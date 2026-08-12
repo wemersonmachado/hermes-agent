@@ -1,0 +1,6 @@
+interface Env {
+  SUPABASE_SERVICE_ROLE_KEY: string;
+  TELEGRAM_BOT_TOKEN: string;
+  TELEGRAM_ALLOWED_USERS: string;
+  TELEGRAM_WEBHOOK_SECRET: string;
+}
