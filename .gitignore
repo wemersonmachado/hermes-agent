@@ -3,6 +3,13 @@
 .env.*
 *.env
 
+# Node.js
+node_modules/
+**/node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
 # Python & Virtual Environments
 __pycache__/
 *.py[cod]
