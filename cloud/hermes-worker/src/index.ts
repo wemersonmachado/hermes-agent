@@ -45,7 +45,9 @@ import {
   tryOwnDataQueryShortcut,
   tryMemoryCommand,
   transcribeAudioBytes,
+  webSearch,
 } from "./shared";
+import { detectSportsSubject, formatSpecialistAnswer, trySportsSearchSpecialist } from "./search_specialist";
 
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
 
@@ -327,7 +329,8 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
         await markUpdate(env, update.update_id, "error");
         return;
       }
-      await sendText(env, message.chat.id, `🎙️ Entendi: "${userText}"`);
+      // A transcrição alimenta a mesma consulta de texto, sem ecoar a fala
+      // inteira de volta. Isso evita repetir saudações, hesitações e o pedido.
     }
 
     const command = userText.toLowerCase();
@@ -408,6 +411,20 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
 
     if (!isVoiceInput) {
       await telegram(env, "sendChatAction", { chat_id: message.chat.id, action: "typing" });
+    }
+
+    const sportsResult = await trySportsSearchSpecialist(env, userText, webSearch).catch(() => null);
+    const sportsSubject = detectSportsSubject(userText);
+    if (sportsResult || sportsSubject) {
+      const reply = sportsResult
+        ? formatSpecialistAnswer(sportsResult)
+        : `Não consegui confirmar agora os dados atuais de ${sportsSubject}. Prefiro não inventar placar, posição ou competições; tente novamente em instantes.`;
+      await saveMessage(env, message, "user", userText);
+      await saveMessage(env, message, "assistant", reply);
+      await sendText(env, message.chat.id, reply);
+      await maybeSendVoice(env, message.chat.id, userText, reply, update.update_id);
+      await markUpdate(env, update.update_id, "done");
+      return;
     }
 
     const newsShortcut = await tryNewsShortcut(env, userText);

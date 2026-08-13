@@ -42,6 +42,17 @@ Telegram e armazenamento R2.
   responder, o Hermes informa a falha; não completa com fatos inventados.
 - O endpoint do painel é `GET /api/dashboard/news?category=...&query=...`.
 
+Perguntas factuais sobre clubes conhecidos passam antes pelo motor isolado
+`src/search_specialist.ts`. Ele pesquisa e sintetiza diretamente placar,
+adversário, data, competição, posição e competições em disputa conforme a
+pergunta. Páginas agregadoras com texto como "acompanhe as notícias" são
+rejeitadas. Se as fontes não confirmarem os dados, o motor declara a falha em
+vez de cair na antiga lista de capas/matérias.
+
+Áudios do Telegram são transcritos apenas internamente. A transcrição completa
+não é mais enviada como uma mensagem `Entendi: "..."`; o usuário recebe somente
+a resposta ao pedido, evitando eco de saudações, repetições e hesitações.
+
 ### Memória e fotos
 
 Os comandos abaixo funcionam no Telegram, dashboard e PWA antes do LLM:

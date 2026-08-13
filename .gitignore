@@ -6,6 +6,7 @@
 # Node.js
 node_modules/
 **/node_modules/
+.codex-remote-attachments/
 package-lock.json
 yarn.lock
 pnpm-lock.yaml

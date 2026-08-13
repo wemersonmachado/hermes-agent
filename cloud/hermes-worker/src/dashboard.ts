@@ -25,7 +25,9 @@ import {
   tryMemoryCommand,
   fetchCategoryNews,
   transcribeAudioBytes,
+  webSearch,
 } from "./shared";
+import { detectSportsSubject, formatSpecialistAnswer, trySportsSearchSpecialist } from "./search_specialist";
 
 function ownerChatId(env: Env): string {
   return env.TELEGRAM_ALLOWED_USERS.split(",")[0]?.trim() ?? "";
@@ -702,6 +704,17 @@ export async function handleDashboardRequest(request: Request, env: Env, path: s
       await saveDashboardMessage(env, chatId, "user", text);
       await saveDashboardMessage(env, chatId, "assistant", memoryResult.reply);
       return json({ ok: true, reply: memoryResult.reply, imageFileIds: memoryResult.imageFileIds || [] });
+    }
+
+    const sportsResult = await trySportsSearchSpecialist(env, text, webSearch).catch(() => null);
+    const sportsSubject = detectSportsSubject(text);
+    if (sportsResult || sportsSubject) {
+      const reply = sportsResult
+        ? formatSpecialistAnswer(sportsResult)
+        : `Não consegui confirmar agora os dados atuais de ${sportsSubject}. Prefiro não inventar placar, posição ou competições; tente novamente em instantes.`;
+      await saveDashboardMessage(env, chatId, "user", text);
+      await saveDashboardMessage(env, chatId, "assistant", reply);
+      return json({ ok: true, reply, kind: "sports_fact" });
     }
 
     const newsShortcut = await tryNewsShortcut(env, text).catch(() => null);
