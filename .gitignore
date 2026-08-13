@@ -39,3 +39,8 @@ hermes_capacidades.ogg
 # IDE
 .vscode/
 .idea/
+# Hermes Cloud local secrets and generated Cloudflare state
+API.txt
+.webhook_secret_tmp
+**/.wrangler/cache/
+**/node_modules/
