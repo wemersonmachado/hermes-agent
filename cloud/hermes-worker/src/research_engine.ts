@@ -95,6 +95,17 @@ export function isCurrentNewsDate(value: string | null | undefined, now = Date.n
   return time !== null && time <= now + 3_600_000 && now - time <= NEWS_MAX_AGE_MS;
 }
 
+function isProviderCurrent(item: Evidence, now = Date.now()): boolean {
+  if (isCurrentNewsDate(item.publishedAt, now)) return true;
+  const time = timestamp(item.publishedAt);
+  if (time === null) return false;
+  // Google News e GDELT já recebem uma janela server-side (when:7d e
+  // timespan=1week). Tolera diferença de calendário do runtime/fontes, mas
+  // nunca conteúdo legado: no máximo o ano anterior ao relógio do Worker.
+  const constrainedProvider = item.provider === "google-news-rss" || item.provider === "gdelt";
+  return constrainedProvider && new Date(time).getUTCFullYear() >= new Date(now).getUTCFullYear() - 1;
+}
+
 async function wikipediaSearch(query: string): Promise<Evidence[]> {
   const url = `https://pt.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srlimit=5&format=json&origin=*`;
   const response = await fetch(url, { headers: { "user-agent": "HermesResearch/1.0" } });
@@ -116,14 +127,14 @@ function rankAndDiversify(items: Evidence[], query: string, mode: ResearchMode, 
   const unique = new Map<string, Evidence>();
   for (const item of items) {
     if (!safeHttpUrl(item.url)) continue;
-    if (mode === "news" && !isCurrentNewsDate(item.publishedAt)) continue;
+    if (mode === "news" && !isProviderCurrent(item)) continue;
     const key = clean(item.title).toLocaleLowerCase("pt-BR").replace(/\W/g, "").slice(0, 100);
     if (key && !unique.has(key)) unique.set(key, item);
   }
   const scored = [...unique.values()].map((item) => {
     const haystack = `${item.title} ${item.snippet}`.toLocaleLowerCase("pt-BR");
     const relevance = terms.reduce((score, term) => score + (haystack.includes(term) ? 2 : 0), 0);
-    const recency = item.publishedAt && isCurrentNewsDate(item.publishedAt) ? 6 : 0;
+    const recency = item.publishedAt && isProviderCurrent(item) ? 6 : 0;
     return { item, score: relevance + recency };
   }).sort((a, b) => b.score - a.score);
   const selected: Evidence[] = [];
