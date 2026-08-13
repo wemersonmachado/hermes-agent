@@ -1356,6 +1356,7 @@ DEFAULT_CONFIG = {
         "edge": {
             "voice": "en-US-AriaNeural",
             # Popular: AriaNeural, JennyNeural, AndrewNeural, BrianNeural, SoniaNeural
+            # "pitch": "-15Hz",  # negative = deeper voice, e.g. "-10Hz".."-25Hz"
         },
         "elevenlabs": {
             "voice_id": "pNInz6obpgDQGcFmaJgB",  # Adam

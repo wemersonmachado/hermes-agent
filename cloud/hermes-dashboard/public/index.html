@@ -1,0 +1,1489 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HERMES — Segundo Cérebro AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="app">
+
+    <!-- Mobile Sidebar Backdrop Overlay -->
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="closeMobileSidebar()"></div>
+
+    <!-- ── SIDEBAR ─────────────────────────────── -->
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-logo">
+            <span class="logo-brain">🧠</span>
+            <span class="logo-text">HERMES</span>
+            <button class="mobile-close-btn" onclick="closeMobileSidebar()" title="Fechar Menu">✕</button>
+        </div>
+        <nav class="sidebar-nav">
+            <!-- 🧠 CÉREBRO CENTRAL (PRIMEIRA PÁGINA EM DESTAQUE) -->
+            <a class="nav-item active" href="#" data-tab="voz" onclick="switchMainTab('voz', this); return false;" style="background: linear-gradient(135deg, rgba(168,85,247,0.3), rgba(6,182,212,0.3)); border: 1px solid rgba(168,85,247,0.6); font-weight: 700; color: #fff; margin-bottom: 8px; border-radius: 8px; box-shadow: 0 0 12px rgba(168,85,247,0.35);">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="1" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
+                </svg>
+                <span>🧠 Cérebro Central</span>
+            </a>
+            <a class="nav-item" href="#" data-tab="dashboard" onclick="switchMainTab('dashboard', this); return false;">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+                </svg>
+                <span>Dashboard</span>
+            </a>
+            <a class="nav-item" href="#" data-tab="memoria" onclick="switchMainTab('memoria', this); return false;">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+                </svg>
+                <span>Memória</span>
+            </a>
+            <a class="nav-item" href="#" data-tab="agenda" onclick="switchMainTab('agenda', this); return false;">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                <span>Agenda</span>
+            </a>
+            <a class="nav-item" href="#" data-tab="financas" onclick="switchMainTab('financas', this); return false;">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                </svg>
+                <span>Finanças</span>
+            </a>
+            <a class="nav-item" href="#" data-tab="documentos" onclick="switchMainTab('documentos', this); return false;">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+                <span>Documentos</span>
+            </a>
+            <a class="nav-item" href="#" data-tab="contatos" onclick="switchMainTab('contatos', this); return false;">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 010 7.75"/>
+                </svg>
+                <span>Contatos</span>
+            </a>
+            <a class="nav-item" href="#" data-tab="metas" onclick="switchMainTab('metas', this); return false;">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+                </svg>
+                <span>Metas</span>
+            </a>
+            <a class="nav-item" href="#" data-tab="tarefas" onclick="switchMainTab('tarefas', this); return false;">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                </svg>
+                <span>Tarefas</span>
+            </a>
+            <a class="nav-item" href="#" data-tab="pesquisa" onclick="switchMainTab('pesquisa', this); return false;">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <span>Pesquisa Web</span>
+            </a>
+            <a class="nav-item" href="#" data-tab="automacao" onclick="switchMainTab('automacao', this); return false;">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+                <span>Automação</span>
+            </a>
+            <a class="nav-item" href="#" data-tab="skills" onclick="switchMainTab('skills', this); return false;">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2a3 3 0 0 1 3 3v2h2a3 3 0 0 1 0 6h-2v2a3 3 0 0 1-6 0v-2H7a3 3 0 0 1 0-6h2V5a3 3 0 0 1 3-3z"/>
+                </svg>
+                <span>Skills e Agentes</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="agent-pill">
+                <span class="agent-avatar">🤖</span>
+                <div class="agent-info">
+                    <p class="agent-name">HERMES AI</p>
+                    <p class="agent-status"><span class="dot-green"></span> Motor Ativo</p>
+                </div>
+            </div>
+            <button class="theme-btn" onclick="toggleTheme()" title="Alternar tema">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+            </button>
+        </div>
+    </aside>
+
+    <!-- ── MAIN ────────────────────────────────── -->
+    <div class="main">
+
+        <!-- HEADER -->
+        <header class="header">
+            <div class="hd-left">
+                <button class="mobile-menu-btn" onclick="toggleMobileSidebar()" title="Abrir Menu">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+                        <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+                    </svg>
+                </button>
+                <div class="hd-brand">
+                    <h1 class="brand-name">HERMES — Segundo Cérebro AI</h1>
+                    <span class="version-chip">v2.0.0 PROD</span>
+                </div>
+            </div>
+
+            <div class="hd-status">
+                <div class="status-pill">
+                    <span class="status-lbl">Canal:</span>
+                    <span id="wa-status-badge" class="badge badge-warning">Verificando...</span>
+                </div>
+                <div class="status-pill">
+                    <span class="status-lbl">Motor IA:</span>
+                    <span class="badge badge-info">Cloudflare / Multi-LLM</span>
+                </div>
+            </div>
+            <div class="hd-actions">
+                <span class="update-ts">Atualizado: <span id="last-updated">—</span></span>
+                <button class="btn btn-ghost" onclick="fetchData()" title="Atualizar dados">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon">
+                        <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                    </svg>
+                    <span class="btn-lbl">Atualizar</span>
+                </button>
+                <button class="btn btn-primary" onclick="triggerBriefing()" title="Briefing Proativo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                    </svg>
+                    <span class="btn-lbl">Briefing Proativo</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- CONTENT -->
+        <main class="content">
+
+            <!-- ── TAB 1: DASHBOARD OVERVIEW (NOVO LAYOUT INTERATIVO EM TEMPO REAL & NOTÍCIAS DE LADO A LADO) ── -->
+            <div id="view-dashboard" class="main-tab-view active">
+
+                <!-- 1. CARD SUPERIOR DE NOTÍCIAS EM TEMPO REAL (DE LADO A LADO / FULL WIDTH) -->
+                <section class="card news-card-banner mb-3">
+                    <div class="card-hd news-hd">
+                        <div class="news-title-group">
+                            <span class="live-dot-pulse"></span>
+                            <h2 class="card-title">
+                                📰 NOTÍCIAS EM TEMPO REAL
+                                <span id="news-current-category-name" class="badge badge-info" style="margin-left:8px; font-size:11px;">🏛️ Política</span>
+                            </h2>
+                        </div>
+                        <div class="news-hd-actions">
+                            <span class="news-updated-time">Rodízio a cada 1h • <span id="news-last-updated-ts">Atualizado agora</span></span>
+                            <button class="btn btn-ghost btn-xs" onclick="loadDashboardNews(true)" title="Atualizar Notícias">🔄 Atualizar Manchetes</button>
+                        </div>
+                    </div>
+
+                    <!-- BARRA DE PÍLULAS DE CATEGORIAS DE NOTÍCIAS (COM ADIÇÃO DE NOVOS ASSUNTOS) -->
+                    <div class="news-categories-bar" id="news-categories-pills-bar">
+                        <button class="news-cat-pill active" onclick="filterNewsCategory('politica', this)">🏛️ Política</button>
+                        <button class="news-cat-pill" onclick="filterNewsCategory('futebol', this)">⚽ Futebol</button>
+                        <button class="news-cat-pill" onclick="filterNewsCategory('financas', this)">💰 Finanças</button>
+                        <button class="news-cat-pill" onclick="filterNewsCategory('investimentos', this)">📈 Investimentos</button>
+                        <button class="news-cat-pill" onclick="filterNewsCategory('tecnologia', this)">💻 Tecnologia</button>
+                        <button class="news-cat-pill" onclick="filterNewsCategory('ia', this)">🤖 IA</button>
+                        <button class="news-cat-pill" onclick="filterNewsCategory('negocios', this)">💼 Negócios</button>
+                        <button class="news-cat-pill news-cat-add-btn" onclick="toggleAddTopicInput()" title="Adicionar Novo Assunto">➕ Novo Assunto</button>
+                    </div>
+
+                    <!-- FORMULÁRIO COMPACTO INLINE PARA NOVO ASSUNTO -->
+                    <div id="add-topic-inline-box" style="display:none; padding:8px 0 12px 0; border-bottom:1px solid rgba(255,255,255,0.06);">
+                        <form onsubmit="submitCustomNewsTopic(event)" style="display:flex; gap:6px; align-items:center; max-width:420px;">
+                            <input type="text" id="custom-topic-input" class="input input-xs f2" placeholder="Ex: Criptomoedas, Cinema, Saúde, Carros..." required style="height:30px; font-size:12px;">
+                            <button type="submit" class="btn btn-xs btn-primary" style="height:30px; padding:0 12px; font-size:11.5px;">+ Adicionar</button>
+                            <button type="button" class="btn btn-xs btn-ghost" onclick="toggleAddTopicInput()" style="height:30px; padding:0 8px; font-size:11.5px;">Cancelar</button>
+                        </form>
+                    </div>
+
+                    <!-- CARROSSEL / MANCHETES DE NOTÍCIAS (EXATAMENTE 4 NOTÍCIAS POR ASSUNTO) -->
+                    <div id="news-ticker-container" class="news-ticker-wrapper">
+                        <div id="news-items-list" class="news-items-grid">
+                            <div class="news-loading-skeleton">⏳ Carregando 4 manchetes do segmento...</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. GRID DE KPIS INTERATIVOS & ESTILIZADOS (4 COLUNAS PRIMÁRIAS) -->
+                <div class="dash-kpi-grid mb-3">
+                    <!-- KPI 1: SAÚDE FINANCEIRA -->
+                    <div class="kpi-card kpi-finances" onclick="switchMainTab('financas'); return false;" style="cursor:pointer;" title="Clique para abrir o painel de Finanças">
+                        <div class="kpi-hd">
+                            <span class="kpi-icon-box bg-emerald">💰</span>
+                            <div class="kpi-title-block">
+                                <span class="kpi-label">Saúde Financeira</span>
+                                <span class="kpi-sub">Balanço Estimado</span>
+                            </div>
+                            <span class="kpi-badge kpi-badge-up">🟢 Ativo</span>
+                        </div>
+                        <div class="kpi-body">
+                            <h3 id="financial-summary" class="kpi-value">R$ 0,00</h3>
+                            <div class="kpi-mini-meta">
+                                <span>Receitas: <strong id="kpi-fin-income" style="color:var(--emerald);">R$ 0,00</strong></span>
+                                <span>Despesas: <strong id="kpi-fin-expense" style="color:var(--rose);">R$ 0,00</strong></span>
+                            </div>
+                            <canvas id="sparkline" class="sparkline" width="220" height="36"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- KPI 2: MENTE & MEMÓRIA AI -->
+                    <div class="kpi-card kpi-memory" onclick="switchMainTab('memoria'); return false;" style="cursor:pointer;" title="Clique para abrir a Central de Memória">
+                        <div class="kpi-hd">
+                            <span class="kpi-icon-box bg-purple">🧠</span>
+                            <div class="kpi-title-block">
+                                <span class="kpi-label">Mente & Memória AI</span>
+                                <span class="kpi-sub">Conhecimento Guardado</span>
+                            </div>
+                            <span id="kpi-memory-count-badge" class="kpi-badge kpi-badge-info">0 Memórias</span>
+                        </div>
+                        <div class="kpi-body">
+                            <div class="kpi-list-preview">
+                                <p class="kpi-mini-hd">🎯 Prioridade Principal:</p>
+                                <ul id="priorities-list" class="chip-list"></ul>
+                                <p class="kpi-mini-hd mt-1">🚀 Projetos / Hábitos:</p>
+                                <ul id="projects-list" class="chip-list"></ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- KPI 3: AGENDA & COMPROMISSOS -->
+                    <div class="kpi-card kpi-agenda" onclick="switchMainTab('agenda'); return false;" style="cursor:pointer;" title="Clique para abrir a Agenda">
+                        <div class="kpi-hd">
+                            <span class="kpi-icon-box bg-amber">📅</span>
+                            <div class="kpi-title-block">
+                                <span class="kpi-label">Agenda & Lembretes</span>
+                                <span class="kpi-sub">Compromissos Nuvem</span>
+                            </div>
+                            <span id="kpi-agenda-count-badge" class="kpi-badge kpi-badge-warning">0 Pendentes</span>
+                        </div>
+                        <div class="kpi-body">
+                            <div id="kpi-agenda-preview" class="kpi-agenda-box">
+                                <div class="kpi-agenda-item">
+                                    <span class="kpi-agenda-time">Hoje</span>
+                                    <span class="kpi-agenda-text">Sem eventos pendentes</span>
+                                </div>
+                            </div>
+                            <div class="kpi-footer-action">
+                                <span>⏰ Automações e Cron Ativos</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- KPI 4: COFRE DE DOCUMENTOS R2 -->
+                    <div class="kpi-card kpi-documents" onclick="switchMainTab('documentos'); return false;" style="cursor:pointer;" title="Clique para abrir o Cofre de Documentos">
+                        <div class="kpi-hd">
+                            <span class="kpi-icon-box bg-cyan">📁</span>
+                            <div class="kpi-title-block">
+                                <span class="kpi-label">Cofre de Documentos R2</span>
+                                <span class="kpi-sub">Arquivos & OCR</span>
+                            </div>
+                            <span id="doc-count-badge-desk" class="kpi-badge kpi-badge-cyan">0 Arquivos</span>
+                        </div>
+                        <div class="kpi-body">
+                            <div class="kpi-doc-status">
+                                <div class="doc-stat-row">
+                                    <span>Armazenamento R2:</span>
+                                    <strong style="color:var(--cyan);">Ilimitado</strong>
+                                </div>
+                                <div class="doc-stat-row">
+                                    <span>IA OCR / Visão:</span>
+                                    <strong style="color:var(--emerald);">Ativa 24/7</strong>
+                                </div>
+                                <div class="doc-stat-row">
+                                    <span>Memória Vector RAG:</span>
+                                    <strong style="color:#a855f7;">Sincronizada</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. AÇÕES RÁPIDAS (09/08/2026: substituiu o card "Chat com HERMES").
+                     Achado da auditoria de redundância: esse mini-chat não usava o LLM
+                     completo (/api/chat, com memória/finanças/skills/dispositivos/
+                     autoconhecimento) -- só respondia briefing local ou Deep Research cru,
+                     e na falha mandava o usuário "usar o Telegram pra conversar em
+                     linguagem natural" (confissão no próprio código de que era
+                     inferior ao Cérebro Central). Dois chats fazendo a mesma coisa,
+                     um pior que o outro, na mesma página -- exatamente o tipo de
+                     redundância pedida pra eliminar. Fica só os botões de ação real
+                     que não duplicam nada + link direto pro chat de verdade.
+                     Formulários de adição rápida também removidos (ver histórico) --
+                     eram 100% duplicados dos forms dedicados em cada aba. -->
+                <div class="row mb-3">
+                    <section class="card">
+                        <div class="card-hd">
+                            <h2 class="card-title">
+                                <svg viewBox="0 0 24 24" class="title-icon" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                                </svg>
+                                Ações Rápidas
+                            </h2>
+                        </div>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap; padding:4px 0;">
+                            <button class="btn btn-primary" onclick="switchMainTab('voz'); return false;">🧠 Conversar com a HERMES (Cérebro Central)</button>
+                            <button class="btn btn-ghost" onclick="testFinancialGuard()" title="Guardião Financeiro">🛡️ Guardião Financeiro</button>
+                            <button class="btn btn-ghost" onclick="showGraphOverview()" title="Grafo de Conhecimento">🕸️ Grafo de Conhecimento</button>
+                            <button class="btn btn-ghost" onclick="triggerBriefing()">✨ Gerar Briefing</button>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- 4. RODAPÉ DO DASHBOARD (STATUS DOS PROVEDORES & MÓDULOS) -->
+                <div class="row row-bottom">
+                    <!-- Coluna estreita: HERMES Cloud Status + Dispositivos Conectados empilhados -->
+                    <div class="col-stack">
+                    <!-- HERMES Cloud Status Card -->
+                    <section class="card wa-card">
+                        <div class="card-hd">
+                            <h2 class="card-title">
+                                <svg viewBox="0 0 24 24" class="title-icon" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                                </svg>
+                                Status dos 14 Provedores & Conexão (HERMES Cloud)
+                            </h2>
+                            <button class="btn btn-ghost btn-sm" onclick="fetchCloudStatus()">Atualizar Status</button>
+                        </div>
+                        <div class="wa-body">
+                            <div id="wa-qr-container" class="qr-box">
+                                <p class="qr-hint">Verificando conexão com o Worker...</p>
+                            </div>
+                            <div class="wa-info-block">
+                                <p id="wa-info-text" class="wa-info-text">Conectando à HERMES Cloud...</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- DISPOSITIVOS CONECTADOS (Bluetooth do PC + Celular via PWA) -->
+                    <section class="card">
+                        <div class="card-hd">
+                            <h2 class="card-title">
+                                <svg viewBox="0 0 24 24" class="title-icon" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M6.5 6.5l11 11L12 23V1l5.5 5.5-11 11"/>
+                                </svg>
+                                Dispositivos Conectados
+                            </h2>
+                        </div>
+                        <div id="connected-devices-list" class="device-list">
+                            <div class="device-row text-muted">Carregando dispositivos...</div>
+                        </div>
+                    </section>
+                    </div>
+
+                    <!-- MÓDULOS (full width) -->
+                    <section class="card modules-card mt-2">
+                        <div class="card-hd">
+                            <h2 class="card-title">
+                                <svg viewBox="0 0 24 24" class="title-icon" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
+                                </svg>
+                                Status dos 11 Módulos Independentes
+                            </h2>
+                        </div>
+                        <div class="modules-grid">
+                            <div class="mod-card" onclick="switchMainTab('memoria'); return false;"><span class="mod-icon">🧠</span><span class="mod-name">Memória</span><span class="mod-status"><span class="dot-green"></span>Ativo</span></div>
+                            <div class="mod-card" onclick="switchMainTab('agenda'); return false;"><span class="mod-icon">📅</span><span class="mod-name">Agenda</span><span class="mod-status"><span class="dot-green"></span>Ativo</span></div>
+                            <div class="mod-card" onclick="switchMainTab('financas'); return false;"><span class="mod-icon">💰</span><span class="mod-name">Finanças</span><span class="mod-status"><span class="dot-green"></span>Ativo</span></div>
+                            <div class="mod-card" onclick="switchMainTab('documentos'); return false;"><span class="mod-icon">📄</span><span class="mod-name">Documentos</span><span class="mod-status"><span class="dot-green"></span>Ativo</span></div>
+                            <div class="mod-card" onclick="switchMainTab('contatos'); return false;"><span class="mod-icon">👥</span><span class="mod-name">Contatos</span><span class="mod-status"><span class="dot-green"></span>Ativo</span></div>
+                            <div class="mod-card" onclick="switchMainTab('metas'); return false;"><span class="mod-icon">🎯</span><span class="mod-name">Metas</span><span class="mod-status"><span class="dot-green"></span>Ativo</span></div>
+                            <div class="mod-card" onclick="switchMainTab('tarefas'); return false;"><span class="mod-icon">✅</span><span class="mod-name">Tarefas</span><span class="mod-status"><span class="dot-green"></span>Ativo</span></div>
+                            <div class="mod-card" onclick="switchMainTab('pesquisa'); return false;"><span class="mod-icon">🌐</span><span class="mod-name">Pesquisa Web</span><span class="mod-status"><span class="dot-green"></span>Ativo</span></div>
+                            <div class="mod-card" onclick="switchMainTab('automacao'); return false;"><span class="mod-icon">🤖</span><span class="mod-name">Automação</span><span class="mod-status"><span class="dot-green"></span>Ativo</span></div>
+                            <div class="mod-card" onclick="switchMainTab('dashboard'); return false;"><span class="mod-icon">📊</span><span class="mod-name">Dashboard</span><span class="mod-status"><span class="dot-green"></span>Ativo</span></div>
+                            <div class="mod-card" onclick="switchMainTab('voz'); return false;"><span class="mod-icon">🎤</span><span class="mod-name">Voz Edge-TTS</span><span class="mod-status"><span class="dot-green"></span>Ativo</span></div>
+                        </div>
+                    </section>
+                </div>
+            </div><!-- /view-dashboard -->
+
+
+            <!-- ── TAB 2: MEMÓRIA (BUSCA INTELIGENTE RÁPIDA E CATEGORIZADA) ── -->
+            <div id="view-memoria" class="main-tab-view">
+                <section class="card">
+                    <div class="card-hd">
+                        <h2 class="card-title">🧠 Central de Memória Permanente da HERMES</h2>
+                        <span class="badge badge-info">Busca Inteligente Rápida</span>
+                    </div>
+
+                    <!-- BARRA DE BUSCA E FILTROS RÁPIDOS DA MEMÓRIA -->
+                    <div class="mem-search-bar mb-3">
+                        <div class="form-row mb-2">
+                            <input type="text" id="memory-search-input" class="input f2" placeholder="🔍 Pesquisar qualquer fato, hábito ou pessoa na memória da HERMES..." oninput="filterMemories()">
+                            <div class="tab-pills memory-filter-pills">
+                                <button class="tab-btn active" onclick="filterMemoryCategory('all', this)">Todas</button>
+                                <button class="tab-btn" onclick="filterMemoryCategory('priorities', this)">🎯 Prioridades</button>
+                                <button class="tab-btn" onclick="filterMemoryCategory('projects', this)">🚀 Projetos</button>
+                                <button class="tab-btn" onclick="filterMemoryCategory('habits', this)">💡 Hábitos</button>
+                                <button class="tab-btn" onclick="filterMemoryCategory('people', this)">🤝 Pessoas</button>
+                                <button class="tab-btn" onclick="filterMemoryCategory('decisions', this)">📝 Decisões</button>
+                                <button class="tab-btn" onclick="filterMemoryCategory('goals', this)">🚩 Metas</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LISTA REAL DE MEMÓRIAS COM SELEÇÃO MÚLTIPLA E AÇÕES EM LOTE -->
+                    <div class="mem-cat-card border-purple">
+                        <div class="mem-cat-hd" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <h3 class="mem-cat-title" style="margin:0;">🧠 Memórias salvas na HERMES</h3>
+                                <span id="memory-full-count" class="badge badge-info">0</span>
+                            </div>
+                            <div class="batch-actions-bar" style="display:flex; align-items:center; gap:8px;">
+                                <label style="display:flex; align-items:center; gap:4px; font-size:12px; cursor:pointer;" title="Marcar ou desmarcar todas">
+                                    <input type="checkbox" id="mem-select-all" class="item-checkbox" onchange="toggleSelectAllMemories(this)">
+                                    <span>Marcar Várias</span>
+                                </label>
+                                <button id="btn-delete-selected-memories" class="btn btn-danger btn-sm" onclick="deleteSelectedMemoriesReal()" style="display:none;">🗑️ Apagar Memórias Selecionadas (<span id="selected-memories-count">0</span>)</button>
+                            </div>
+                        </div>
+                        <ul id="memory-full-list" class="data-list mem-scroll-list"><li class="text-muted">Carregando memórias reais da HERMES...</li></ul>
+                    </div>
+
+                    <!-- Adicionar memória real -->
+                    <div class="mem-cat-card border-cyan mt-3">
+                        <div class="mem-cat-hd"><h3 class="mem-cat-title">➕ Memorizar novo fato</h3></div>
+                        <form onsubmit="submitMemoryForm(event)">
+                            <div class="form-row">
+                                <input type="text" id="memory-input-text" placeholder="Fato, preferência ou hábito para a HERMES gravar..." required class="input f2">
+                                <select id="memory-input-category" class="input f1">
+                                    <option value="priorities">🎯 Prioridade / Trabalho</option>
+                                    <option value="habits">💡 Hábito / Pessoal</option>
+                                    <option value="people">🤝 Pessoa / Contato</option>
+                                    <option value="decisions">📝 Decisão / Anotação</option>
+                                    <option value="goals">🚩 Meta / OKR</option>
+                                </select>
+                                <button type="submit" class="btn btn-primary">Memorizar na HERMES</button>
+                            </div>
+                            <div id="memory-form-status" class="form-status"></div>
+                        </form>
+                    </div>
+                </section>
+            </div>
+
+
+            <!-- ── TAB 3: AGENDA (COM SELEÇÃO MÚLTIPLA E REMOÇÃO EM LOTE) ── -->
+            <div id="view-agenda" class="main-tab-view">
+                <div class="tab-grid-2col">
+                    <section class="card">
+                        <div class="card-hd" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                            <div>
+                                <h2 class="card-title">📅 Próximos Compromissos</h2>
+                                <span class="badge badge-success">Sincronizado Telegram</span>
+                            </div>
+                            <div class="batch-actions-bar" style="display:flex; align-items:center; gap:8px;">
+                                <label style="display:flex; align-items:center; gap:4px; font-size:12px; cursor:pointer;" title="Marcar ou desmarcar todos">
+                                    <input type="checkbox" id="agenda-select-all" class="item-checkbox" onchange="toggleSelectAllAgenda(this)">
+                                    <span>Marcar Vários</span>
+                                </label>
+                                <button id="btn-delete-selected-agenda" class="btn btn-danger btn-sm" onclick="deleteSelectedAgendaReal()" style="display:none;">🗑️ Apagar Compromissos Selecionados (<span id="selected-agenda-count">0</span>)</button>
+                                <button class="btn btn-ghost btn-sm" onclick="deleteSentAgendaReal()" title="Apagar todos os compromissos já notificados">🗑️ Limpar Já Enviados</button>
+                            </div>
+                        </div>
+                        <ul id="tab-agenda-list" class="data-list"><li class="text-muted">Nenhum compromisso pendente no banco.</li></ul>
+                    </section>
+
+                    <section class="card">
+                        <div class="card-hd">
+                            <h2 class="card-title">➕ Novo Compromisso</h2>
+                        </div>
+                        <form onsubmit="submitAgendaForm(event)">
+                            <div class="form-col">
+                                <input type="text" name="title" placeholder="Nome do compromisso..." required class="input">
+                                <input type="date" id="tab-agenda-input-date" name="due_date" required class="input">
+                                <div class="relative-days-row mb-1">
+                                    <span class="p-label">Notificar em:</span>
+                                    <button type="button" class="btn btn-ghost btn-xs" onclick="setDaysAhead(1, 'tab-agenda-input-date')">+1 dia</button>
+                                    <button type="button" class="btn btn-ghost btn-xs" onclick="setDaysAhead(3, 'tab-agenda-input-date')">+3 dias</button>
+                                    <button type="button" class="btn btn-ghost btn-xs" onclick="setDaysAhead(7, 'tab-agenda-input-date')">+7 dias</button>
+                                    <button type="button" class="btn btn-ghost btn-xs" onclick="setDaysAhead(15, 'tab-agenda-input-date')">+15 dias</button>
+                                    <button type="button" class="btn btn-ghost btn-xs" onclick="setDaysAhead(30, 'tab-agenda-input-date')">+30 dias</button>
+                                    <input type="number" min="1" placeholder="X dias" class="input input-xs" style="width:65px;" oninput="if(this.value) setDaysAhead(this.value, 'tab-agenda-input-date')">
+                                </div>
+                                <select name="priority" class="input">
+                                    <option value="alta">Prioridade Alta (Importante)</option>
+                                    <option value="média" selected>Prioridade Média</option>
+                                    <option value="baixa">Prioridade Baixa</option>
+                                </select>
+                                <button type="submit" class="btn btn-primary mt-2">Agendar Compromisso</button>
+                            </div>
+                        </form>
+                    </section>
+                </div>
+            </div>
+
+
+            <!-- ── TAB 4: FINANÇAS — PAINEL EXECUTIVO 1:1 COM A IMAGEM ── -->
+            <div id="view-financas" class="main-tab-view">
+                
+                <div style="margin-bottom:12px;">
+                    <h2 style="font-size:18px; font-weight:900; color:#fff; display:flex; align-items:center; gap:6px;">📊 Gestão Financeira Executiva</h2>
+                    <div style="font-size:12px; color:var(--text-2); font-weight:500; margin-top:2px;">Demonstração de Resultados (DRE), Orçamentos & Liquidez • Clique nos cards para gerenciar e editar</div>
+                </div>
+
+                <!-- MERCADO AO VIVO: Dólar (BCB), Selic (BCB), BTC/ETH (CoinGecko) -->
+                <div id="market-ticker-strip" class="market-ticker-strip">
+                    <div class="market-ticker-item"><span class="mt-label">💵 Dólar</span><span class="mt-val" id="mt-dolar">--</span></div>
+                    <div class="market-ticker-item"><span class="mt-label">📊 Selic</span><span class="mt-val" id="mt-selic">--</span></div>
+                    <div class="market-ticker-item"><span class="mt-label">₿ BTC</span><span class="mt-val" id="mt-btc">--</span></div>
+                    <div class="market-ticker-item"><span class="mt-label">Ξ ETH</span><span class="mt-val" id="mt-eth">--</span></div>
+                </div>
+
+                <div class="finances-exec-container">
+                    
+                    <!-- TOP GRID: SIMETRIA 3 BLOCOS (LEFT 2x2 | CENTER DONUT MARGEM | RIGHT 2x2) -->
+                    <div class="finances-exec-topgrid">
+                        
+                        <!-- WING ESQUERDA (4 KPIS): RECEITA, DESPESAS, LUCRO LÍQUIDO, SALDO FINAL -->
+                        <div class="finances-kpi-wing">
+                            <div class="finances-kpi-card" style="cursor:pointer;" onclick="openFinanceKpiDetailModal('receita')" title="Clique para ver e gerenciar Receitas">
+                                <div class="finances-kpi-title">Total Receita ↗️</div>
+                                <div class="finances-kpi-val" id="desk-kpi-total-receita">R$ 0,00</div>
+                                <div><span class="kpi-trend trend-down" id="desk-trend-receita">0,0%</span> <span style="font-size:9.5px; color:var(--text-2);">vs mês anterior</span></div>
+                            </div>
+                            <div class="finances-kpi-card" style="cursor:pointer;" onclick="openFinanceKpiDetailModal('despesa')" title="Clique para ver e gerenciar Despesas">
+                                <div class="finances-kpi-title">Total Despesas ↘️</div>
+                                <div class="finances-kpi-val" id="desk-kpi-total-despesas" style="color:#ef4444;">R$ 0,00</div>
+                                <div><span class="kpi-trend trend-down" id="desk-trend-despesas">0,0%</span> <span style="font-size:9.5px; color:var(--text-2);">vs mês anterior</span></div>
+                            </div>
+                            <div class="finances-kpi-card" style="cursor:pointer;" onclick="openFinanceKpiDetailModal('lucro')" title="Clique para ver margem e distribuição de Lucro">
+                                <div class="finances-kpi-title">Lucro Líquido 💰</div>
+                                <div class="finances-kpi-val" id="desk-kpi-lucro-liquido" style="color:var(--green);">R$ 0,00</div>
+                                <div><span class="kpi-trend trend-down" id="desk-trend-lucro">0,0%</span> <span style="font-size:9.5px; color:var(--text-2);">vs mês anterior</span></div>
+                            </div>
+                            <div class="finances-kpi-card" style="cursor:pointer;" onclick="openFinanceKpiDetailModal('saldo')" title="Clique para ver Fluxo de Caixa e Saldo">
+                                <div class="finances-kpi-title">Saldo no final do mês 🏦</div>
+                                <div class="finances-kpi-val" id="desk-kpi-saldo-final" style="color:var(--cyan);">R$ 0,00</div>
+                                <div><span class="kpi-trend trend-down" id="desk-trend-saldo">0,0%</span> <span style="font-size:9.5px; color:var(--text-2);">vs mês anterior</span></div>
+                            </div>
+                        </div>
+
+                        <!-- GAUGE CENTRAL DE MARGEM DE LUCRO LÍQUIDO -->
+                        <div class="finances-center-donut" style="cursor:pointer;" onclick="openFinanceKpiDetailModal('margem')" title="Clique para configurar Meta de Margem de Lucro">
+                            <div class="donut-gauge-title">% Margem Lucro Líquido 🎯</div>
+                            
+                            <div class="donut-svg-container">
+                                <svg width="130" height="130" viewBox="0 0 100 100" class="donut-svg-el">
+                                    <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="10"/>
+                                    <circle id="desk-donut-margem-circle" cx="50" cy="50" r="38" fill="none" stroke="var(--cyan)" stroke-width="10" stroke-dasharray="238.76" stroke-dashoffset="238.76" transform="rotate(-90 50 50)" stroke-linecap="round" style="transition: stroke-dashoffset 0.5s ease;"/>
+                                </svg>
+
+                                <div class="donut-inner-content">
+                                    <div class="donut-gauge-value" id="desk-kpi-margem-val">0,0%</div>
+                                    <div class="donut-gauge-goal" id="desk-goal-margem-label">Objetivo: 12,0%</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- WING DIREITA (4 KPIS): CONTAS A RECEBER, CONTAS A PAGAR, LIQUIDEZ REDUZIDA, LIQUIDEZ -->
+                        <div class="finances-kpi-wing">
+                            <div class="finances-kpi-card" style="cursor:pointer;" onclick="openFinanceKpiDetailModal('receber')" title="Clique para gerenciar Contas a Receber">
+                                <div class="finances-kpi-title">Contas a Receber 📥</div>
+                                <div class="finances-kpi-val" id="desk-kpi-contas-receber" style="color:var(--green);">R$ 0,00</div>
+                                <div><span class="kpi-trend trend-up" id="desk-trend-receber">+0,0%</span> <span style="font-size:9.5px; color:var(--text-2);">vs mês anterior</span></div>
+                            </div>
+                            <div class="finances-kpi-card" style="cursor:pointer;" onclick="openFinanceKpiDetailModal('pagar')" title="Clique para gerenciar Contas a Pagar">
+                                <div class="finances-kpi-title">Contas a Pagar 📤</div>
+                                <div class="finances-kpi-val" id="desk-kpi-contas-pagar" style="color:#ef4444;">R$ 0,00</div>
+                                <div><span class="kpi-trend trend-up" id="desk-trend-pagar">+0,0%</span> <span style="font-size:9.5px; color:var(--text-2);">vs mês anterior</span></div>
+                            </div>
+                            <div class="finances-kpi-card" style="cursor:pointer;" onclick="openFinanceKpiDetailModal('liquidez_reduzida')" title="Clique para ver Análise de Liquidez Reduzida">
+                                <div class="finances-kpi-title">Índice Liquidez Reduzida ⚡</div>
+                                <div class="finances-kpi-val" id="desk-kpi-liquidez-reduzida" style="color:var(--cyan);">0,00</div>
+                                <div style="font-size:9.5px; color:var(--text-2); font-weight:600;">1 ou mais • Objetivo</div>
+                            </div>
+                            <div class="finances-kpi-card" style="cursor:pointer;" onclick="openFinanceKpiDetailModal('liquidez_geral')" title="Clique para ver Análise de Liquidez Geral">
+                                <div class="finances-kpi-title">Índice de Liquidez 🛡️</div>
+                                <div class="finances-kpi-val" id="desk-kpi-liquidez-geral" style="color:var(--green);">0,00</div>
+                                <div style="font-size:9.5px; color:var(--text-2); font-weight:600;">3 ou mais • Objetivo</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MIDDLE GRID: GRÁFICO COMBO RECEITAS/DESPESAS (ESQ) + ANÉIS DE ORÇAMENTO (DIR) -->
+                    <div class="finances-middle-grid">
+                        
+                        <!-- GRÁFICO DE COMBO: RECEITAS E DESPESAS (JAN A DEZ) -->
+                        <div class="card" style="margin-bottom:0; cursor:pointer;" onclick="openFinanceKpiDetailModal('combo_chart')" title="Clique para ver o Detalhamento Mensal de Receitas vs Despesas">
+                            <div class="card-hd">
+                                <h2 class="card-title">📊 Receitas e Despesas (Mensal) 🔍</h2>
+                                <div style="font-size:11px; display:flex; gap:10px;">
+                                    <span style="color:var(--cyan);">■ Receita</span>
+                                    <span style="color:#ef4444;">■ Despesa</span>
+                                    <span style="color:var(--purple);">━ Lucro</span>
+                                </div>
+                            </div>
+                            
+                            <!-- SVG COMBO CHART (BARRAS DE RECEITA/DESPESA + LINHA DE LUCRO) -->
+                            <div style="width:100%; height:200px; position:relative; margin-top:8px;">
+                                <svg id="desk-combo-chart-svg" width="100%" height="200" viewBox="0 0 500 200" preserveAspectRatio="none">
+                                    <!-- Eixo Zero -->
+                                    <line x1="30" y1="110" x2="490" y2="110" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+                                    
+                                    <!-- Rótulos Y -->
+                                    <text x="5" y="30" fill="#64748b" font-size="9" font-weight="700">6.000</text>
+                                    <text x="5" y="70" fill="#64748b" font-size="9" font-weight="700">3.000</text>
+                                    <text x="20" y="113" fill="#64748b" font-size="9" font-weight="700">0</text>
+                                    <text x="0" y="155" fill="#64748b" font-size="9" font-weight="700">-3.000</text>
+
+                                    <g id="desk-combo-chart-bars-group"></g>
+                                    <path id="desk-combo-chart-profit-line" d="" fill="none" stroke="var(--purple)" stroke-width="2.5"/>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- ANÉIS DE ORÇAMENTO DA DIREITA (% DO ORÇAMENTO RECEITA E DESPESA) -->
+                        <div class="card" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:space-between;">
+                            <div class="card-hd"><h2 class="card-title">🎯 Execução Orçamentária</h2></div>
+                            
+                            <div class="budget-rings-wrapper">
+                                <!-- RING 1: ORÇAMENTO RECEITA -->
+                                <div class="budget-ring-box" style="cursor:pointer;" onclick="openFinanceKpiDetailModal('orc_receita')" title="Clique para gerenciar o Orçamento de Receitas">
+                                    <div class="budget-ring-title">% do orçamento de receita ⚙️</div>
+                                    <div class="ring-svg-container">
+                                        <svg width="100" height="100" viewBox="0 0 100 100" class="ring-svg-el">
+                                            <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="10"/>
+                                            <circle id="desk-ring-orc-receita" cx="50" cy="50" r="38" fill="none" stroke="var(--cyan)" stroke-width="10" stroke-dasharray="238.76" stroke-dashoffset="238.76" transform="rotate(-90 50 50)" stroke-linecap="round"/>
+                                        </svg>
+                                        <div class="budget-ring-value" style="color:var(--cyan);" id="desk-val-ring-receita">0%</div>
+                                    </div>
+                                    <div class="budget-meta-row"><span>Orçamento</span> <strong id="desk-orc-receita-val">R$ 0,00</strong></div>
+                                    <div class="budget-meta-row"><span>Balanço</span> <strong style="color:#ef4444;" id="desk-bal-receita-val">R$ 0,00</strong></div>
+                                </div>
+
+                                <!-- RING 2: ORÇAMENTO DESPESA -->
+                                <div class="budget-ring-box" style="cursor:pointer;" onclick="openFinanceKpiDetailModal('orc_despesa')" title="Clique para gerenciar o Teto Orçamentário de Despesas">
+                                    <div class="budget-ring-title">% do orçamento de despesas ⚙️</div>
+                                    <div class="ring-svg-container">
+                                        <svg width="100" height="100" viewBox="0 0 100 100" class="ring-svg-el">
+                                            <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="10"/>
+                                            <circle id="desk-ring-orc-despesa" cx="50" cy="50" r="38" fill="none" stroke="#ef4444" stroke-width="10" stroke-dasharray="238.76" stroke-dashoffset="238.76" transform="rotate(-90 50 50)" stroke-linecap="round"/>
+                                        </svg>
+                                        <div class="budget-ring-value" style="color:#ef4444;" id="desk-val-ring-despesa">0%</div>
+                                    </div>
+                                    <div class="budget-meta-row"><span>Orçamento</span> <strong id="desk-orc-despesa-val">R$ 0,00</strong></div>
+                                    <div class="budget-meta-row"><span>Balanço</span> <strong style="color:#ef4444;" id="desk-bal-despesa-val">R$ 0,00</strong></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BOTTOM GRID: GRÁFICO TENDÊNCIA SALDO FINAL (ESQ) + DEMONSTRAÇÃO DE RESULTADOS DRE (DIR) -->
+                    <div class="finances-bottom-grid">
+                        
+                        <!-- GRÁFICO DE TENDÊNCIA DE SALDO FINAL DO MÊS -->
+                        <div class="card" style="margin-bottom:0; cursor:pointer;" onclick="openFinanceKpiDetailModal('trend_saldo')" title="Clique para ver a Projeção de Trajetória do Saldo">
+                            <div class="card-hd"><h2 class="card-title">📈 Saldo no final do mês (Trajetória) 🔍</h2></div>
+                            <div style="width:100%; height:180px; position:relative; margin-top:8px;">
+                                <svg id="desk-balance-trend-svg" width="100%" height="180" viewBox="0 0 500 180" preserveAspectRatio="none">
+                                    <line x1="30" y1="150" x2="490" y2="150" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+                                    <line x1="30" y1="110" x2="490" y2="110" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                                    <line x1="30" y1="70" x2="490" y2="70" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                                    <line x1="30" y1="30" x2="490" y2="30" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+
+                                    <text x="5" y="34" fill="#64748b" font-size="9" font-weight="700">2.500</text>
+                                    <text x="5" y="74" fill="#64748b" font-size="9" font-weight="700">1.500</text>
+                                    <text x="12" y="114" fill="#64748b" font-size="9" font-weight="700">500</text>
+                                    <text x="20" y="154" fill="#64748b" font-size="9" font-weight="700">0</text>
+
+                                    <path id="desk-balance-trend-path" d="" fill="none" stroke="var(--yellow)" stroke-width="3"/>
+                                    <g id="desk-balance-trend-dots"></g>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- TABELA DRE (DEMONSTRAÇÃO DE RESULTADOS FIEL À IMAGEM) -->
+                        <div class="card" style="margin-bottom:0; cursor:pointer;" onclick="openFinanceKpiDetailModal('dre_table')" title="Clique para ver e configurar a Demonstração de Resultados DRE">
+                            <div class="card-hd">
+                                <h2 class="card-title">📋 Demonstração de Resultados (DRE) 🔍</h2>
+                                <span class="badge badge-info">Mensal</span>
+                            </div>
+                            <table class="dre-table">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th style="text-align:right;">Valor</th>
+                                        <th style="text-align:right;">% Receita</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr onclick="openFinanceKpiDetailModal('receita'); event.stopPropagation();" title="Clique para abrir Receitas">
+                                        <td>Total Receita</td>
+                                        <td style="text-align:right;" id="desk-dre-val-receita">R$ 0,00</td>
+                                        <td style="text-align:right;" id="desk-dre-pct-receita">0%</td>
+                                    </tr>
+                                    <tr onclick="openFinanceKpiDetailModal('dre_table'); event.stopPropagation();" title="Clique para ver Custos">
+                                        <td>Custo de bens vendidos</td>
+                                        <td style="text-align:right;" id="desk-dre-val-custo">R$ 0,00</td>
+                                        <td style="text-align:right;" id="desk-dre-pct-custo">0%</td>
+                                    </tr>
+                                    <tr class="dre-highlight" onclick="openFinanceKpiDetailModal('lucro'); event.stopPropagation();" title="Clique para ver Lucro Bruto">
+                                        <td><strong>Lucro bruto</strong></td>
+                                        <td style="text-align:right;" id="desk-dre-val-bruto">R$ 0,00</td>
+                                        <td style="text-align:right;" id="desk-dre-pct-bruto">0%</td>
+                                    </tr>
+                                    <tr onclick="openFinanceKpiDetailModal('despesa'); event.stopPropagation();" title="Clique para abrir Despesas Operacionais">
+                                        <td>Total Despesas Operacionais</td>
+                                        <td style="text-align:right;" id="desk-dre-val-despesas">R$ 0,00</td>
+                                        <td style="text-align:right;" id="desk-dre-pct-despesas">0%</td>
+                                    </tr>
+                                    <tr class="dre-total" onclick="openFinanceKpiDetailModal('lucro'); event.stopPropagation();" title="Clique para ver Lucro Líquido Operacional">
+                                        <td><strong>Lucro Líquido Operacional</strong></td>
+                                        <td style="text-align:right;" id="desk-dre-val-liquido">R$ 0,00</td>
+                                        <td style="text-align:right;" id="desk-dre-pct-liquido">0%</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </div>
+
+                    <!-- SAÚDE FINANCEIRA: GASTOS POR CATEGORIA + PRÓXIMOS VENCIMENTOS -->
+                    <div class="tab-grid-2col">
+                        <section class="card">
+                            <div class="card-hd">
+                                <h2 class="card-title">📊 Gastos por Categoria (mês atual)</h2>
+                                <span id="fin-tab-status" class="badge badge-info"></span>
+                            </div>
+                            <div id="fin-tab-category-chart" class="fin-category-chart">
+                                <p class="text-muted">Nenhum gasto registrado este mês.</p>
+                            </div>
+                        </section>
+                        <section class="card">
+                            <div class="card-hd"><h2 class="card-title">💳 Próximos Vencimentos & Parcelas</h2></div>
+                            <ul id="fin-tab-upcoming-list" class="data-list">
+                                <li class="text-muted">Nenhum pagamento pendente nos próximos dias.</li>
+                            </ul>
+                        </section>
+                    </div>
+
+                    <!-- FORMULÁRIO DE LANÇAMENTO E FILTRO DE TRANSAÇÕES -->
+                    <div class="tab-grid-2col">
+                        <section class="card">
+                            <div class="card-hd"><h2 class="card-title">➕ Novo Lançamento Financeiro</h2></div>
+                            <form onsubmit="submitForm(event, 'finances')">
+                                <div class="form-col">
+                                    <label class="p-label">Tipo de Lançamento</label>
+                                    <select name="type" class="input">
+                                        <option value="despesa" selected>Despesa (-)</option>
+                                        <option value="receita">Receita (+)</option>
+                                        <option value="receber">Contas a Receber (+)</option>
+                                        <option value="pagar">Contas a Pagar (-)</option>
+                                    </select>
+
+                                    <label class="p-label">Valor (R$)</label>
+                                    <input type="number" step="0.01" name="amount" placeholder="0.00" required class="input">
+
+                                    <label class="p-label">Categoria</label>
+                                    <select name="category" class="input" required>
+                                        <option value="alimentacao">🍽️ Alimentação</option>
+                                        <option value="transporte">🚗 Transporte</option>
+                                        <option value="saude">💊 Saúde</option>
+                                        <option value="moradia">🏠 Moradia</option>
+                                        <option value="lazer">🎮 Lazer</option>
+                                        <option value="vestuario">👕 Vestuário</option>
+                                        <option value="educacao">📚 Educação</option>
+                                        <option value="salario">💼 Salário</option>
+                                        <option value="outros" selected>📦 Outros</option>
+                                    </select>
+
+                                    <label class="p-label">Descrição Opcional</label>
+                                    <input type="text" name="description" placeholder="Detalhes do pagamento..." class="input">
+
+                                    <button type="submit" class="btn btn-primary mt-2">Salvar Transação</button>
+                                </div>
+                            </form>
+                        </section>
+
+                        <section class="card">
+                            <div class="card-hd">
+                                <h2 class="card-title">📄 Extrato & Histórico Recente</h2>
+                                <button class="btn btn-ghost btn-sm" onclick="loadFinances()">Atualizar Extrato</button>
+                            </div>
+                            <div class="extrato-container">
+                                <ul id="fin-tab-extrato-list" class="data-list">
+                                    <li class="text-muted">Nenhuma transação financeira cadastrada ainda.</li>
+                                </ul>
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- UPLOAD DE EXTRATO/RECIBO/PDF/EXCEL COM EXTRAÇÃO AUTOMÁTICA -->
+                    <div class="tab-grid-1col">
+                        <section class="card">
+                            <div class="card-hd"><h2 class="card-title">📎 Importar Extrato / Recibo / PDF / Excel</h2></div>
+                            <p class="text-muted" style="margin:0 0 10px;">Envie uma foto de recibo, extrato bancário (PDF/CSV/Excel) ou nota fiscal. A HERMES lê, separa cada transação por categoria e lança tudo automaticamente.</p>
+                            <input type="file" id="fin-upload-input" accept="image/*,.pdf,.csv,.xls,.xlsx,.doc,.docx" onchange="uploadFinanceReceipt(event)" class="input">
+                            <div id="fin-upload-status" class="text-muted" style="margin-top:8px;"></div>
+                        </section>
+                    </div>
+
+                </div>
+            </div>
+
+
+            <!-- ── TAB 5: DOCUMENTOS & ARQUIVOS (COFRE R2 + MEMÓRIA AI) ── -->
+            <div id="view-documentos" class="main-tab-view">
+                <div class="tab-grid-2col">
+                    <!-- PAINEL ESQUERDO: LISTA DE DOCUMENTOS E FILTROS -->
+                    <section class="card">
+                        <div class="card-hd">
+                            <h2 class="card-title">📁 Cofre de Documentos & Arquivos</h2>
+                            <span class="badge badge-info" id="doc-count-badge-tab">0 Arquivos</span>
+                        </div>
+                        <p class="text-muted" style="font-size:12px; margin-bottom:12px;">
+                            Arquivos armazenados no R2 com extração automática OCR/Text. Todos os documentos ficam instantaneamente integrados à **Mente & Memória da HERMES**.
+                        </p>
+
+                        <!-- BARRA DE BUSCA E FILTROS -->
+                        <div style="display:flex; gap:8px; margin-bottom:12px;">
+                            <input type="text" id="doc-search-input" class="input" placeholder="🔍 Buscar por nome, categoria ou conteúdo..." oninput="filterDocumentsDesk()">
+                            <select id="doc-category-filter" class="input" style="width:160px;" onchange="filterDocumentsDesk()">
+                                <option value="all">Todas as Categorias</option>
+                                <option value="pessoal">📄 Pessoal</option>
+                                <option value="veiculo">🚗 Veículo</option>
+                                <option value="imovel">🏠 Imóvel</option>
+                                <option value="contrato">📜 Contrato</option>
+                                <option value="financeiro">💰 Financeiro</option>
+                                <option value="outros">📂 Outros</option>
+                            </select>
+                        </div>
+
+                        <!-- LISTA DINÂMICA DE DOCUMENTOS -->
+                        <ul id="tab-documents-list" class="data-list">
+                            <li class="text-muted">Carregando documentos...</li>
+                        </ul>
+                    </section>
+
+                    <!-- PAINEL DIREITO: UPLOAD & NOVO CADASTRO DE DOCUMENTO -->
+                    <section class="card">
+                        <div class="card-hd">
+                            <h2 class="card-title">📤 Upload & Novo Documento</h2>
+                        </div>
+
+                        <!-- ZONA DE DROPZONE PARA ARQUIVOS -->
+                        <div class="dropzone-box" style="border: 2px dashed rgba(6,182,212,0.4); border-radius: 12px; padding: 20px; text-align: center; background: rgba(15,23,42,0.6); cursor: pointer; transition: background 0.2s;" onclick="document.getElementById('doc-file-upload-input').click()">
+                            <div style="font-size: 36px; margin-bottom: 6px;">📥</div>
+                            <strong style="font-size: 14px; color: #fff;">Arraste e solte seus arquivos aqui ou clique para selecionar</strong>
+                            <div style="font-size: 11.5px; color: var(--cyan); margin-top: 6px;">Suporta PDF, DOCX, XLSX, TXT, CSV, PNG, JPG, WebP (até 20MB)</div>
+                            <input type="file" id="doc-file-upload-input" multiple style="display:none;" onchange="uploadDocumentFileDesk(event)">
+                        </div>
+
+                        <div id="doc-upload-status-desk" class="text-muted" style="margin: 10px 0; font-size: 12px;"></div>
+
+                        <hr style="border:0; border-top:1px solid rgba(255,255,255,0.08); margin:16px 0;">
+
+                        <!-- FORMULÁRIO DE CADASTRO COMPLEMENTAR -->
+                        <form onsubmit="submitCategoryDocumentFormDesk(event)">
+                            <div class="form-col">
+                                <label style="font-size:12px; color:var(--text-2); font-weight:700;">Nome do Documento (Opcional se enviar arquivo)</label>
+                                <input type="text" id="doc-form-title" placeholder="Nome (ex: CNH Digital, Contrato Aluguel, IPVA 2026...)" class="input">
+                                
+                                <label style="font-size:12px; color:var(--text-2); font-weight:700; margin-top:8px;">Categoria do Documento</label>
+                                <input type="text" id="doc-form-category" placeholder="Categoria (ex: Pessoal, Veículo, Imóvel, Contrato, Financeiro...)" class="input" value="documento">
+                                
+                                <label style="font-size:12px; color:var(--text-2); font-weight:700; margin-top:8px;">Validade / Prazo (Opcional)</label>
+                                <input type="date" id="doc-form-validity" class="input">
+
+                                <button type="submit" class="btn btn-primary mt-2" style="background:var(--cyan); color:#000; font-weight:800;">
+                                    📤 Salvar e Compartilhar com a Memória HERMES
+                                </button>
+                            </div>
+                        </form>
+                    </section>
+                </div>
+            </div>
+
+
+            <!-- ── TAB 6: CONTATOS ── -->
+            <div id="view-contatos" class="main-tab-view">
+                <div class="tab-grid-2col">
+                    <section class="card">
+                        <div class="card-hd">
+                            <h2 class="card-title">👥 Lista de Contatos Chave</h2>
+                        </div>
+                        <ul id="tab-contacts-list" class="data-list"><li class="text-muted">Nenhum contato cadastrado no banco.</li></ul>
+                    </section>
+
+                    <section class="card">
+                        <div class="card-hd">
+                            <h2 class="card-title">➕ Novo Contato</h2>
+                        </div>
+                        <form onsubmit="submitForm(event, 'contacts')">
+                            <div class="form-col">
+                                <input type="text" name="name" placeholder="Nome do contato..." required class="input">
+                                <input type="text" name="relationship" placeholder="Relacionamento (Família, Trabalho, Cliente...)" class="input">
+                                <input type="text" name="phone" placeholder="Telefone..." class="input">
+                                <button type="submit" class="btn btn-primary mt-2">Salvar Contato</button>
+                            </div>
+                        </form>
+                    </section>
+                </div>
+            </div>
+
+
+            <!-- ── TAB 7: METAS (INTEGRADA COM BANCO REAL DE MEMÓRIAS/AGENDA) ── -->
+            <div id="view-metas" class="main-tab-view">
+                <div class="tab-grid-2col">
+                    <section class="card">
+                        <div class="card-hd">
+                            <h2 class="card-title">🎯 Metas & OKRs Ativos</h2>
+                            <span id="tab-goals-count" class="badge badge-info">0</span>
+                        </div>
+                        <ul id="tab-goals-list" class="data-list"><li class="text-muted">Carregando metas ativas do banco...</li></ul>
+                    </section>
+
+                    <section class="card">
+                        <div class="card-hd">
+                            <h2 class="card-title">➕ Nova Meta / OKR</h2>
+                        </div>
+                        <form onsubmit="submitForm(event, 'goals')">
+                            <div class="form-col">
+                                <input type="text" name="title" placeholder="Título da meta ou OKR..." required class="input">
+                                <input type="text" name="category" value="Pessoal" placeholder="Categoria (Pessoal, Profissional, Financeira...)" class="input">
+                                <input type="date" id="tab-goal-target-date" name="target_date" class="input">
+                                <div class="relative-days-row mb-1">
+                                    <span class="p-label">Prazo em:</span>
+                                    <button type="button" class="btn btn-ghost btn-xs" onclick="setDaysAhead(30, 'tab-goal-target-date')">+30 dias</button>
+                                    <button type="button" class="btn btn-ghost btn-xs" onclick="setDaysAhead(90, 'tab-goal-target-date')">+90 dias</button>
+                                    <button type="button" class="btn btn-ghost btn-xs" onclick="setDaysAhead(180, 'tab-goal-target-date')">+180 dias</button>
+                                    <button type="button" class="btn btn-ghost btn-xs" onclick="setDaysAhead(365, 'tab-goal-target-date')">+1 ano</button>
+                                </div>
+                                <button type="submit" class="btn btn-primary mt-2">Cadastrar Meta na HERMES</button>
+                            </div>
+                        </form>
+                    </section>
+                </div>
+            </div>
+
+
+            <!-- ── TAB 8: TAREFAS (INTEGRADA COM BANCO REAL DE AGENDA/MEMÓRIA) ── -->
+            <div id="view-tarefas" class="main-tab-view">
+                <div class="tab-grid-2col">
+                    <section class="card">
+                        <div class="card-hd">
+                            <h2 class="card-title">✅ Tarefas Pendentes</h2>
+                            <span id="tab-tasks-count" class="badge badge-success">0</span>
+                        </div>
+                        <ul id="tab-tasks-list" class="data-list"><li class="text-muted">Carregando tarefas pendentes...</li></ul>
+                    </section>
+
+                    <section class="card">
+                        <div class="card-hd">
+                            <h2 class="card-title">➕ Criar Nova Tarefa</h2>
+                        </div>
+                        <form onsubmit="submitAgendaForm(event)">
+                            <div class="form-col">
+                                <input type="text" name="title" placeholder="Título da tarefa..." required class="input">
+                                <select name="priority" class="input">
+                                    <option value="média" selected>Prioridade Média</option>
+                                    <option value="alta">Prioridade Alta</option>
+                                    <option value="baixa">Prioridade Baixa</option>
+                                </select>
+                                <input type="date" id="tab-task-input-date" name="due_date" class="input">
+                                <div class="relative-days-row mb-1">
+                                    <span class="p-label">Notificar em:</span>
+                                    <button type="button" class="btn btn-ghost btn-xs" onclick="setDaysAhead(1, 'tab-task-input-date')">+1 dia</button>
+                                    <button type="button" class="btn btn-ghost btn-xs" onclick="setDaysAhead(3, 'tab-task-input-date')">+3 dias</button>
+                                    <button type="button" class="btn btn-ghost btn-xs" onclick="setDaysAhead(7, 'tab-task-input-date')">+7 dias</button>
+                                    <button type="button" class="btn btn-ghost btn-xs" onclick="setDaysAhead(15, 'tab-task-input-date')">+15 dias</button>
+                                    <button type="button" class="btn btn-ghost btn-xs" onclick="setDaysAhead(30, 'tab-task-input-date')">+30 dias</button>
+                                    <input type="number" min="1" placeholder="X dias" class="input input-xs" style="width:65px;" oninput="if(this.value) setDaysAhead(this.value, 'tab-task-input-date')">
+                                </div>
+                                <button type="submit" class="btn btn-primary mt-2">Salvar Tarefa</button>
+                            </div>
+                        </form>
+                    </section>
+                </div>
+            </div>
+
+
+            <!-- ── TAB 9: PESQUISA WEB COMPLETA & CENTRAL DE INTELIGÊNCIA PROGRAMADA ── -->
+            <div id="view-pesquisa" class="main-tab-view">
+                <!-- Seção 1: Pesquisa em Tempo Real e Feed de Notícias -->
+                <section class="card">
+                    <div class="card-hd">
+                        <h2 class="card-title">🌐 Pesquisa Web em Tempo Real & Feed de Notícias</h2>
+                        <span class="badge badge-info">Google & DuckDuckGo API</span>
+                    </div>
+                    <div class="form-col">
+                        <p class="text-2 mb-2">Digite uma pesquisa para a HERMES buscar notícias e artigos na web em tempo real com links verificados:</p>
+                        <form onsubmit="executeWebSearch(event)">
+                            <div class="form-row">
+                                <input type="text" id="search-query-input" placeholder="Digite sua pesquisa, ex: Lançamentos AI 2026, Mercado Dólar..." required class="input f2">
+                                <button type="submit" class="btn btn-primary">Pesquisar na Web</button>
+                            </div>
+                        </form>
+                        <div id="search-results-box" class="search-box mt-3">
+                            <p class="text-muted">Resultados estruturados de pesquisas com notícias e links originais aparecerão aqui.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Seção 2: Temas de Interesse & Atalhos Rápido -->
+                <section class="card">
+                    <div class="card-hd">
+                        <h2 class="card-title">💡 Temas de Interesse Monitorados</h2>
+                        <span class="badge badge-success">Top Tópicos</span>
+                    </div>
+                    <div class="interest-topics-grid mb-2">
+                        <div class="topic-chip-card" onclick="quickSearchTopic('Notícias Recentes sobre Inteligência Artificial LLM')">
+                            <span class="topic-icon">🤖</span>
+                            <div class="topic-info">
+                                <strong>Inteligência Artificial & LLMs</strong>
+                                <span class="text-muted">OpenAI, Anthropic, Gemini...</span>
+                            </div>
+                        </div>
+                        <div class="topic-chip-card" onclick="quickSearchTopic('Mercado Financeiro Brasil Economia Hoje')">
+                            <span class="topic-icon">📈</span>
+                            <div class="topic-info">
+                                <strong>Mercado Financeiro & Economia</strong>
+                                <span class="text-muted">Taxa Selic, Dólar, Ibovespa...</span>
+                            </div>
+                        </div>
+                        <div class="topic-chip-card" onclick="quickSearchTopic('Tecnologia Cloudflare Workers Edge Computing')">
+                            <span class="topic-icon">☁️</span>
+                            <div class="topic-info">
+                                <strong>Cloud & Edge Computing</strong>
+                                <span class="text-muted">Cloudflare, Workers, Serverless...</span>
+                            </div>
+                        </div>
+                        <div class="topic-chip-card" onclick="quickSearchTopic('Notícias de Macaé e Rio das Ostras Hoje')">
+                            <span class="topic-icon">📍</span>
+                            <div class="topic-info">
+                                <strong>Notícias Regionais (Macaé / R. Ostras)</strong>
+                                <span class="text-muted">Notícias locais e eventos...</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Seção 3: Pesquisas Programadas (Recurso de Conveniência Local) -->
+                <section class="card">
+                    <div class="card-hd">
+                        <h2 class="card-title">📡 Central de Pesquisas Programadas</h2>
+                        <span class="badge badge-info">Monitoramento Local</span>
+                    </div>
+                    <div class="form-col">
+                        <p class="text-2 mb-2">Configure tópicos de interesse para consultar com um clique:</p>
+                        <form onsubmit="addScheduledSearch(event)">
+                            <div class="form-row mb-2">
+                                <input type="text" id="sch-topic" placeholder="Tópico a pesquisar (ex: Notícias de IA)..." required class="input f2">
+                                <select id="sch-freq" class="input f1">
+                                    <option value="Diário">Diário</option>
+                                    <option value="Semanal">Semanal</option>
+                                </select>
+                                <select id="sch-hour" class="input f1">
+                                    <option value="09:00">09:00</option>
+                                    <option value="18:00">18:00</option>
+                                </select>
+                                <button type="submit" class="btn btn-primary">Adicionar Atalho</button>
+                            </div>
+                        </form>
+
+                        <div class="scheduled-searches-box border-purple mt-2">
+                            <h3 class="p-label mb-2">Tópicos Cadastrados:</h3>
+                            <ul id="scheduled-searches-list" class="data-list">
+                                <li class="text-muted">Nenhum atalho de pesquisa cadastrado.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+
+            <!-- ── TAB 10: AUTOMAÇÃO & INTELIGÊNCIA PROATIVA (RECONSTRUÍDA) ── -->
+            <div id="view-automacao" class="main-tab-view">
+                
+                <div class="form-col gap-3 mb-3">
+
+                    <!-- SEÇÃO 0: LOCALIZAÇÃO (usada pro aviso proativo de clima) -->
+                    <section class="card">
+                        <div class="card-hd"><h2 class="card-title">📍 Localização</h2></div>
+                        <div class="form-col gap-2">
+                            <p class="text-2">Usada pela HERMES pra avisar sobre chuva/calor no briefing diário. GPS tem prioridade; sem permissão, usa a cidade digitada ou um padrão.</p>
+                            <div id="location-current-label" class="text-muted" style="font-size:12px;">Carregando localização atual...</div>
+                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="useGpsLocation()">📍 Usar minha localização (GPS)</button>
+                                <input type="text" id="location-city-input" class="input" placeholder="Ou digite sua cidade..." style="flex:1; min-width:180px;">
+                                <button type="button" class="btn btn-primary btn-sm" onclick="setManualLocation()">Salvar cidade</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- SEÇÃO 1: PROGRAMADOR DE BRIEFING DIÁRIO DE NOTÍCIAS POR ASSUNTO -->
+                    <section class="card border-purple">
+                        <div class="card-hd">
+                            <h2 class="card-title">
+                                📡 Programar Briefing Diário de Notícias por Assunto
+                                <span class="card-eyebrow">Entrega Autônoma Telegram</span>
+                            </h2>
+                            <span class="badge badge-info">Cron Cloud Active</span>
+                        </div>
+                        <div class="form-col gap-2">
+                            <p class="text-2">Configure tópicos de interesse (ex: Futebol, IA, Mercado) para a HERMES pesquisar na web e enviar um resumo diário completo no horário escolhido diretamente no Telegram:</p>
+                            
+                            <!-- Chips de Seleção Rápida de Tópicos -->
+                            <div class="p-label mb-1">Escolha um tópico popular ou digite um personalizado:</div>
+                            <div class="interest-topics-grid mb-2">
+                                <div class="topic-chip-card" onclick="selectBriefingTopic('Inteligência Artificial, LLMs e novos modelos de IA')">
+                                    <span class="topic-icon">🤖</span>
+                                    <div class="topic-info">
+                                        <strong>IA & Modelos LLM</strong>
+                                        <span class="text-muted">Notícias de IA, ChatGPT, Gemini...</span>
+                                    </div>
+                                </div>
+                                <div class="topic-chip-card" onclick="selectBriefingTopic('Futebol - Principais jogos, resultados e notícias de futebol hoje')">
+                                    <span class="topic-icon">⚽</span>
+                                    <div class="topic-info">
+                                        <strong>Futebol & Esportes</strong>
+                                        <span class="text-muted">Brasileirão, Champions, Mercado da Bola...</span>
+                                    </div>
+                                </div>
+                                <div class="topic-chip-card" onclick="selectBriefingTopic('Mercado Financeiro, Dólar, Ibovespa e Economia no Brasil')">
+                                    <span class="topic-icon">📈</span>
+                                    <div class="topic-info">
+                                        <strong>Mercado & Economia</strong>
+                                        <span class="text-muted">Dólar, Selic, Ações e Finanças...</span>
+                                    </div>
+                                </div>
+                                <div class="topic-chip-card" onclick="selectBriefingTopic('Principais Notícias do Brasil e do Mundo no Dia')">
+                                    <span class="topic-icon">📍</span>
+                                    <div class="topic-info">
+                                        <strong>Notícias do Brasil & Mundo</strong>
+                                        <span class="text-muted">Principais acontecimentos do dia...</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Formulário de Cadastro de Briefing Programado -->
+                            <form onsubmit="addScheduledBriefing(event)" class="mt-1">
+                                <div class="form-row mb-2">
+                                    <input type="text" id="briefing-topic-input" placeholder="Digite o assunto a ser pesquisado (ex: Notícias de Futebol, Mercado de IA)..." required class="input f2">
+                                    <select id="briefing-time-input" class="input f1">
+                                        <option value="06:00">06:00 (Madrugada)</option>
+                                        <option value="06:30">06:30 (Madrugada)</option>
+                                        <option value="07:00">07:00 (Manhã)</option>
+                                        <option value="07:30">07:30 (Manhã)</option>
+                                        <option value="08:00" selected>08:00 (Manhã)</option>
+                                        <option value="08:30">08:30 (Manhã)</option>
+                                        <option value="09:00">09:00 (Manhã)</option>
+                                        <option value="10:00">10:00 (Manhã)</option>
+                                        <option value="11:00">11:00 (Manhã)</option>
+                                        <option value="12:00">12:00 (Meio-dia)</option>
+                                        <option value="13:00">13:00 (Tarde)</option>
+                                        <option value="14:00">14:00 (Tarde)</option>
+                                        <option value="15:00">15:00 (Tarde)</option>
+                                        <option value="16:00">16:00 (Tarde)</option>
+                                        <option value="17:00">17:00 (Fim de Tarde)</option>
+                                        <option value="18:00">18:00 (Fim de Tarde)</option>
+                                        <option value="19:00">19:00 (Noite)</option>
+                                        <option value="20:00">20:00 (Noite)</option>
+                                        <option value="21:00">21:00 (Noite)</option>
+                                        <option value="22:00">22:00 (Noite)</option>
+                                        <option value="23:00">23:00 (Noite)</option>
+                                    </select>
+                                    <select id="briefing-freq-input" class="input f1">
+                                        <option value="Diário (Seg a Dom)">Diário (Todos os dias)</option>
+                                        <option value="Dias Úteis (Seg a Sex)">Dias Úteis (Seg a Sex)</option>
+                                        <option value="Finais de Semana">Finais de Semana</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-primary">➕ Programar Briefing</button>
+                                </div>
+                            </form>
+
+                            <!-- Lista de Briefings Diários Programados -->
+                            <div class="p-card border-cyan mt-2">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                    <h3 class="p-label" style="margin:0;">📅 Briefings de Notícias Programados Ativos</h3>
+                                    <span id="scheduled-briefings-count" class="badge badge-success">0 ativos</span>
+                                </div>
+                                <ul id="scheduled-briefings-list" class="data-list">
+                                    <li class="text-muted">Nenhum briefing programado ainda. Escolha um tópico acima para cadastrar!</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- SEÇÃO 2: BRIEFING EXECUTIVO PROATIVO INSTANTÂNEO -->
+                    <section class="card border-purple">
+                        <div class="card-hd">
+                            <h2 class="card-title">
+                                📊 Briefing Executivo Proativo Geral
+                                <span class="card-eyebrow">Síntese Autônoma</span>
+                            </h2>
+                            <button class="btn btn-primary btn-sm" onclick="triggerBriefingAutomacao()">✨ Gerar Briefing Executivo Agora</button>
+                        </div>
+                        <div id="briefing-automacao-box" class="p-card mt-2">
+                            <p class="text-2">Clique em <strong>Gerar Briefing Executivo Agora</strong> para compilar a síntese proativa com saldo, lembretes pendentes e memórias acumuladas.</p>
+                        </div>
+                    </section>
+
+                    <!-- SEÇÃO 3: LEMBRETES & GUARDIÃO FINANCEIRO -->
+                    <div class="tab-grid-2col">
+                        <!-- Lembretes & Notificações -->
+                        <section class="card border-cyan">
+                            <div class="card-hd">
+                                <h2 class="card-title">⏰ Próximos Lembretes (Cron Cloud)</h2>
+                                <span id="auto-reminders-count" class="badge badge-success">0</span>
+                            </div>
+                            <ul id="auto-reminders-list" class="data-list">
+                                <li class="text-muted">Carregando lembretes ativos...</li>
+                            </ul>
+                        </section>
+
+                        <!-- Guardião Financeiro -->
+                        <section class="card border-green">
+                            <div class="card-hd">
+                                <h2 class="card-title">🛡️ Guardião Financeiro</h2>
+                                <button class="btn btn-ghost btn-xs" onclick="testFinancialGuard()">Testar Saúde</button>
+                            </div>
+                            <div id="auto-financial-box" class="p-card">
+                                <p class="kpi-label">Saldo Atual Estimado:</p>
+                                <p id="auto-fin-saldo" class="kpi-value text-green">R$ 0,00</p>
+                                <p id="auto-fin-sub" class="text-2 mt-1">Monitoramento contínuo de anomalias ativado.</p>
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- SEÇÃO 4: GRAFO DE CONHECIMENTO -->
+                    <section class="card">
+                        <div class="card-hd">
+                            <h2 class="card-title">🕸️ Grafo de Conhecimento & Entidades</h2>
+                            <button class="btn btn-ghost btn-xs" onclick="showGraphOverview()">Consultar Grafo</button>
+                        </div>
+                        <div id="auto-graph-box" class="p-card">
+                            <p class="text-2">O Grafo de Conhecimento da HERMES conecta fatos, pessoas, projetos e finanças de forma semântica.</p>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- SEÇÃO 5 (RODAPÉ): STATUS DOS PROVEDORES (HERMES CLOUD) -->
+                <section class="card">
+                    <div class="card-hd">
+                        <h2 class="card-title">🤖 Status real dos provedores (HERMES Cloud)</h2>
+                        <span class="badge badge-info">Cron a cada minuto</span>
+                    </div>
+                    <ul id="automation-status-box" class="data-list">
+                        <li class="text-muted">Carregando status dos provedores...</li>
+                    </ul>
+                </section>
+            </div>
+
+
+            <!-- ── TAB 11: SKILLS E AGENTES ── -->
+            <div id="view-skills" class="main-tab-view">
+                <section class="card">
+                    <div class="card-hd">
+                        <h2 class="card-title">🧩 Skills e Agentes Registrados</h2>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span id="skills-summary" class="badge badge-info">Carregando...</span>
+                            <button class="btn btn-primary btn-sm" onclick="toggleNewSkillForm()">+ Nova Skill</button>
+                        </div>
+                    </div>
+
+                    <form id="new-skill-form" class="input-form" style="display:none; margin-bottom:14px;" onsubmit="submitNewSkill(event)">
+                        <div class="form-row mb-2">
+                            <input type="text" id="new-skill-name" placeholder="Nome da skill (ex: resumo_reunioes)" required class="input f1">
+                            <input type="text" id="new-skill-desc" placeholder="Descrição: o que ela deve fazer / diretriz de comportamento..." required class="input f2">
+                            <button type="submit" class="btn btn-primary">Criar</button>
+                        </div>
+                        <p class="text-muted" style="font-size:11px;">Skills nascem como <strong>candidata</strong>. Use "Colocar pra rodar" no card pra testar, aprovar e ativar em um clique.</p>
+                    </form>
+
+                    <div id="skills-list" class="form-col gap-2 mt-2">
+                        <p class="text-muted">Carregando skills registradas na HERMES Cloud...</p>
+                    </div>
+                </section>
+            </div>
+
+
+            <!-- ── TAB 12: PAINEL NEURAL VIVO — CÉREBRO CENTRAL (HUD, 13/08/2026) ──
+                 Layout visual portado de D:\PROJETOS\AGENTES\DASHBOARD\jarvis.html a
+                 pedido do usuário — só a aparência veio de lá. Toda telemetria, chat,
+                 voz e alertas abaixo continuam ligados no MESMO backend real que já
+                 existia (pollRealTelemetryAgent, sendVoiceChatMessage, speakWithEdgeTTS,
+                 toggleVoiceInput, checkPcOverload) — nenhum dado é simulado. -->
+            <div id="view-voz" class="main-tab-view active">
+                <style>
+                    @keyframes hudRotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                    @keyframes hudRotateCcw { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+                    #view-voz .hud-scrollbar::-webkit-scrollbar { width: 3px; }
+                    #view-voz .hud-scrollbar::-webkit-scrollbar-thumb { background: var(--cyan); border-radius: 2px; }
+                </style>
+                <section id="hermes-hud" class="card border-purple" style="display:flex; flex-direction:column; height:calc(100vh - 120px); max-height:900px; overflow:hidden; padding:0; position:relative;">
+                    <canvas id="hud-bg-canvas" style="position:absolute; inset:0; z-index:0; pointer-events:none;"></canvas>
+
+                    <!-- HEADER -->
+                    <div class="card-hd" style="position:relative; z-index:2; flex-shrink:0; height:52px; min-height:52px; max-height:52px; overflow:hidden; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:0 16px;">
+                        <h2 class="card-title" style="margin:0; white-space:nowrap;">
+                            🧠 HERMES — Cérebro Central
+                            <span class="card-eyebrow" style="margin-left:8px;">Assistente Neural Viva</span>
+                        </h2>
+                        <div style="display:flex; gap:10px; align-items:center; flex-wrap:nowrap; flex-shrink:0;">
+                            <div style="display:flex; background:rgba(15, 23, 42, 0.85); border-radius:20px; padding:3px; border:1px solid rgba(168, 85, 247, 0.35); gap:4px; flex-shrink:0;">
+                                <button type="button" id="mode-btn-both" class="mode-btn active" onclick="setChatMode('both')" title="Responder em texto e voz">💬+🔊 Ambos</button>
+                                <button type="button" id="mode-btn-text" class="mode-btn" onclick="setChatMode('text')" title="Responder apenas em texto">💬 Texto</button>
+                                <button type="button" id="mode-btn-audio" class="mode-btn" onclick="setChatMode('audio')" title="Responder apenas em voz">🎙️ Áudio</button>
+                            </div>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="repeatLastHermesMessage(event); return false;" title="Reler última resposta da HERMES por voz" style="border-radius:18px; padding:4px 14px; font-weight:600; font-size:11px;">🔁 Reler Voz</button>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="stopHermesAudio()" title="Interromper fala/áudio da HERMES" style="border-radius:18px; padding:4px 14px; font-weight:600; font-size:11px;">⏹️ Parar Áudio</button>
+                            <button type="button" class="btn btn-ghost btn-sm text-red" onclick="clearVoiceChatHistory()" title="Limpar todo o histórico do chat" style="border-radius:18px; padding:4px 14px; font-weight:600; font-size:11px; border:1px solid rgba(239,68,68,0.3);">🗑️ Limpar Chat</button>
+                            <span id="voice-state-badge" class="badge badge-info" style="font-size:11px; padding:5px 10px; border-radius:14px; font-weight:600; min-width:90px; max-width:90px; text-align:center; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; display:inline-block; flex-shrink:0;">🟢 Pronta</span>
+                            <span id="hud-clock" style="font-family:'Share Tech Mono', monospace; font-size:11px; color:var(--cyan); min-width:64px; text-align:right; flex-shrink:0;">00:00:00</span>
+                        </div>
+                    </div>
+
+                    <!-- GRID: telemetria real | núcleo central | chat real -->
+                    <div style="position:relative; z-index:2; flex:1; display:grid; grid-template-columns:265px 1fr 320px; gap:10px; padding:10px 12px; min-height:0; overflow:hidden;">
+
+                        <!-- ESQUERDA: telemetria real + hardware + processos reais + avisos -->
+                        <aside class="hud-scrollbar" style="display:flex; flex-direction:column; gap:8px; min-height:0; overflow-y:auto; background:rgba(10,14,24,0.7); border:1px solid var(--border); border-radius:10px; padding:10px;">
+                            <div style="font-family:'Orbitron',sans-serif; font-size:10px; font-weight:700; letter-spacing:0.1em; color:var(--cyan); border-bottom:1px solid var(--border); padding-bottom:4px;">◈ TELEMETRIA DO PC</div>
+                            <div id="telemetry-source-badge" style="font-size:9px; color:var(--text-muted);">⏳ verificando fonte dos dados…</div>
+
+                            <div>
+                                <div style="display:flex; justify-content:space-between; font-size:10px;"><span>⚡ CPU</span><span id="hud-cpu-txt">0%</span></div>
+                                <div style="height:5px; background:rgba(45,212,255,0.08); border-radius:3px; overflow:hidden; margin-top:2px;"><div id="hud-cpu-bar" style="height:100%; width:0%; background:linear-gradient(90deg,var(--purple),var(--cyan)); transition:width .5s;"></div></div>
+                            </div>
+                            <div>
+                                <div style="display:flex; justify-content:space-between; font-size:10px;"><span>🧠 RAM</span><span id="hud-ram-txt">0%</span></div>
+                                <div style="height:5px; background:rgba(45,212,255,0.08); border-radius:3px; overflow:hidden; margin-top:2px;"><div id="hud-ram-bar" style="height:100%; width:0%; background:linear-gradient(90deg,var(--purple),var(--cyan)); transition:width .5s;"></div></div>
+                            </div>
+                            <div>
+                                <div style="display:flex; justify-content:space-between; font-size:10px;"><span>🎮 GPU</span><span id="hud-gpu-txt">0%</span></div>
+                                <div style="height:5px; background:rgba(45,212,255,0.08); border-radius:3px; overflow:hidden; margin-top:2px;"><div id="hud-gpu-bar" style="height:100%; width:0%; background:linear-gradient(90deg,var(--purple),var(--cyan)); transition:width .5s;"></div></div>
+                            </div>
+                            <div>
+                                <div style="display:flex; justify-content:space-between; font-size:10px;"><span>💾 Disco C</span><span id="hud-disk-txt">--%</span></div>
+                                <div style="height:5px; background:rgba(45,212,255,0.08); border-radius:3px; overflow:hidden; margin-top:2px;"><div id="hud-disk-bar" style="height:100%; width:0%; background:linear-gradient(90deg,var(--purple),var(--cyan)); transition:width .5s;"></div></div>
+                            </div>
+
+                            <div style="font-family:'Orbitron',sans-serif; font-size:10px; font-weight:700; letter-spacing:0.1em; color:var(--cyan); border-bottom:1px solid var(--border); padding-bottom:4px; margin-top:4px;">◈ HARDWARE</div>
+                            <div style="font-size:10px; display:flex; flex-direction:column; gap:4px;">
+                                <div style="display:flex; justify-content:space-between; gap:6px;"><span style="color:var(--text-muted);">Placa de vídeo</span><strong id="telemetry-gpu-val" style="text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:140px;" title="">--</strong></div>
+                                <div style="display:flex; justify-content:space-between; gap:6px;"><span style="color:var(--text-muted);">Memória heap</span><strong id="telemetry-ram-val">--</strong></div>
+                                <div style="display:flex; justify-content:space-between; gap:6px;"><span style="color:var(--text-muted);">Processador</span><strong id="telemetry-cpu-val">--</strong></div>
+                                <div style="display:flex; justify-content:space-between; gap:6px;"><span style="color:var(--text-muted);">Disco C livre</span><strong id="telemetry-disk-val">--</strong></div>
+                            </div>
+
+                            <div style="font-family:'Orbitron',sans-serif; font-size:10px; font-weight:700; letter-spacing:0.1em; color:var(--cyan); border-bottom:1px solid var(--border); padding-bottom:4px; margin-top:4px;">◈ PROCESSOS REAIS (TOP CPU)</div>
+                            <div id="hud-process-list" style="display:flex; flex-direction:column; gap:4px; font-size:9.5px;">
+                                <div style="color:var(--text-muted);">Aguardando agente local (tools/pc_telemetry_reporter.py)...</div>
+                            </div>
+
+                            <div style="font-family:'Orbitron',sans-serif; font-size:10px; font-weight:700; letter-spacing:0.1em; color:var(--cyan); border-bottom:1px solid var(--border); padding-bottom:4px; margin-top:4px;">◈ AVISOS &amp; DIAGNÓSTICOS</div>
+                            <div id="telemetry-alerts-container" style="display:flex; flex-direction:column; gap:6px; font-size:10px;">
+                                <div class="alert-item" style="background:rgba(6,182,212,0.08); border-left:3px solid var(--cyan); padding:6px 8px; border-radius:6px; color:var(--text-muted); line-height:1.4;">🟢 Sistema operando normalmente.</div>
+                            </div>
+
+                            <div style="border-top:1px solid var(--border); padding-top:6px; margin-top:auto;">
+                                <button type="button" id="hud-theme-toggle" class="btn btn-ghost btn-sm" style="width:100%; font-size:10px;">⚙️ Esquema de Cor</button>
+                                <div id="hud-theme-panel" style="display:none; grid-template-columns:repeat(6,1fr); gap:4px; margin-top:6px;"></div>
+                            </div>
+                        </aside>
+
+                        <!-- CENTRO: núcleo animado real (reage a fala/escuta reais) + onda -->
+                        <main style="display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; min-height:0;">
+                            <div style="position:absolute; width:320px; height:320px; border:1px solid rgba(45,212,255,0.06); border-radius:50%; pointer-events:none; animation:hudRotate 50s linear infinite;"></div>
+                            <div style="position:absolute; width:340px; height:340px; border:1px dashed rgba(45,212,255,0.08); border-radius:50%; pointer-events:none; animation:hudRotateCcw 65s linear infinite;"></div>
+                            <div id="voice-transcript-title" style="position:absolute; top:6px; font-family:'Orbitron',sans-serif; font-size:11px; letter-spacing:0.12em; color:rgba(45,212,255,0.75); text-shadow:0 0 8px rgba(45,212,255,0.4); text-align:center; max-width:92%; z-index:3;">Converse com a HERMES — digite ou fale</div>
+                            <canvas id="hud-core-canvas" width="360" height="360" style="max-width:340px; max-height:340px; cursor:pointer;" title="Clique pra falar com a HERMES"></canvas>
+                        </main>
+
+                        <!-- DIREITA: chat real (mesmo pipeline do Telegram/PWA) -->
+                        <aside style="display:flex; flex-direction:column; min-height:0; background:rgba(10,14,24,0.7); border:1px solid var(--border); border-radius:10px; padding:10px; gap:8px;">
+                            <div id="voice-chat-messages" class="hud-scrollbar" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:12px; min-height:0;"></div>
+                            <audio id="edge-tts-player" style="display:none;"></audio>
+                            <div style="flex-shrink:0; display:flex; gap:8px; align-items:center; border-top:1px solid var(--border); padding-top:8px;">
+                                <button type="button" id="btn-mic-toggle" class="btn btn-ghost" onclick="toggleVoiceInput()" title="Falar por voz" style="padding:8px 12px; font-size:18px; border-radius:50%; min-width:42px;"><span id="mic-icon">🎙️</span></button>
+                                <input type="text" id="voice-chat-input" placeholder="Mensagem para a HERMES..." class="input f1" style="border-radius:20px;" autocomplete="off">
+                                <button type="button" class="btn btn-primary" onclick="sendVoiceChatMessage()" style="border-radius:20px; padding:8px 18px;">Enviar</button>
+                            </div>
+                        </aside>
+                    </div>
+
+                    <!-- RODAPÉ: osciloscópio (mesmo dado real de isSpeakingOrListening já usado hoje) -->
+                    <div style="position:relative; z-index:2; flex-shrink:0; height:70px; border-top:1px solid var(--border); background:rgba(8,8,18,0.5); padding:4px 12px;">
+                        <canvas id="neural-wave-canvas" style="width:100%; height:100%;"></canvas>
+                    </div>
+                </section>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<!-- MODAL DE DETALHAMENTO E GERENCIAMENTO DE CARDS DE FINANÇAS -->
+<div id="finance-kpi-modal-overlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:350; align-items:center; justify-content:center; padding:16px;">
+    <div style="background:rgba(15,23,42,0.98); border:1px solid var(--cyan); border-radius:18px; width:100%; max-width:620px; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 12px 40px rgba(0,0,0,0.9); overflow:hidden;">
+        
+        <!-- MODAL HEADER -->
+        <div style="padding:14px 18px; background:rgba(30,41,59,0.8); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between;">
+            <div>
+                <h3 id="fkpi-modal-title" style="font-size:15px; font-weight:900; color:#fff;">📊 Detalhamento Financeiro</h3>
+                <div id="fkpi-modal-subtitle" style="font-size:11px; color:var(--text-2);">Gerenciamento e edições de lançamentos</div>
+            </div>
+            <button class="btn btn-ghost btn-xs" style="font-size:18px;" onclick="closeFinanceKpiDetailModal()">✕</button>
+        </div>
+
+        <!-- MODAL SUMMARY BAR -->
+        <div id="fkpi-modal-stats-bar" style="padding:10px 18px; background:rgba(15,23,42,0.9); border-bottom:1px solid rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center; font-size:12px;">
+            <!-- Renderizado dinamicamente -->
+        </div>
+
+        <!-- MODAL BODY WITH SCROLLABLE LIST AND QUICK ADD FORM -->
+        <div style="flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:14px;">
+            
+            <!-- FORMULÁRIO RÁPIDO DE ADIÇÃO NO MODAL -->
+            <div id="fkpi-modal-form-box" style="background:rgba(30,41,59,0.6); border:1px solid var(--border); border-radius:14px; padding:12px;">
+                <div style="font-size:12.5px; font-weight:800; color:#fff; margin-bottom:8px;" id="fkpi-modal-form-title">➕ Adicionar Lançamento nesta Categoria</div>
+                
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <input type="text" id="fkpi-input-desc" class="input" placeholder="Descrição do lançamento (ex: Cliente X, Fornecedor Y)...">
+                    <div style="display:flex; gap:6px;">
+                        <input type="number" id="fkpi-input-amount" class="input" placeholder="Valor (R$)" step="0.01" style="flex:1;">
+                        <select id="fkpi-input-cat" class="input" style="flex:1;">
+                            <option value="alimentacao">🍽️ Alimentação</option>
+                            <option value="transporte">🚗 Transporte</option>
+                            <option value="saude">💊 Saúde</option>
+                            <option value="moradia">🏠 Moradia</option>
+                            <option value="lazer">🎮 Lazer</option>
+                            <option value="vestuario">👕 Vestuário</option>
+                            <option value="educacao">📚 Educação</option>
+                            <option value="salario">💼 Salário</option>
+                            <option value="outros" selected>📦 Outros</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; gap:6px; align-items:center;">
+                        <input type="date" id="fkpi-input-date" class="input" style="flex:1;">
+                        <button type="button" class="btn btn-primary" style="padding:8px 14px; font-weight:800; font-size:12px;" onclick="saveFinanceFromKpiModal()">Salvar Lançamento</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LISTA DE LANÇAMENTOS E DETALHES -->
+            <div>
+                <div style="font-size:12.5px; font-weight:800; color:#fff; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+                    <span>📋 Lançamentos Cadastrados</span>
+                    <span id="fkpi-modal-count-badge" class="badge badge-info">0</span>
+                </div>
+                <div id="fkpi-modal-items-list" style="display:flex; flex-direction:column; gap:8px;">
+                    <!-- Renderizado dinamicamente pelo JS -->
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<script src="/app.js"></script>
+<script src="/voz-core.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+{
+  "name": "HERMES — Segundo Cérebro AI",
+  "short_name": "HERMES",
+  "description": "Assistente Neural Pessoal & Segundo Cérebro AI — Voz, Memória, Telemetria e Central de Comando",
+  "start_url": "/pwa/index.html",
+  "scope": "/pwa/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0f19",
+  "theme_color": "#0f172a",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/pwa/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Cérebro Central",
+      "short_name": "HERMES",
+      "description": "Conversar com a HERMES",
+      "url": "/pwa/index.html#voz",
+      "icons": [{ "src": "/pwa/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Painel completo de controle",
+      "url": "/pwa/index.html#dashboard",
+      "icons": [{ "src": "/pwa/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>HERMES — Segundo Cérebro AI</title>
+
+    <!-- Meta Tags para PWA Móvel -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="HERMES">
+    <meta name="description" content="HERMES — Assistente Neural Pessoal & Segundo Cérebro AI">
+
+    <!-- Ícones e Logo Oficial da HERMES -->
+    <link rel="manifest" href="/pwa/manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="/pwa/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/pwa/icons/icon-512.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/pwa/icons/icon-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/pwa/icons/icon-512.png">
+
+    <!-- CSS System -->
+    <link rel="stylesheet" href="/pwa/pwa.css?v=6.6.2">
+</head>
+<body>
+
+    <div id="pwa-app">
+        <!-- BANNER DE INSTALAÇÃO DO PWA COM A LOGO REAL DO CÉREBRO -->
+        <div id="pwa-install-banner">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <img src="/pwa/icons/icon-192.png" class="brand-logo-img" alt="HERMES Logo">
+                <div>
+                    <strong style="font-size:13px; color:#fff;">Instalar HERMES</strong>
+                    <div style="font-size:11px; color:var(--text-muted);">Adicione à tela inicial do celular</div>
+                </div>
+            </div>
+            <button class="install-btn" onclick="installPwaApp()">Instalar</button>
+        </div>
+
+        <!-- HEADER FIXO DO APP -->
+        <header id="pwa-header">
+            <div class="hd-left-group">
+                <button class="menu-toggle-btn" onclick="openDrawer()" title="Abrir Menu">
+                    ☰
+                </button>
+                <div class="brand-title">
+                    <img src="/pwa/icons/icon-192.png" class="brand-logo-img" alt="HERMES Logo"> HERMES
+                </div>
+            </div>
+            <div class="status-indicator">
+                <span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--emerald);"></span>
+                <span>Tempo Real 24/7</span>
+            </div>
+        </header>
+
+        <!-- BACKDROP E DRAWER SLIDING MENU COM TODOS OS 12 MENUS DO DASHBOARD -->
+        <div id="pwa-drawer-backdrop" onclick="closeDrawer()"></div>
+        <aside id="pwa-drawer">
+            <div class="drawer-header">
+                <div class="brand-title">
+                    <img src="/pwa/icons/icon-192.png" class="brand-logo-img" alt="HERMES Logo"> HERMES
+                </div>
+                <button class="menu-toggle-btn" onclick="closeDrawer()">✕</button>
+            </div>
+            <nav class="drawer-nav">
+                <a id="drawer-item-voz" class="drawer-item highlight active" onclick="switchPwaTab('voz')">
+                    <span>🧠</span> Cérebro Central
+                </a>
+                <a id="drawer-item-dashboard" class="drawer-item" onclick="switchPwaTab('dashboard')">
+                    <span>📊</span> Dashboard
+                </a>
+                <a id="drawer-item-memoria" class="drawer-item" onclick="switchPwaTab('memoria')">
+                    <span>🧠</span> Memória
+                </a>
+                <a id="drawer-item-agenda" class="drawer-item" onclick="switchPwaTab('agenda')">
+                    <span>📅</span> Agenda
+                </a>
+                <a id="drawer-item-financas" class="drawer-item" onclick="switchPwaTab('financas')">
+                    <span>💰</span> Finanças
+                </a>
+                <a id="drawer-item-documentos" class="drawer-item" onclick="switchPwaTab('documentos')">
+                    <span>📄</span> Documentos
+                </a>
+                <a id="drawer-item-contatos" class="drawer-item" onclick="switchPwaTab('contatos')">
+                    <span>👥</span> Contatos
+                </a>
+                <a id="drawer-item-metas" class="drawer-item" onclick="switchPwaTab('metas')">
+                    <span>🎯</span> Metas
+                </a>
+                <a id="drawer-item-tarefas" class="drawer-item" onclick="switchPwaTab('tarefas')">
+                    <span>✅</span> Tarefas
+                </a>
+                <a id="drawer-item-pesquisa" class="drawer-item" onclick="switchPwaTab('pesquisa')">
+                    <span>🔍</span> Pesquisa Web
+                </a>
+                <a id="drawer-item-automacao" class="drawer-item" onclick="switchPwaTab('automacao')">
+                    <span>⚡</span> Automação
+                </a>
+                <a id="drawer-item-skills" class="drawer-item" onclick="switchPwaTab('skills')">
+                    <span>🧩</span> Skills e Agentes
+                </a>
+            </nav>
+        </aside>
+
+        <!-- ÁREA PRINCIPAL DE CONTEÚDO SCROLLÁVEL -->
+        <main id="pwa-content">
+            
+            <!-- 1. CÉREBRO CENTRAL (CHAT HERMES REAL + PAINEL DE 2 LINHAS PERFEITO E PREMIUM) -->
+            <section id="view-voz" class="pwa-view active">
+                <div class="chat-actions-topbar">
+                    <div class="topbar-row-modes">
+                        <div class="mode-pills-group">
+                            <button type="button" id="mode-btn-both" class="mode-btn active" onclick="setChatModePwa('both')" title="Responder em texto e voz">💬+🔊 Ambos</button>
+                            <button type="button" id="mode-btn-text" class="mode-btn" onclick="setChatModePwa('text')" title="Responder apenas em texto">💬 Texto</button>
+                            <button type="button" id="mode-btn-audio" class="mode-btn" onclick="setChatModePwa('audio')" title="Responder apenas em voz">🎙️ Áudio</button>
+                        </div>
+                    </div>
+                    <div class="topbar-row-actions">
+                        <button type="button" class="btn-top-action btn-reler" onclick="repeatLastHermesMessagePwa(event)" title="Reler última resposta por voz">🔁 Reler</button>
+                        <button type="button" class="btn-top-action btn-parar" onclick="stopHermesAudioPwa()" title="Interromper fala">⏹️ Parar</button>
+                        <button type="button" class="btn-top-action btn-limpar" onclick="clearVoiceChatHistoryPwa()" title="Limpar histórico">🗑️ Limpar</button>
+                        <span id="voice-state-badge" class="badge-status-pwa">🟢 Pronta</span>
+                    </div>
+                </div>
+
+                <!-- CANVAS DE ONDAS NEURAIS DA HERMES -->
+                <div id="neural-wave-wrapper">
+                    <canvas id="neural-wave-canvas"></canvas>
+                    <div class="wave-title" id="voice-transcript-title">Converse com a HERMES — digite ou fale</div>
+                </div>
+
+                <!-- ÁREA DE MENSAGENS DO CHAT -->
+                <div id="chat-messages-container">
+                    <!-- Mensagens do Chat -->
+                </div>
+
+                <!-- BARRA INFERIOR DE ENTRADA DO CHAT ULTRASLEEK E ZERO-OVERFLOW -->
+                <div id="chat-input-bar">
+                    <button type="button" class="chat-attach-btn" onclick="triggerChatPhotoUploadPwa()" title="Enviar Foto">
+                        📷
+                    </button>
+                    <button type="button" class="chat-attach-btn" onclick="triggerChatFileUploadPwa()" title="Enviar Arquivo">
+                        📎
+                    </button>
+                    <button type="button" id="mic-btn-toggle" class="mic-btn" onclick="toggleMicInput()" title="Falar por Voz">
+                        🎙️
+                    </button>
+                    <input type="text" id="chat-input-field" class="pwa-input" placeholder="Mensagem..." autocomplete="off">
+                    <button type="button" class="send-btn" onclick="sendChatMessage()">Enviar</button>
+
+                    <!-- INPUTS OCULTOS DE UPLOAD -->
+                    <input type="file" id="chat-photo-input" accept="image/*" style="display:none;" onchange="handleChatPhotoUploadPwa(event)">
+                    <input type="file" id="chat-file-input" accept="image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx" style="display:none;" onchange="handleChatFileUploadPwa(event)">
+                </div>
+
+                <!-- PLAYER OCULTO EDGE-TTS -->
+                <audio id="edge-tts-player" style="display:none;"></audio>
+            </section>
+
+            <!-- 2. DASHBOARD OVERVIEW + PAINEL DE TELEMETRIA EXATAMENTE 1:1 AO DASHBOARD -->
+            <section id="view-dashboard" class="pwa-view">
+                <div class="pwa-section">
+                    <!-- NOTÍCIAS EM TEMPO REAL (espelho fiel do dashboard, 08/08/2026) -->
+                    <div class="pwa-card">
+                        <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                            <span>📰 Notícias <span id="news-current-category-name-pwa" class="badge-status-pwa" style="font-size:10px;">🏛️ Política</span></span>
+                            <button class="btn-delete" style="font-size:10px; padding:4px 8px;" onclick="loadDashboardNewsPwa(true)">🔄 Atualizar</button>
+                        </div>
+                        <div style="font-size:10px; color:var(--text-muted); margin-bottom:8px;">Rodízio a cada 1h • <span id="news-last-updated-ts-pwa">Atualizado agora</span></div>
+                        <div style="display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; margin-bottom:8px;" id="news-categories-pills-bar-pwa">
+                            <button class="news-cat-pill-pwa active" onclick="filterNewsCategoryPwa('politica', this)">🏛️ Política</button>
+                            <button class="news-cat-pill-pwa" onclick="filterNewsCategoryPwa('futebol', this)">⚽ Futebol</button>
+                            <button class="news-cat-pill-pwa" onclick="filterNewsCategoryPwa('financas', this)">💰 Finanças</button>
+                            <button class="news-cat-pill-pwa" onclick="filterNewsCategoryPwa('investimentos', this)">📈 Investimentos</button>
+                            <button class="news-cat-pill-pwa" onclick="filterNewsCategoryPwa('tecnologia', this)">💻 Tecnologia</button>
+                            <button class="news-cat-pill-pwa" onclick="filterNewsCategoryPwa('ia', this)">🤖 IA</button>
+                            <button class="news-cat-pill-pwa" onclick="filterNewsCategoryPwa('negocios', this)">💼 Negócios</button>
+                        </div>
+                        <div id="news-items-list-pwa" style="display:flex; flex-direction:column; gap:8px;">
+                            <div style="color:var(--text-muted); font-size:12px;">⏳ Carregando manchetes...</div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn-action" style="flex:1; background:linear-gradient(135deg, var(--purple), var(--magenta));" onclick="runBriefingPwa()">📋 Gerar Briefing Proativo</button>
+                        <button class="btn-action" style="flex:1; background:linear-gradient(135deg, var(--cyan), var(--primary));" onclick="showGraphOverviewPwa()">🧠 Grafo do Cérebro</button>
+                    </div>
+
+                    <div class="pwa-card">
+                        <div class="card-title">📊 Visão Geral do Segundo Cérebro</div>
+                        <div id="kpi-overview-container" class="kpi-grid">
+                            <div class="kpi-card"><div class="kpi-label">Carregando...</div></div>
+                        </div>
+                    </div>
+
+                    <!-- CARD DE TELEMETRIA DO PC COMPLETO (CÓPIA FIEL 1:1 DO DASHBOARD) -->
+                    <div class="pwa-card" style="padding:14px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                            <span style="font-size:13.5px; font-weight:800; color:#fff;">💻 Telemetria do PC</span>
+                            <span id="telemetry-status-badge" class="badge-status-pwa" style="background:rgba(16,185,129,0.15); border-color:rgba(16,185,129,0.4); color:var(--emerald);">🟢 Normal</span>
+                        </div>
+                        <div style="margin-bottom:10px;">
+                            <span id="telemetry-source-badge" style="font-size:10px; color:var(--emerald); font-weight:700;">🟢 CPU/RAM reais (agente local ativo)</span>
+                        </div>
+
+                        <!-- 4 VELOCÍMETROS AUTOMOTIVOS (CPU, RAM, GPU, DISCO C) -->
+                        <div class="telemetry-grid">
+                            <!-- 1. CPU SPEEDOMETER (CIANO NEON) -->
+                            <div class="speedometer-box">
+                                <svg width="125" height="72" viewBox="0 0 120 66">
+                                    <defs>
+                                        <linearGradient id="pwa-grad-cpu" x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" stop-color="#06b6d4" /><stop offset="100%" stop-color="#3b82f6" />
+                                        </linearGradient>
+                                    </defs>
+                                    <text x="6" y="60" fill="#64748b" font-size="7" font-weight="700">0%</text>
+                                    <text x="10" y="28" fill="#64748b" font-size="7" font-weight="700">20%</text>
+                                    <text x="32" y="10" fill="#64748b" font-size="7" font-weight="700">40%</text>
+                                    <text x="82" y="10" fill="#64748b" font-size="7" font-weight="700">60%</text>
+                                    <text x="104" y="28" fill="#64748b" font-size="7" font-weight="700">80%</text>
+                                    <text x="106" y="60" fill="#64748b" font-size="7" font-weight="700">100%</text>
+
+                                    <circle cx="60" cy="56" r="38" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="10" stroke-dasharray="119.38 238.76" stroke-dashoffset="0" transform="rotate(180 60 56)"/>
+                                    <circle id="gauge-cpu-circle" cx="60" cy="56" r="38" fill="none" stroke="url(#pwa-grad-cpu)" stroke-width="10" stroke-dasharray="119.38 238.76" stroke-dashoffset="119.38" transform="rotate(180 60 56)"/>
+                                    <g id="gauge-cpu-needle" style="transform-origin: 60px 56px; transform: rotate(-90deg);">
+                                        <line x1="60" y1="56" x2="60" y2="22" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+                                        <circle cx="60" cy="56" r="4" fill="#06b6d4" stroke="#ffffff" stroke-width="1.5"/>
+                                    </g>
+                                    <path d="M 38 56 A 22 22 0 0 1 82 56 Z" fill="rgba(15,23,42,0.95)" stroke="rgba(6,182,212,0.4)" stroke-width="1.5"/>
+                                    <text x="60" y="50" text-anchor="middle" fill="var(--cyan)" font-size="13" font-weight="800" id="gauge-cpu-text">12%</text>
+                                </svg>
+                                <div class="gauge-lbl" style="color:var(--cyan);">⚡ CPU</div>
+                            </div>
+
+                            <!-- 2. RAM SPEEDOMETER (ROXO MAGENTA) -->
+                            <div class="speedometer-box">
+                                <svg width="125" height="72" viewBox="0 0 120 66">
+                                    <defs>
+                                        <linearGradient id="pwa-grad-ram" x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" stop-color="#a855f7" /><stop offset="100%" stop-color="#ec4899" />
+                                        </linearGradient>
+                                    </defs>
+                                    <text x="6" y="60" fill="#64748b" font-size="7" font-weight="700">0%</text>
+                                    <text x="10" y="28" fill="#64748b" font-size="7" font-weight="700">20%</text>
+                                    <text x="32" y="10" fill="#64748b" font-size="7" font-weight="700">40%</text>
+                                    <text x="82" y="10" fill="#64748b" font-size="7" font-weight="700">60%</text>
+                                    <text x="104" y="28" fill="#64748b" font-size="7" font-weight="700">80%</text>
+                                    <text x="106" y="60" fill="#64748b" font-size="7" font-weight="700">100%</text>
+
+                                    <circle cx="60" cy="56" r="38" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="10" stroke-dasharray="119.38 238.76" stroke-dashoffset="0" transform="rotate(180 60 56)"/>
+                                    <circle id="gauge-ram-circle" cx="60" cy="56" r="38" fill="none" stroke="url(#pwa-grad-ram)" stroke-width="10" stroke-dasharray="119.38 238.76" stroke-dashoffset="119.38" transform="rotate(180 60 56)"/>
+                                    <g id="gauge-ram-needle" style="transform-origin: 60px 56px; transform: rotate(-90deg);">
+                                        <line x1="60" y1="56" x2="60" y2="22" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+                                        <circle cx="60" cy="56" r="4" fill="#a855f7" stroke="#ffffff" stroke-width="1.5"/>
+                                    </g>
+                                    <path d="M 38 56 A 22 22 0 0 1 82 56 Z" fill="rgba(15,23,42,0.95)" stroke="rgba(168,85,247,0.4)" stroke-width="1.5"/>
+                                    <text x="60" y="50" text-anchor="middle" fill="var(--purple)" font-size="13" font-weight="800" id="gauge-ram-text">78%</text>
+                                </svg>
+                                <div class="gauge-lbl" style="color:var(--purple);">🧠 RAM</div>
+                            </div>
+
+                            <!-- 3. GPU SPEEDOMETER (VERDE ESMERALDA) -->
+                            <div class="speedometer-box">
+                                <svg width="125" height="72" viewBox="0 0 120 66">
+                                    <defs>
+                                        <linearGradient id="pwa-grad-gpu" x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" stop-color="#10b981" /><stop offset="100%" stop-color="#34d399" />
+                                        </linearGradient>
+                                    </defs>
+                                    <text x="6" y="60" fill="#64748b" font-size="7" font-weight="700">0%</text>
+                                    <text x="10" y="28" fill="#64748b" font-size="7" font-weight="700">20%</text>
+                                    <text x="32" y="10" fill="#64748b" font-size="7" font-weight="700">40%</text>
+                                    <text x="82" y="10" fill="#64748b" font-size="7" font-weight="700">60%</text>
+                                    <text x="104" y="28" fill="#64748b" font-size="7" font-weight="700">80%</text>
+                                    <text x="106" y="60" fill="#64748b" font-size="7" font-weight="700">100%</text>
+
+                                    <circle cx="60" cy="56" r="38" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="10" stroke-dasharray="119.38 238.76" stroke-dashoffset="0" transform="rotate(180 60 56)"/>
+                                    <circle id="gauge-gpu-circle" cx="60" cy="56" r="38" fill="none" stroke="url(#pwa-grad-gpu)" stroke-width="10" stroke-dasharray="119.38 238.76" stroke-dashoffset="119.38" transform="rotate(180 60 56)"/>
+                                    <g id="gauge-gpu-needle" style="transform-origin: 60px 56px; transform: rotate(-90deg);">
+                                        <line x1="60" y1="56" x2="60" y2="22" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+                                        <circle cx="60" cy="56" r="4" fill="#10b981" stroke="#ffffff" stroke-width="1.5"/>
+                                    </g>
+                                    <path d="M 38 56 A 22 22 0 0 1 82 56 Z" fill="rgba(15,23,42,0.95)" stroke="rgba(16,185,129,0.4)" stroke-width="1.5"/>
+                                    <text x="60" y="50" text-anchor="middle" fill="#10b981" font-size="13" font-weight="800" id="gauge-gpu-text">10%</text>
+                                </svg>
+                                <div class="gauge-lbl" style="color:#10b981;">🎮 GPU</div>
+                            </div>
+
+                            <!-- 4. DISCO C SPEEDOMETER (ÂMBAR DOURADO) -->
+                            <div class="speedometer-box">
+                                <svg width="125" height="72" viewBox="0 0 120 66">
+                                    <defs>
+                                        <linearGradient id="pwa-grad-disk" x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" stop-color="#f59e0b" /><stop offset="100%" stop-color="#fbbf24" />
+                                        </linearGradient>
+                                    </defs>
+                                    <text x="6" y="60" fill="#64748b" font-size="7" font-weight="700">0%</text>
+                                    <text x="10" y="28" fill="#64748b" font-size="7" font-weight="700">20%</text>
+                                    <text x="32" y="10" fill="#64748b" font-size="7" font-weight="700">40%</text>
+                                    <text x="82" y="10" fill="#64748b" font-size="7" font-weight="700">60%</text>
+                                    <text x="100" y="28" fill="#64748b" font-size="7" font-weight="700">80%</text>
+                                    <text x="100" y="60" fill="#64748b" font-size="7" font-weight="700">100%</text>
+
+                                    <circle cx="60" cy="56" r="38" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="10" stroke-dasharray="119.38 238.76" stroke-dashoffset="0" transform="rotate(180 60 56)"/>
+                                    <circle id="gauge-disk-circle" cx="60" cy="56" r="38" fill="none" stroke="url(#pwa-grad-disk)" stroke-width="10" stroke-dasharray="119.38 238.76" stroke-dashoffset="119.38" transform="rotate(180 60 56)"/>
+                                    <g id="gauge-disk-needle" style="transform-origin: 60px 56px; transform: rotate(-90deg);">
+                                        <line x1="60" y1="56" x2="60" y2="22" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+                                        <circle cx="60" cy="56" r="4" fill="#f59e0b" stroke="#ffffff" stroke-width="1.5"/>
+                                    </g>
+                                    <path d="M 38 56 A 22 22 0 0 1 82 56 Z" fill="rgba(15,23,42,0.95)" stroke="rgba(245,158,11,0.4)" stroke-width="1.5"/>
+                                    <text x="60" y="50" text-anchor="middle" fill="#f59e0b" font-size="13" font-weight="800" id="gauge-disk-text">90%</text>
+                                </svg>
+                                <div class="gauge-lbl" style="color:#f59e0b;">💾 Disco C</div>
+                            </div>
+                        </div>
+
+                        <!-- LISTA DE DETALHES DE HARDWARE EXATAMENTE IGUAL AO DASHBOARD -->
+                        <div style="font-size:11.5px; color:var(--text-muted); display:flex; flex-direction:column; gap:6px; border-top:1px solid rgba(255,255,255,0.08); padding-top:10px; margin-top:4px; line-height:1.4;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                                <span style="display:flex; align-items:center; gap:4px; font-weight:500;">🎮 <span>Placa de Vídeo:</span></span>
+                                <strong id="telemetry-gpu-val" style="color:#e2e8f0; font-weight:600; text-overflow:ellipsis; overflow:hidden; white-space:nowrap; max-width:160px; text-align:right;">NVIDIA GeForce 940MX</strong>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                                <span style="display:flex; align-items:center; gap:4px; font-weight:500;">🧠 <span>Memória Heap:</span></span>
+                                <strong id="telemetry-ram-val" style="color:var(--purple); font-weight:600;">6290MB / 8090MB (78%)</strong>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                                <span style="display:flex; align-items:center; gap:4px; font-weight:500;">⚡ <span>Processador:</span></span>
+                                <strong id="telemetry-cpu-val" style="color:var(--cyan); font-weight:600;">12% (4 Núcleos)</strong>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                                <span style="display:flex; align-items:center; gap:4px; font-weight:500;">💾 <span>Disco C livre:</span></span>
+                                <strong id="telemetry-disk-val" style="color:var(--amber); font-weight:600;">10.9GB / 111.1GB</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DISPOSITIVOS CONECTADOS (espelha o dashboard desktop, 08/09/2026) -->
+                    <div class="pwa-card">
+                        <div class="card-title">📶 Dispositivos Conectados</div>
+                        <div id="connected-devices-list-pwa" style="display:flex; flex-direction:column; gap:4px; font-size:11.5px;">
+                            <div style="color:var(--text-muted);">Carregando dispositivos...</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. MEMÓRIA -->
+            <section id="view-memoria" class="pwa-view">
+                <div class="pwa-section">
+                    <div class="pwa-card">
+                        <div class="card-title">🧠 Gravar Nova Memória</div>
+                        <div class="form-row">
+                            <input type="text" id="new-memory-input" class="form-input" placeholder="Digite o conteúdo da memória...">
+                            <div class="form-group-inline">
+                                <select id="new-memory-cat" class="form-select" style="flex:1;">
+                                    <option value="geral">Geral</option>
+                                    <option value="pessoal">Pessoal</option>
+                                    <option value="trabalho">Trabalho</option>
+                                    <option value="projeto">Projeto</option>
+                                </select>
+                                <button class="btn-action" onclick="addMemoryPwa()">Salvar Memória</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pwa-card">
+                        <div class="card-title">
+                            <span>📚 Memórias Registradas</span>
+                            <input type="text" id="memory-search-input" class="form-input" style="width:140px; height:32px; font-size:11px;" placeholder="Buscar..." oninput="filterMemoriesCategoryPwa(currentMemoryCategory)">
+                        </div>
+
+                        <div class="memory-filter-pills filter-pills">
+                            <button id="mem-pill-all" class="pill-btn active" onclick="filterMemoriesCategoryPwa('all')">Todas</button>
+                            <button id="mem-pill-geral" class="pill-btn" onclick="filterMemoriesCategoryPwa('geral')">Geral</button>
+                            <button id="mem-pill-pessoal" class="pill-btn" onclick="filterMemoriesCategoryPwa('pessoal')">Pessoal</button>
+                            <button id="mem-pill-trabalho" class="pill-btn" onclick="filterMemoriesCategoryPwa('trabalho')">Trabalho</button>
+                            <button id="mem-pill-projeto" class="pill-btn" onclick="filterMemoriesCategoryPwa('projeto')">Projeto</button>
+                        </div>
+
+                        <div id="pwa-memory-list" style="display:flex; flex-direction:column; gap:10px;">
+                            <div style="color:var(--text-muted);">Carregando memórias...</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. AGENDA -->
+            <section id="view-agenda" class="pwa-view">
+                <div class="pwa-section">
+                    <div class="pwa-card">
+                        <div class="card-title">📅 Novo Compromisso</div>
+                        <div class="form-row">
+                            <input type="text" id="agenda-title-input" class="form-input" placeholder="Título do compromisso...">
+                            <div class="form-group-inline">
+                                <input type="date" id="agenda-date-input" class="form-input" style="flex:1;">
+                                <input type="time" id="agenda-time-input" class="form-input" value="09:00" style="flex:1;">
+                            </div>
+                            <button class="btn-action" onclick="addAgendaPwa()">Agendar</button>
+                        </div>
+                    </div>
+
+                    <div class="pwa-card">
+                        <div class="card-title">🗓️ Compromissos Agendados</div>
+                        <div id="pwa-agenda-list" style="display:flex; flex-direction:column; gap:10px;">
+                            <div style="color:var(--text-muted);">Carregando agenda...</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. FINANÇAS — DASHBOARD EXECUTIVO REAL 1:1 COM A IMAGEM -->
+            <section id="view-financas" class="pwa-view">
+                <div class="pwa-section">
+                    
+                    <!-- BARRA SUPERIOR DISCRETA: upload rápido de documento -->
+                    <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
+                        <button type="button" onclick="document.getElementById('fin-upload-input-pwa').click()" title="Importar extrato, recibo ou nota fiscal" style="display:flex; align-items:center; gap:6px; background:rgba(6,182,212,0.12); border:1px solid rgba(6,182,212,0.35); color:var(--cyan); border-radius:20px; padding:6px 14px; font-size:12px; font-weight:700; cursor:pointer;">
+                            📎 Importar documento
+                        </button>
+                    </div>
+
+                    <!-- MERCADO AO VIVO: Dólar (BCB), Selic (BCB), BTC/ETH (CoinGecko) -- compacto, 1 linha -->
+                    <div class="market-ticker-strip-pwa">
+                        <div class="mt-item-pwa"><span class="mt-lbl-pwa">💵</span><span id="mt-dolar-pwa" class="mt-v-pwa">--</span></div>
+                        <div class="mt-item-pwa"><span class="mt-lbl-pwa">📊</span><span id="mt-selic-pwa" class="mt-v-pwa">--</span></div>
+                        <div class="mt-item-pwa"><span class="mt-lbl-pwa">₿</span><span id="mt-btc-pwa" class="mt-v-pwa">--</span></div>
+                        <div class="mt-item-pwa"><span class="mt-lbl-pwa">Ξ</span><span id="mt-eth-pwa" class="mt-v-pwa">--</span></div>
+                    </div>
+
+                    <!-- CONTAINER DO DASHBOARD EXECUTIVO DE FINANÇAS -->
+                    <div class="finances-exec-container">
+                        
+                        <!-- TOP GRID: SIMETRIA 3 BLOCOS (LEFT 2x2 | CENTER DONUT MARGEM | RIGHT 2x2) -->
+                        <div class="finances-exec-topgrid">
+                            
+                            <!-- WING ESQUERDA (4 KPIS): RECEITA, DESPESAS, LUCRO LÍQUIDO, SALDO FINAL -->
+                            <div class="finances-kpi-wing">
+                                <div class="finances-kpi-card" style="cursor:pointer;" onclick="openFinanceKpiDetailModal('receita')" title="Clique para ver e gerenciar Receitas">
+                                    <div class="finances-kpi-title">Total Receita ↗️</div>
+                                    <div class="finances-kpi-val" id="kpi-total-receita">R$ 0,00</div>
+                                    <div><span class="kpi-trend trend-down" id="pwa-trend-receita">0,0%</span> <span style="font-size:9.5px; color:var(--text-muted);">vs mês anterior</span></div>
+                                </div>
+                                <div class="finances-kpi-card" style="cursor:pointer;" onclick="openFinanceKpiDetailModal('despesa')" title="Clique para ver e gerenciar Despesas">
+                                    <div class="finances-kpi-title">Total Despesas ↘️</div>
+                                    <div class="finances-kpi-val" id="kpi-total-despesas" style="color:#ef4444;">R$ 0,00</div>
+                                    <div><span class="kpi-trend trend-down" id="pwa-trend-despesas">0,0%</span> <span style="font-size:9.5px; color:var(--text-muted);">vs mês anterior</span></div>
+                                </div>
+                                <div class="finances-kpi-card" style="cursor:pointer;" onclick="openFinanceKpiDetailModal('lucro')" title="Clique para ver margem e distribuição de Lucro">
+                                    <div class="finances-kpi-title">Lucro Líquido 💰</div>
+                                    <div class="finances-kpi-val" id="kpi-lucro-liquido" style="color:var(--emerald);">R$ 0,00</div>
+                                    <div><span class="kpi-trend trend-down" id="pwa-trend-lucro">0,0%</span> <span style="font-size:9.5px; color:var(--text-muted);">vs mês anterior</span></div>
+                                </div>
+                                <div class="finances-kpi-card" style="cursor:pointer;" onclick="openFinanceKpiDetailModal('saldo')" title="Clique para ver Fluxo de Caixa e Saldo">
+                                    <div class="finances-kpi-title">Saldo no final do mês 🏦</div>
+                                    <div class="finances-kpi-val" id="kpi-saldo-final" style="color:var(--cyan);">R$ 0,00</div>
+                                    <div><span class="kpi-trend trend-down" id="pwa-trend-saldo">0,0%</span> <span style="font-size:9.5px; color:var(--text-muted);">vs mês anterior</span></div>
+                                </div>
+                            </div>
+
+                            <!-- GAUGE CENTRAL DE MARGEM DE LUCRO LÍQUIDO -->
+                            <div class="finances-center-donut" style="cursor:pointer;" onclick="openFinanceKpiDetailModal('margem')" title="Clique para configurar Meta de Margem de Lucro">
+                                <div class="donut-gauge-title">% Margem Lucro Líquido 🎯</div>
+                                
+                                <div class="donut-svg-container">
+                                    <svg width="130" height="130" viewBox="0 0 100 100" class="donut-svg-el">
+                                        <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="10"/>
+                                        <circle id="donut-margem-circle" cx="50" cy="50" r="38" fill="none" stroke="var(--cyan)" stroke-width="10" stroke-dasharray="238.76" stroke-dashoffset="238.76" transform="rotate(-90 50 50)" stroke-linecap="round" style="transition: stroke-dashoffset 0.5s ease;"/>
+                                    </svg>
+
+                                    <div class="donut-inner-content">
+                                        <div class="donut-gauge-value" id="kpi-margem-val">0,0%</div>
+                                        <div class="donut-gauge-goal" id="pwa-goal-margem-label">Objetivo: 12,0%</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- WING DIREITA (4 KPIS): CONTAS A RECEBER, CONTAS A PAGAR, LIQUIDEZ REDUZIDA, LIQUIDEZ -->
+                            <div class="finances-kpi-wing">
+                                <div class="finances-kpi-card" style="cursor:pointer;" onclick="openFinanceKpiDetailModal('receber')" title="Clique para gerenciar Contas a Receber">
+                                    <div class="finances-kpi-title">Contas a Receber 📥</div>
+                                    <div class="finances-kpi-val" id="kpi-contas-receber" style="color:var(--emerald);">R$ 0,00</div>
+                                    <div><span class="kpi-trend trend-up" id="pwa-trend-receber">+0,0%</span> <span style="font-size:9.5px; color:var(--text-muted);">vs mês anterior</span></div>
+                                </div>
+                                <div class="finances-kpi-card" style="cursor:pointer;" onclick="openFinanceKpiDetailModal('pagar')" title="Clique para gerenciar Contas a Pagar">
+                                    <div class="finances-kpi-title">Contas a Pagar 📤</div>
+                                    <div class="finances-kpi-val" id="kpi-contas-pagar" style="color:#ef4444;">R$ 0,00</div>
+                                    <div><span class="kpi-trend trend-up" id="pwa-trend-pagar">+0,0%</span> <span style="font-size:9.5px; color:var(--text-muted);">vs mês anterior</span></div>
+                                </div>
+                                <div class="finances-kpi-card" style="cursor:pointer;" onclick="openFinanceKpiDetailModal('liquidez_reduzida')" title="Clique para ver Análise de Liquidez Reduzida">
+                                    <div class="finances-kpi-title">Índice Liquidez Reduzida ⚡</div>
+                                    <div class="finances-kpi-val" id="kpi-liquidez-reduzida" style="color:var(--cyan);">0,00</div>
+                                    <div style="font-size:9.5px; color:var(--text-muted); font-weight:600;">1 ou mais • Objetivo</div>
+                                </div>
+                                <div class="finances-kpi-card" style="cursor:pointer;" onclick="openFinanceKpiDetailModal('liquidez_geral')" title="Clique para ver Análise de Liquidez Geral">
+                                    <div class="finances-kpi-title">Índice de Liquidez 🛡️</div>
+                                    <div class="finances-kpi-val" id="kpi-liquidez-geral" style="color:var(--emerald);">0,00</div>
+                                    <div style="font-size:9.5px; color:var(--text-muted); font-weight:600;">3 ou mais • Objetivo</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- MIDDLE GRID: GRÁFICO COMBO RECEITAS/DESPESAS (ESQ) + ANÉIS DE ORÇAMENTO (DIR) -->
+                        <div class="finances-middle-grid">
+                            
+                            <!-- GRÁFICO DE COMBO: RECEITAS E DESPESAS (JAN A DEZ) -->
+                            <div class="pwa-card" style="margin-bottom:0; cursor:pointer;" onclick="openFinanceKpiDetailModal('combo_chart')" title="Clique para ver o Detalhamento Mensal de Receitas vs Despesas">
+                                <div class="card-title">
+                                    <span>📊 Receitas e Despesas (Mensal) 🔍</span>
+                                    <div style="font-size:10.5px; display:flex; gap:8px;">
+                                        <span style="color:var(--cyan);">■ Receita</span>
+                                        <span style="color:#ef4444;">■ Despesa</span>
+                                        <span style="color:var(--purple);">━ Lucro</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- SVG COMBO CHART (BARRAS DE RECEITA/DESPESA + LINHA DE LUCRO) -->
+                                <div style="width:100%; height:200px; position:relative; margin-top:8px;">
+                                    <svg id="combo-chart-svg" width="100%" height="200" viewBox="0 0 500 200" preserveAspectRatio="none">
+                                        <!-- Eixo Zero -->
+                                        <line x1="30" y1="110" x2="490" y2="110" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+                                        
+                                        <!-- Rótulos Y -->
+                                        <text x="5" y="30" fill="#64748b" font-size="9" font-weight="700">6.000</text>
+                                        <text x="5" y="70" fill="#64748b" font-size="9" font-weight="700">3.000</text>
+                                        <text x="20" y="113" fill="#64748b" font-size="9" font-weight="700">0</text>
+                                        <text x="0" y="155" fill="#64748b" font-size="9" font-weight="700">-3.000</text>
+
+                                        <!-- Barras e Linhas de Jan a Dez renderizados dinamicamente pelo JS -->
+                                        <g id="combo-chart-bars-group"></g>
+                                        <path id="combo-chart-profit-line" d="" fill="none" stroke="var(--purple)" stroke-width="2.5"/>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <!-- ANÉIS DE ORÇAMENTO DA DIREITA (% DO ORÇAMENTO RECEITA E DESPESA) -->
+                            <div class="pwa-card" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:space-between;">
+                                <div class="card-title">🎯 Execução Orçamentária</div>
+                                
+                                <div class="budget-rings-wrapper">
+                                    <!-- RING 1: ORÇAMENTO RECEITA -->
+                                    <div class="budget-ring-box" style="cursor:pointer;" onclick="openFinanceKpiDetailModal('orc_receita')" title="Clique para gerenciar o Orçamento de Receitas">
+                                        <div class="budget-ring-title">% do orçamento de receita ⚙️</div>
+                                        <div class="ring-svg-container">
+                                            <svg width="100" height="100" viewBox="0 0 100 100" class="ring-svg-el">
+                                                <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="10"/>
+                                                <circle id="ring-orc-receita" cx="50" cy="50" r="38" fill="none" stroke="var(--cyan)" stroke-width="10" stroke-dasharray="238.76" stroke-dashoffset="238.76" transform="rotate(-90 50 50)" stroke-linecap="round"/>
+                                            </svg>
+                                            <div class="budget-ring-value" style="color:var(--cyan);" id="val-ring-receita">0%</div>
+                                        </div>
+                                        <div class="budget-meta-row"><span>Orçamento</span> <strong id="orc-receita-val">R$ 5.000,00</strong></div>
+                                        <div class="budget-meta-row"><span>Balanço</span> <strong style="color:#ef4444;" id="bal-receita-val">R$ 0,00</strong></div>
+                                    </div>
+
+                                    <!-- RING 2: ORÇAMENTO DESPESA -->
+                                    <div class="budget-ring-box" style="cursor:pointer;" onclick="openFinanceKpiDetailModal('orc_despesa')" title="Clique para gerenciar o Teto Orçamentário de Despesas">
+                                        <div class="budget-ring-title">% do orçamento de despesas ⚙️</div>
+                                        <div class="ring-svg-container">
+                                            <svg width="100" height="100" viewBox="0 0 100 100" class="ring-svg-el">
+                                                <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="10"/>
+                                                <circle id="ring-orc-despesa" cx="50" cy="50" r="38" fill="none" stroke="#ef4444" stroke-width="10" stroke-dasharray="238.76" stroke-dashoffset="238.76" transform="rotate(-90 50 50)" stroke-linecap="round"/>
+                                            </svg>
+                                            <div class="budget-ring-value" style="color:#ef4444;" id="val-ring-despesa">0%</div>
+                                        </div>
+                                        <div class="budget-meta-row"><span>Orçamento</span> <strong id="orc-despesa-val">R$ 3.500,00</strong></div>
+                                        <div class="budget-meta-row"><span>Balanço</span> <strong style="color:#ef4444;" id="bal-despesa-val">R$ 0,00</strong></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BOTTOM GRID: GRÁFICO TENDÊNCIA SALDO FINAL (ESQ) + DEMONSTRAÇÃO DE RESULTADOS DRE (DIR) -->
+                        <div class="finances-bottom-grid">
+                            
+                            <!-- GRÁFICO DE TENDÊNCIA DE SALDO FINAL DO MÊS -->
+                            <div class="pwa-card" style="margin-bottom:0; cursor:pointer;" onclick="openFinanceKpiDetailModal('trend_saldo')" title="Clique para ver a Projeção de Trajetória do Saldo">
+                                <div class="card-title">📈 Saldo no final do mês (Trajetória) 🔍</div>
+                                <div style="width:100%; height:180px; position:relative; margin-top:8px;">
+                                    <svg id="balance-trend-svg" width="100%" height="180" viewBox="0 0 500 180" preserveAspectRatio="none">
+                                        <line x1="30" y1="150" x2="490" y2="150" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+                                        <line x1="30" y1="110" x2="490" y2="110" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                                        <line x1="30" y1="70" x2="490" y2="70" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                                        <line x1="30" y1="30" x2="490" y2="30" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+
+                                        <!-- Y Labels -->
+                                        <text x="5" y="34" fill="#64748b" font-size="9" font-weight="700">2.500</text>
+                                        <text x="5" y="74" fill="#64748b" font-size="9" font-weight="700">1.500</text>
+                                        <text x="12" y="114" fill="#64748b" font-size="9" font-weight="700">500</text>
+                                        <text x="20" y="154" fill="#64748b" font-size="9" font-weight="700">0</text>
+
+                                        <!-- Linha Dourada e Nós renderizados dinamicamente pelo JS -->
+                                        <path id="balance-trend-path" d="" fill="none" stroke="var(--amber)" stroke-width="3"/>
+                                        <g id="balance-trend-dots"></g>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <!-- TABELA DRE (DEMONSTRAÇÃO DE RESULTADOS FIEL À IMAGEM) -->
+                            <div class="pwa-card" style="margin-bottom:0; cursor:pointer;" onclick="openFinanceKpiDetailModal('dre_table')" title="Clique para ver e configurar a Demonstração de Resultados DRE">
+                                <div class="card-title">
+                                    <span>📋 Demonstração de Resultados (DRE) 🔍</span>
+                                    <span class="badge-status-pwa">Mensal</span>
+                                </div>
+                                <table class="dre-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Item</th>
+                                            <th style="text-align:right;">Valor</th>
+                                            <th style="text-align:right;">% Receita</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr onclick="openFinanceKpiDetailModal('receita'); event.stopPropagation();" title="Clique para abrir Receitas">
+                                            <td>Total Receita</td>
+                                            <td style="text-align:right;" id="dre-val-receita">R$ 0,00</td>
+                                            <td style="text-align:right;" id="dre-pct-receita">0%</td>
+                                        </tr>
+                                        <tr onclick="openFinanceKpiDetailModal('dre_table'); event.stopPropagation();" title="Clique para ver Custos">
+                                            <td>Custo de bens vendidos</td>
+                                            <td style="text-align:right;" id="dre-val-custo">R$ 0,00</td>
+                                            <td style="text-align:right;" id="dre-pct-custo">0%</td>
+                                        </tr>
+                                        <tr class="dre-highlight" onclick="openFinanceKpiDetailModal('lucro'); event.stopPropagation();" title="Clique para ver Lucro Bruto">
+                                            <td><strong>Lucro bruto</strong></td>
+                                            <td style="text-align:right;" id="dre-val-bruto">R$ 0,00</td>
+                                            <td style="text-align:right;" id="dre-pct-bruto">0%</td>
+                                        </tr>
+                                        <tr onclick="openFinanceKpiDetailModal('despesa'); event.stopPropagation();" title="Clique para abrir Despesas Operacionais">
+                                            <td>Total Despesas Operacionais</td>
+                                            <td style="text-align:right;" id="dre-val-despesas">R$ 0,00</td>
+                                            <td style="text-align:right;" id="dre-pct-despesas">0%</td>
+                                        </tr>
+                                        <tr class="dre-total" onclick="openFinanceKpiDetailModal('lucro'); event.stopPropagation();" title="Clique para ver Lucro Líquido Operacional">
+                                            <td><strong>Lucro Líquido Operacional</strong></td>
+                                            <td style="text-align:right;" id="dre-val-liquido">R$ 0,00</td>
+                                            <td style="text-align:right;" id="dre-pct-liquido">0%</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                        </div>
+
+                        <!-- UPLOAD DE EXTRATO/RECIBO/PDF/EXCEL COM EXTRAÇÃO AUTOMÁTICA -->
+                        <div class="pwa-card">
+                            <div class="card-title">📎 Importar Extrato / Recibo / PDF / Excel</div>
+                            <div style="color:var(--text-muted); font-size:12px; margin-bottom:8px;">Envie uma foto de recibo, extrato bancário (PDF/CSV/Excel) ou nota fiscal. A HERMES lê, separa cada transação por categoria e lança tudo automaticamente.</div>
+                            <input type="file" id="fin-upload-input-pwa" accept="image/*,.pdf,.csv,.xls,.xlsx,.doc,.docx" onchange="uploadFinanceReceiptPwa(event)" class="form-input">
+                            <div id="fin-upload-status-pwa" style="color:var(--text-muted); font-size:12px; margin-top:8px;"></div>
+                        </div>
+
+                        <!-- FORMULÁRIO DE LANÇAMENTO E FILTRO DE TRANSAÇÕES (CRUD DE FINANÇAS) -->
+                        <div class="pwa-card">
+                            <div class="card-title">➕ Novo Lançamento Financeiro</div>
+                            <div class="form-row">
+                                <input type="text" id="fin-desc-input" class="form-input" placeholder="Descrição do lançamento (ex: Salário, Aluguel, Cliente)...">
+                                <div class="form-group-inline">
+                                    <input type="number" id="fin-amount-input" class="form-input" placeholder="Valor (R$)" step="0.01" style="flex:1;">
+                                    <select id="fin-type-select" class="form-select" style="flex:1;">
+                                        <option value="expense">📉 Despesa (R$)</option>
+                                        <option value="income">📈 Receita (R$)</option>
+                                        <option value="receber">📥 Contas a Receber</option>
+                                        <option value="pagar">📤 Contas a Pagar</option>
+                                    </select>
+                                </div>
+                                <button class="btn-action" onclick="addFinancePwa()">Salvar Transação na HERMES</button>
+                            </div>
+                        </div>
+
+                        <div class="pwa-card">
+                            <div class="card-title">📊 Histórico e Lançamentos Salvos</div>
+                            <div id="pwa-finances-list" style="display:flex; flex-direction:column; gap:10px;">
+                                <div style="color:var(--text-muted);">Carregando lançamentos...</div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <!-- 6. DOCUMENTOS -->
+            <section id="view-documentos" class="pwa-view">
+                <div class="pwa-section">
+                    <div class="pwa-card">
+                        <div class="card-title">
+                            <span>📄 Enviar Documento para HERMES Ler & Analisar</span>
+                            <span id="doc-count-badge" class="badge-status-pwa">0</span>
+                        </div>
+                        <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">
+                            Envie relatórios em **PDF, planilhas Excel, documentos Word, fotos ou notas**. A HERMES lerá, interpretará e integrará ao seu Segundo Cérebro:
+                        </p>
+
+                        <!-- DROPZONE DE ARQUIVOS -->
+                        <div class="dropzone-box" onclick="document.getElementById('doc-file-input-main').click()">
+                            <div style="font-size:32px; margin-bottom:6px;">📥</div>
+                            <strong style="font-size:14px; color:#fff;">Clique ou arraste um arquivo aqui</strong>
+                            <div style="font-size:11px; color:var(--cyan); margin-top:4px;">Suporta PDF, DOCX, XLSX, TXT, CSV, PNG, JPG</div>
+                            <input type="file" id="doc-file-input-main" multiple style="display:none;" onchange="handleDocDropzoneSelectPwa(event)">
+                        </div>
+                    </div>
+
+                    <div class="pwa-card">
+                        <div class="card-title">📚 Documentos e Arquivos Salvos</div>
+                        <div id="pwa-documents-list" style="display:flex; flex-direction:column; gap:10px;">
+                            <div style="color:var(--text-muted);">Carregando documentos...</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 7. CONTATOS -->
+            <section id="view-contatos" class="pwa-view">
+                <div class="pwa-section">
+                    <div class="pwa-card">
+                        <div class="card-title">👥 Adicionar Novo Contato</div>
+                        <div class="form-row">
+                            <input type="text" id="contact-name-input" class="form-input" placeholder="Nome do contato...">
+                            <input type="text" id="contact-phone-input" class="form-input" placeholder="Telefone / Celular...">
+                            <button class="btn-action" onclick="addContactPwa()">Salvar Contato</button>
+                        </div>
+                    </div>
+
+                    <div class="pwa-card">
+                        <div class="card-title">📞 Lista de Contatos</div>
+                        <div id="pwa-contacts-list" style="display:flex; flex-direction:column; gap:10px;">
+                            <div style="color:var(--text-muted);">Carregando contatos...</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 8. METAS 100% IDÊNTICA AO DASHBOARD -->
+            <section id="view-metas" class="pwa-view">
+                <div class="pwa-section">
+                    <div class="pwa-card">
+                        <div class="card-title">➕ Nova Meta / OKR</div>
+                        <div class="form-row">
+                            <input type="text" id="goal-title-input" class="form-input" placeholder="Título da meta ou OKR..." required>
+                            <div class="form-group-inline">
+                                <select id="goal-cat-input" class="form-select" style="flex:1;">
+                                    <option value="Pessoal">Pessoal</option>
+                                    <option value="Profissional">Profissional</option>
+                                    <option value="Financeira">Financeira</option>
+                                    <option value="Projetos">Projetos</option>
+                                </select>
+                                <input type="date" id="goal-date-input" class="form-input" style="flex:1;">
+                            </div>
+                            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:2px;">
+                                <span style="font-size:11px; color:var(--text-muted); align-self:center;">Prazo em:</span>
+                                <button type="button" class="pill-btn" onclick="setDaysAheadGoal(30)">+30 dias</button>
+                                <button type="button" class="pill-btn" onclick="setDaysAheadGoal(90)">+90 dias</button>
+                                <button type="button" class="pill-btn" onclick="setDaysAheadGoal(180)">+180 dias</button>
+                                <button type="button" class="pill-btn" onclick="setDaysAheadGoal(365)">+1 ano</button>
+                            </div>
+                            <button type="button" class="btn-action" style="margin-top:6px;" onclick="addGoalPwa()">Cadastrar Meta na HERMES</button>
+                        </div>
+                    </div>
+
+                    <div class="pwa-card">
+                        <div class="card-title">
+                            <span>🎯 Metas & OKRs Ativos</span>
+                            <span id="tab-goals-count" class="badge-status-pwa">0</span>
+                        </div>
+                        <div id="pwa-goals-list" style="display:flex; flex-direction:column; gap:10px;">
+                            <div style="color:var(--text-muted);">Carregando metas...</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 9. TAREFAS 100% IDÊNTICA AO DASHBOARD -->
+            <section id="view-tarefas" class="pwa-view">
+                <div class="pwa-section">
+                    <div class="pwa-card">
+                        <div class="card-title">➕ Criar Nova Tarefa</div>
+                        <div class="form-row">
+                            <input type="text" id="task-title-input" class="form-input" placeholder="Descrição da tarefa..." required>
+                            <div class="form-group-inline">
+                                <select id="task-prio-select" class="form-select" style="flex:1;">
+                                    <option value="média" selected>Prioridade Média</option>
+                                    <option value="alta">Prioridade Alta</option>
+                                    <option value="baixa">Prioridade Baixa</option>
+                                </select>
+                                <input type="date" id="task-date-input" class="form-input" style="flex:1;">
+                            </div>
+                            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:2px;">
+                                <span style="font-size:11px; color:var(--text-muted); align-self:center;">Notificar em:</span>
+                                <button type="button" class="pill-btn" onclick="setDaysAheadTask(1)">+1 dia</button>
+                                <button type="button" class="pill-btn" onclick="setDaysAheadTask(3)">+3 dias</button>
+                                <button type="button" class="pill-btn" onclick="setDaysAheadTask(7)">+7 dias</button>
+                                <button type="button" class="pill-btn" onclick="setDaysAheadTask(15)">+15 dias</button>
+                                <button type="button" class="pill-btn" onclick="setDaysAheadTask(30)">+30 dias</button>
+                            </div>
+                            <button type="button" class="btn-action" style="margin-top:6px;" onclick="addTaskPwa()">Salvar Tarefa</button>
+                        </div>
+                    </div>
+
+                    <div class="pwa-card">
+                        <div class="card-title">
+                            <span>✅ Tarefas Pendentes & Agendadas</span>
+                            <span id="tab-tasks-count" class="badge-status-pwa">0</span>
+                        </div>
+                        <div class="task-filter-pills filter-pills">
+                            <button id="task-pill-all" class="pill-btn active" onclick="filterTaskPriorityPwa('all')">Todas</button>
+                            <button id="task-pill-alta" class="pill-btn" onclick="filterTaskPriorityPwa('alta')">🔴 Alta</button>
+                            <button id="task-pill-média" class="pill-btn" onclick="filterTaskPriorityPwa('média')">🟡 Média</button>
+                            <button id="task-pill-baixa" class="pill-btn" onclick="filterTaskPriorityPwa('baixa')">🟢 Baixa</button>
+                        </div>
+                        <div id="pwa-tasks-list" style="display:flex; flex-direction:column; gap:10px;">
+                            <div style="color:var(--text-muted);">Carregando tarefas...</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 10. PESQUISA WEB -->
+            <section id="view-pesquisa" class="pwa-view">
+                <div class="pwa-section">
+                    <div class="pwa-card">
+                        <div class="card-title">🔍 Deep Research em Tempo Real</div>
+                        <div class="form-row">
+                            <input type="text" id="research-query-input" class="form-input" placeholder="Pesquisar notícias ou fatos na web hoje...">
+                        </div>
+                        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
+                            <button class="pill-btn" onclick="quickSearchTopicPwa('Notícias tecnologia hoje')">🌐 Tecnologia</button>
+                            <button class="pill-btn" onclick="quickSearchTopicPwa('Mercado financeiro Brasil')">📈 Mercado</button>
+                            <button class="pill-btn" onclick="quickSearchTopicPwa('Notícias IA generativa')">🤖 Inteligência Artificial</button>
+                        </div>
+                        <button class="btn-action" onclick="runDeepResearchPwa()">Pesquisar na Web</button>
+                    </div>
+                    <div id="research-results-box" class="pwa-card" style="display:flex; flex-direction:column; gap:8px;"></div>
+                </div>
+            </section>
+
+            <!-- 11. AUTOMAÇÃO (EXATA 1:1 AO DASHBOARD DA CLOUDFLARE) -->
+            <section id="view-automacao" class="pwa-view">
+                <div class="pwa-section">
+                    <!-- SEÇÃO 0: LOCALIZAÇÃO (usada pro aviso proativo de clima) -->
+                    <div class="pwa-card">
+                        <div class="card-title">📍 Localização</div>
+                        <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">Usada pra avisar sobre chuva/calor no briefing diário. GPS tem prioridade.</p>
+                        <div id="location-current-label-pwa" style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">Carregando localização atual...</div>
+                        <button class="btn-action" style="width:100%; margin-bottom:8px;" onclick="useGpsLocationPwa()">📍 Usar minha localização (GPS)</button>
+                        <div style="display:flex; gap:6px;">
+                            <input type="text" id="location-city-input-pwa" class="form-input" placeholder="Ou digite sua cidade..." style="flex:1;">
+                            <button class="btn-action" onclick="setManualLocationPwa()">Salvar</button>
+                        </div>
+                    </div>
+
+                    <!-- SEÇÃO 0.5: TELEMETRIA DO DISPOSITIVO (GPS contínuo, bateria, rede, Bluetooth) -->
+                    <div class="pwa-card">
+                        <div class="card-title">
+                            <span>📡 Telemetria do Dispositivo</span>
+                            <span id="device-telemetry-status-pwa" class="badge-status-pwa">🔴 Inativa</span>
+                        </div>
+                        <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">Deixa a HERMES ciente da bateria, rede e posição do seu celular em tempo real. Cada permissão é pedida separadamente pelo navegador.</p>
+                        <button class="btn-action" style="width:100%; margin-bottom:8px;" onclick="startDeviceTelemetryPwa()">▶️ Ativar Telemetria do Dispositivo</button>
+                        <button class="btn-action" style="width:100%; margin-bottom:10px; background:linear-gradient(135deg, var(--cyan), var(--primary));" onclick="pairBluetoothDevicePwa()">🔵 Parear Dispositivo Bluetooth</button>
+                        <div id="device-telemetry-readout-pwa" style="display:flex; flex-direction:column; gap:5px; font-size:11.5px; color:var(--text-muted); border-top:1px solid rgba(255,255,255,0.08); padding-top:8px;">
+                            <div>Toque em "Ativar" para começar.</div>
+                        </div>
+                    </div>
+
+                    <!-- SEÇÃO 1: PROGRAMADOR DE BRIEFING DIÁRIO -->
+                    <div class="pwa-card">
+                        <div class="card-title">
+                            <span>📡 Programar Briefing Diário (Telegram)</span>
+                            <span class="badge-status-pwa">Cron Cloud Active</span>
+                        </div>
+                        <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">Configure tópicos de interesse para a HERMES pesquisar na web e enviar um resumo diário no horário escolhido diretamente no Telegram:</p>
+                        
+                        <!-- Chips de Tópicos Populares -->
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">
+                            <div class="item-card" style="cursor:pointer;" onclick="selectBriefingTopicPwa('Inteligência Artificial, LLMs e novos modelos de IA')">
+                                🤖 <div><strong style="font-size:12px; color:#fff;">IA & LLMs</strong></div>
+                            </div>
+                            <div class="item-card" style="cursor:pointer;" onclick="selectBriefingTopicPwa('Futebol - Principais jogos e resultados de hoje')">
+                                ⚽ <div><strong style="font-size:12px; color:#fff;">Futebol</strong></div>
+                            </div>
+                            <div class="item-card" style="cursor:pointer;" onclick="selectBriefingTopicPwa('Mercado Financeiro, Dólar e Economia')">
+                                📈 <div><strong style="font-size:12px; color:#fff;">Mercado</strong></div>
+                            </div>
+                            <div class="item-card" style="cursor:pointer;" onclick="selectBriefingTopicPwa('Principais Notícias do Brasil e do Mundo')">
+                                📍 <div><strong style="font-size:12px; color:#fff;">Brasil & Mundo</strong></div>
+                            </div>
+                        </div>
+
+                        <!-- Form de Cadastro de Briefing -->
+                        <form onsubmit="addScheduledBriefingPwa(event)" class="form-row">
+                            <input type="text" id="briefing-topic-input" class="form-input" placeholder="Assunto a ser pesquisado (ex: Futebol, IA)..." required>
+                            <div class="form-group-inline">
+                                <select id="briefing-time-input" class="form-select" style="flex:1;">
+                                    <option value="06:00">06:00 (Madrugada)</option>
+                                    <option value="06:30">06:30 (Madrugada)</option>
+                                    <option value="07:00">07:00 (Manhã)</option>
+                                    <option value="07:30">07:30 (Manhã)</option>
+                                    <option value="08:00" selected>08:00 (Manhã)</option>
+                                    <option value="08:30">08:30 (Manhã)</option>
+                                    <option value="09:00">09:00 (Manhã)</option>
+                                    <option value="10:00">10:00 (Manhã)</option>
+                                    <option value="11:00">11:00 (Manhã)</option>
+                                    <option value="12:00">12:00 (Meio-dia)</option>
+                                    <option value="13:00">13:00 (Tarde)</option>
+                                    <option value="14:00">14:00 (Tarde)</option>
+                                    <option value="15:00">15:00 (Tarde)</option>
+                                    <option value="16:00">16:00 (Tarde)</option>
+                                    <option value="17:00">17:00 (Fim de Tarde)</option>
+                                    <option value="18:00">18:00 (Fim de Tarde)</option>
+                                    <option value="19:00">19:00 (Noite)</option>
+                                    <option value="20:00">20:00 (Noite)</option>
+                                    <option value="21:00">21:00 (Noite)</option>
+                                    <option value="22:00">22:00 (Noite)</option>
+                                    <option value="23:00">23:00 (Noite)</option>
+                                </select>
+                                <select id="briefing-freq-input" class="form-select" style="flex:1;">
+                                    <option value="Diário (Seg a Dom)">Diário</option>
+                                    <option value="Dias Úteis (Seg a Sex)">Dias Úteis</option>
+                                    <option value="Finais de Semana">Finais de Semana</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn-action">➕ Programar Briefing Telegram</button>
+                        </form>
+
+                        <!-- Lista de Briefings Programados -->
+                        <div style="margin-top:12px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                <strong style="font-size:13px; color:#fff;">📅 Briefings Programados Ativos</strong>
+                                <span id="scheduled-briefings-count" class="badge-status-pwa">0 ativos</span>
+                            </div>
+                            <div id="scheduled-briefings-list" style="display:flex; flex-direction:column; gap:8px;">
+                                <div style="color:var(--text-muted);">Nenhum briefing programado ainda.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SEÇÃO 2: BRIEFING EXECUTIVO PROATIVO -->
+                    <div class="pwa-card">
+                        <div class="card-title">
+                            <span>📊 Briefing Executivo Proativo</span>
+                            <button class="btn-action" style="padding:4px 10px; font-size:11px;" onclick="triggerBriefingAutomacaoPwa()">✨ Gerar Agora</button>
+                        </div>
+                        <div id="briefing-automacao-box" style="font-size:13px; color:var(--text-muted);">
+                            Clique em <strong>Gerar Agora</strong> para compilar a síntese proativa com saldo, lembretes e memórias salvas.
+                        </div>
+                    </div>
+
+                    <!-- SEÇÃO 3: LEMBRETES & GUARDIÃO -->
+                    <div class="pwa-card">
+                        <div class="card-title">
+                            <span>⏰ Lembretes Ativos (Cron Cloud)</span>
+                            <span id="auto-reminders-count" class="badge-status-pwa">0</span>
+                        </div>
+                        <ul id="auto-reminders-list" style="padding:0; margin:0;">
+                            <li style="color:var(--text-muted); list-style:none;">Carregando lembretes ativos...</li>
+                        </ul>
+                    </div>
+
+                    <!-- SEÇÃO 4: STATUS DOS PROVEDORES REAL DA HERMES CLOUD -->
+                    <div class="pwa-card">
+                        <div class="card-title">🤖 Status dos Provedores (HERMES Cloud)</div>
+                        <div id="automation-status-box" style="display:flex; flex-direction:column; gap:6px;">
+                            <div style="color:var(--text-muted);">Carregando status dos provedores...</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 12. SKILLS E AGENTES -->
+            <section id="view-skills" class="pwa-view">
+                <div class="pwa-section">
+                    <div class="pwa-card">
+                        <div class="card-title">
+                            <span>🧩 Habilidades e Agentes Neural</span>
+                            <span id="pwa-skills-summary" class="badge-status-pwa">Carregando...</span>
+                        </div>
+                        <div class="form-row" style="margin-bottom:10px;">
+                            <input type="text" id="pwa-new-skill-name" class="form-input" placeholder="Nome da skill...">
+                            <input type="text" id="pwa-new-skill-desc" class="form-input" placeholder="Descrição / diretriz...">
+                            <button class="btn-action" onclick="submitNewSkillPwa()">Criar Skill</button>
+                        </div>
+                        <div id="pwa-skills-container" style="display:flex; flex-direction:column; gap:10px;">
+                            <div style="color:var(--text-muted);">Carregando habilidades...</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- BOTTOM NAV PARA AÇÕES RÁPIDAS -->
+        <nav id="pwa-bottom-nav">
+            <div id="nav-tab-voz" class="nav-tab active" onclick="switchPwaTab('voz')">
+                <span class="icon">💬</span>
+                <span>Chat</span>
+            </div>
+            <div id="nav-tab-dashboard" class="nav-tab" onclick="switchPwaTab('dashboard')">
+                <span class="icon">📊</span>
+                <span>Painel</span>
+            </div>
+            <div id="nav-tab-memoria" class="nav-tab" onclick="switchPwaTab('memoria')">
+                <span class="icon">🧠</span>
+                <span>Memória</span>
+            </div>
+            <div id="nav-tab-agenda" class="nav-tab" onclick="switchPwaTab('agenda')">
+                <span class="icon">📅</span>
+                <span>Agenda</span>
+            </div>
+            <div id="nav-tab-financas" class="nav-tab" onclick="switchPwaTab('financas')">
+                <span class="icon">💰</span>
+                <span>Finanças</span>
+            </div>
+        </nav>
+    </div>
+
+    <!-- MODAL UNIVERSAL DE EDIÇÃO -->
+    <div id="edit-modal-overlay">
+        <div class="modal-box">
+            <div style="font-weight:800; font-size:16px; color:var(--cyan);">✏️ Editar Item</div>
+            <div class="form-row">
+                <input type="text" id="edit-modal-title" class="form-input" placeholder="Título...">
+                <input type="text" id="edit-modal-sub" class="form-input" placeholder="Detalhes ou progresso...">
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:8px;">
+                <button class="btn-delete" onclick="closeEditModalPwa()">Cancelar</button>
+                <button class="btn-action" onclick="saveEditModalPwa()">Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+    <!-- Achado 07/08/2026: faltava o </div> acima -- sem ele, TODO o modal
+         de finanças abaixo ficava aninhado DENTRO de #edit-modal-overlay
+         (que é display:none por padrão). display:none em um ancestral
+         esconde o descendente inteiro, não importa o display do próprio
+         finance-kpi-modal-overlay -- por isso clicar nos cards no PWA
+         nunca abria nada visível, mesmo com o JS funcionando perfeitamente
+         (confirmado: o modal abria de verdade, só que invisível). -->
+    <!-- MODAL DE DETALHAMENTO E GERENCIAMENTO DE CARDS DE FINANÇAS -->
+    <div id="finance-kpi-modal-overlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:350; align-items:center; justify-content:center; padding:16px;">
+        <div style="background:rgba(15,23,42,0.98); border:1px solid var(--cyan); border-radius:18px; width:100%; max-width:620px; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 12px 40px rgba(0,0,0,0.9); overflow:hidden;">
+            
+            <!-- MODAL HEADER -->
+            <div style="padding:14px 18px; background:rgba(30,41,59,0.8); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                    <h3 id="fkpi-modal-title" style="font-size:15px; font-weight:900; color:#fff;">📊 Detalhamento Financeiro</h3>
+                    <div id="fkpi-modal-subtitle" style="font-size:11px; color:var(--text-muted);">Gerenciamento e edições de lançamentos</div>
+                </div>
+                <button class="menu-toggle-btn" style="background:transparent; border:none; color:#fff; font-size:18px; cursor:pointer;" onclick="closeFinanceKpiDetailModal()">✕</button>
+            </div>
+
+            <!-- MODAL SUMMARY BAR -->
+            <div id="fkpi-modal-stats-bar" style="padding:10px 18px; background:rgba(15,23,42,0.9); border-bottom:1px solid rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center; font-size:12px;">
+                <!-- Renderizado dinamicamente -->
+            </div>
+
+            <!-- MODAL BODY WITH SCROLLABLE LIST AND QUICK ADD FORM -->
+            <div style="flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:14px;">
+                
+                <!-- FORMULÁRIO RÁPIDO DE ADIÇÃO NO MODAL -->
+                <div id="fkpi-modal-form-box" style="background:rgba(30,41,59,0.6); border:1px solid var(--border); border-radius:14px; padding:12px;">
+                    <div style="font-size:12.5px; font-weight:800; color:#fff; margin-bottom:8px;" id="fkpi-modal-form-title">➕ Adicionar Lançamento nesta Categoria</div>
+                    
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                        <input type="text" id="fkpi-input-desc" class="form-input" placeholder="Descrição do lançamento (ex: Cliente X, Fornecedor Y)...">
+                        <div style="display:flex; gap:6px;">
+                            <input type="number" id="fkpi-input-amount" class="form-input" placeholder="Valor (R$)" step="0.01" style="flex:1;">
+                            <select id="fkpi-input-cat" class="form-select" style="flex:1;">
+                                <option value="alimentacao">🍽️ Alimentação</option>
+                                <option value="transporte">🚗 Transporte</option>
+                                <option value="saude">💊 Saúde</option>
+                                <option value="moradia">🏠 Moradia</option>
+                                <option value="lazer">🎮 Lazer</option>
+                                <option value="vestuario">👕 Vestuário</option>
+                                <option value="educacao">📚 Educação</option>
+                                <option value="salario">💼 Salário</option>
+                                <option value="outros" selected>📦 Outros</option>
+                            </select>
+                        </div>
+                        <div style="display:flex; gap:6px; align-items:center;">
+                            <input type="date" id="fkpi-input-date" class="form-input" style="flex:1;">
+                            <button type="button" class="btn-action" style="padding:8px 14px; font-weight:800; font-size:12px;" onclick="saveFinanceFromKpiModal()">Salvar Lançamento</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LISTA DE LANÇAMENTOS E DETALHES -->
+                <div>
+                    <div style="font-size:12.5px; font-weight:800; color:#fff; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+                        <span>📋 Lançamentos Cadastrados</span>
+                        <span id="fkpi-modal-count-badge" class="badge-status-pwa">0</span>
+                    </div>
+                    <div id="fkpi-modal-items-list" style="display:flex; flex-direction:column; gap:8px;">
+                        <!-- Renderizado dinamicamente pelo JS -->
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- JS Core -->
+    <!-- Build timestamp: 2026-08-08T03:05:00Z -->
+    <script src="/pwa/pwa.js?v=6.6.2"></script>
+</body>
+</html>
