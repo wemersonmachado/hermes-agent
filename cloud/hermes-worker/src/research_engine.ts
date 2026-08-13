@@ -17,6 +17,7 @@ export interface ResearchAudit {
   elapsedMs: number;
   providers: Partial<Record<ResearchProvider, number>>;
   sourceCount: number;
+  cacheHit?: boolean;
 }
 
 export interface ResearchAnswer {
@@ -32,6 +33,23 @@ interface Evidence extends WebSearchResult {
 
 const PROVIDER_BUDGET_MS = 4_500;
 const NEWS_MAX_AGE_MS = 14 * 86_400_000;
+const CACHE_FRESH_MS = 10 * 60_000;
+const CACHE_FALLBACK_MS = 6 * 60 * 60_000;
+
+interface CachedResearch { savedAt: number; answer: ResearchAnswer }
+
+async function cacheKey(mode: ResearchMode, query: string): Promise<string> {
+  const bytes = new TextEncoder().encode(`${mode}:${query.toLocaleLowerCase("pt-BR")}`);
+  const digest = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map((value) => value.toString(16).padStart(2, "0")).join("");
+  return `research/cache/${mode}/${digest}.json`;
+}
+
+async function readCache(env: Env, key: string): Promise<CachedResearch | null> {
+  try {
+    const object = await env.HERMES_STORAGE.get(key);
+    return object ? await object.json<CachedResearch>() : null;
+  } catch { return null; }
+}
 
 function within<T>(promise: Promise<T>, fallback: T): Promise<T> {
   return Promise.race([
@@ -161,6 +179,11 @@ export async function research(env: Env, text: string, mode: ResearchMode): Prom
   const query = refineSearchQuery(text, { news: mode === "news" });
   if (!query && mode !== "news") return null;
   const effectiveQuery = query || "principais notícias do Brasil e do mundo hoje";
+  const key = await cacheKey(mode, effectiveQuery);
+  const cached = await readCache(env, key);
+  if (cached && Date.now() - cached.savedAt <= CACHE_FRESH_MS) {
+    return { ...cached.answer, audit: { ...cached.answer.audit, elapsedMs: Date.now() - started, cacheHit: true } };
+  }
   const providerQuery = mode === "news" ? `notícias recentes ${effectiveQuery}` : effectiveQuery;
   const [grounded, googleNews, gdelt, editorial, ddg, hn, reddit, wikipedia] = await Promise.all([
     within(googleGroundedSearch(env, providerQuery), null),
@@ -176,10 +199,16 @@ export async function research(env: Env, text: string, mode: ResearchMode): Prom
   // rejeitada em vez de permitir que conteúdo antigo pareça atual.
   const groundedEvidence: Evidence[] = mode === "web" ? (grounded?.sources || []).map((item) => ({ ...item, snippet: grounded?.summary || item.title, source: sourceFromUrl(item.url), provider: "google-grounding" })) : [];
   const evidence = rankAndDiversify([...groundedEvidence, ...googleNews, ...gdelt, ...editorial, ...ddg, ...hn, ...reddit, ...wikipedia], effectiveQuery, mode);
-  if (!evidence.length) return null;
+  if (!evidence.length) {
+    return cached && Date.now() - cached.savedAt <= CACHE_FALLBACK_MS
+      ? { ...cached.answer, audit: { ...cached.answer.audit, elapsedMs: Date.now() - started, cacheHit: true } }
+      : null;
+  }
   const all = [...groundedEvidence, ...googleNews, ...gdelt, ...editorial, ...ddg, ...hn, ...reddit, ...wikipedia];
   const providers = all.reduce<ResearchAudit["providers"]>((counts, item) => ({ ...counts, [item.provider]: (counts[item.provider] || 0) + 1 }), {});
   const audit = { query: effectiveQuery, elapsedMs: Date.now() - started, providers, sourceCount: evidence.length };
   console.log(JSON.stringify({ event: "research_complete", ...audit }));
-  return { reply: formatAnswer(effectiveQuery, mode === "web" ? grounded : null, evidence), audit };
+  const answer = { reply: formatAnswer(effectiveQuery, mode === "web" ? grounded : null, evidence), audit };
+  await env.HERMES_STORAGE.put(key, JSON.stringify({ savedAt: Date.now(), answer }), { httpMetadata: { contentType: "application/json" } }).catch(() => undefined);
+  return answer;
 }

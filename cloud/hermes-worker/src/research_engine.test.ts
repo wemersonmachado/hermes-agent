@@ -23,7 +23,8 @@ describe("isolated multi-source research engine", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("uses refined keywords and returns compact, auditable sources", async () => {
-    const answer = await research({ GEMINI_API_KEY: "test" } as Env, "Busque por desenvolvimento de carros autônomos", "web");
+    const bucket = { get: vi.fn(async () => null), put: vi.fn(async () => undefined) };
+    const answer = await research({ GEMINI_API_KEY: "test", HERMES_STORAGE: bucket } as unknown as Env, "Busque por desenvolvimento de carros autônomos", "web");
     expect(answer?.audit.query).toBe("desenvolvimento de carros autônomos");
     expect(answer?.audit.sourceCount).toBeGreaterThan(0);
     expect(answer?.reply).toContain("[Clique aqui para ler](https://example.org/report)");
@@ -31,7 +32,8 @@ describe("isolated multi-source research engine", () => {
   });
 
   it("rejects unsafe source protocols", async () => {
-    const answer = await research({ GEMINI_API_KEY: "test" } as Env, "Pesquise segurança de software", "web");
+    const bucket = { get: vi.fn(async () => null), put: vi.fn(async () => undefined) };
+    const answer = await research({ GEMINI_API_KEY: "test", HERMES_STORAGE: bucket } as unknown as Env, "Pesquise segurança de software", "web");
     expect(answer?.reply).not.toContain("javascript:");
   });
 
