@@ -1,14 +1,16 @@
 import {
   fetchGoogleNewsHeadlines,
+  duckDuckGoSearch,
   googleGroundedSearch,
+  hackerNewsSearch,
+  redditSearch,
   type GroundedSearchResult,
   type WebSearchResult,
-  webSearch,
 } from "./shared";
 import { compactSourceLink, refineSearchQuery } from "./search_query";
 
 export type ResearchMode = "news" | "web";
-export type ResearchProvider = "google-grounding" | "google-news-rss" | "gdelt" | "editorial-rss" | "duckduckgo-community";
+export type ResearchProvider = "google-grounding" | "google-news-rss" | "gdelt" | "editorial-rss" | "duckduckgo" | "hacker-news" | "reddit" | "wikipedia";
 
 export interface ResearchAudit {
   query: string;
@@ -78,6 +80,22 @@ async function gdeltSearch(query: string): Promise<Evidence[]> {
   }] : []);
 }
 
+async function wikipediaSearch(query: string): Promise<Evidence[]> {
+  const url = `https://pt.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srlimit=5&format=json&origin=*`;
+  const response = await fetch(url, { headers: { "user-agent": "HermesResearch/1.0" } });
+  if (!response.ok) return [];
+  const data = await response.json() as { query?: { search?: Array<{ title?: string; snippet?: string }> } };
+  return (data.query?.search || []).flatMap((item) => item.title ? [{
+    title: item.title, snippet: clean(item.snippet || item.title), source: "pt.wikipedia.org",
+    url: `https://pt.wikipedia.org/wiki/${encodeURIComponent(item.title.replace(/ /g, "_"))}`,
+    provider: "wikipedia" as const,
+  }] : []);
+}
+
+function asEvidence(items: WebSearchResult[], provider: "duckduckgo" | "hacker-news" | "reddit"): Evidence[] {
+  return items.map((item) => ({ ...item, source: sourceFromUrl(item.url), provider }));
+}
+
 function rankAndDiversify(items: Evidence[], query: string, limit = 5): Evidence[] {
   const terms = query.toLocaleLowerCase("pt-BR").split(/\s+/).filter((term) => term.length > 2);
   const unique = new Map<string, Evidence>();
@@ -117,17 +135,21 @@ export async function research(env: Env, text: string, mode: ResearchMode): Prom
   const query = refineSearchQuery(text, { news: mode === "news" });
   if (!query && mode !== "news") return null;
   const effectiveQuery = query || "principais notícias do Brasil e do mundo hoje";
-  const [grounded, googleNews, gdelt, editorial, general] = await Promise.all([
-    within(googleGroundedSearch(env, effectiveQuery), null),
+  const providerQuery = mode === "news" ? `notícias recentes ${effectiveQuery}` : effectiveQuery;
+  const [grounded, googleNews, gdelt, editorial, ddg, hn, reddit, wikipedia] = await Promise.all([
+    within(googleGroundedSearch(env, providerQuery), null),
     mode === "news" ? within(googleNewsRss(effectiveQuery), []) : Promise.resolve([]),
-    mode === "news" ? within(gdeltSearch(effectiveQuery), []) : Promise.resolve([]),
+    within(gdeltSearch(effectiveQuery), []),
     mode === "news" ? within(fetchGoogleNewsHeadlines(query).then((items) => (items || []).map((item) => ({ ...item, provider: "editorial-rss" as const }))), []) : Promise.resolve([]),
-    within(webSearch(effectiveQuery, 6).then((items) => items.map((item) => ({ ...item, source: sourceFromUrl(item.url), provider: "duckduckgo-community" as const }))), []),
+    within(duckDuckGoSearch(providerQuery, 8).then((items) => asEvidence(items, "duckduckgo")), []),
+    mode === "web" ? within(hackerNewsSearch(effectiveQuery, 4).then((items) => asEvidence(items, "hacker-news")), []) : Promise.resolve([]),
+    mode === "web" ? within(redditSearch(effectiveQuery, 4).then((items) => asEvidence(items, "reddit")), []) : Promise.resolve([]),
+    mode === "web" ? within(wikipediaSearch(effectiveQuery), []) : Promise.resolve([]),
   ]);
   const groundedEvidence: Evidence[] = (grounded?.sources || []).map((item) => ({ ...item, snippet: grounded?.summary || item.title, source: sourceFromUrl(item.url), provider: "google-grounding" }));
-  const evidence = rankAndDiversify([...groundedEvidence, ...googleNews, ...gdelt, ...editorial, ...general], effectiveQuery);
+  const evidence = rankAndDiversify([...groundedEvidence, ...googleNews, ...gdelt, ...editorial, ...ddg, ...hn, ...reddit, ...wikipedia], effectiveQuery);
   if (!evidence.length) return null;
-  const all = [...groundedEvidence, ...googleNews, ...gdelt, ...editorial, ...general];
+  const all = [...groundedEvidence, ...googleNews, ...gdelt, ...editorial, ...ddg, ...hn, ...reddit, ...wikipedia];
   const providers = all.reduce<ResearchAudit["providers"]>((counts, item) => ({ ...counts, [item.provider]: (counts[item.provider] || 0) + 1 }), {});
   const audit = { query: effectiveQuery, elapsedMs: Date.now() - started, providers, sourceCount: evidence.length };
   console.log(JSON.stringify({ event: "research_complete", ...audit }));

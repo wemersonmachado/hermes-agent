@@ -528,7 +528,7 @@ function stripHtmlTags(html: string): string {
 // pra fora da lista.
 const AD_URL_PATTERN = /duckduckgo\.com\/y\.js|bing\.com\/aclick|doubleclick\.net|googleadservices\.com|\/aclk\?/i;
 
-async function duckDuckGoSearch(query: string, limit = 5): Promise<WebSearchResult[]> {
+export async function duckDuckGoSearch(query: string, limit = 5): Promise<WebSearchResult[]> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 7000);
   try {
@@ -559,7 +559,7 @@ async function duckDuckGoSearch(query: string, limit = 5): Promise<WebSearchResu
 
 // Fontes extras gratuitas e sem chave — sem cobertura de notícias BR, mas
 // enriquecem pesquisa geral/técnica (discussões reais, não alucinadas).
-async function hackerNewsSearch(query: string, limit = 3): Promise<WebSearchResult[]> {
+export async function hackerNewsSearch(query: string, limit = 3): Promise<WebSearchResult[]> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 5000);
   try {
@@ -582,7 +582,7 @@ async function hackerNewsSearch(query: string, limit = 3): Promise<WebSearchResu
   }
 }
 
-async function redditSearch(query: string, limit = 3): Promise<WebSearchResult[]> {
+export async function redditSearch(query: string, limit = 3): Promise<WebSearchResult[]> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 5000);
   try {

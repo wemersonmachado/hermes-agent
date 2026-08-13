@@ -1,20 +1,26 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./shared", () => ({
   fetchGoogleNewsHeadlines: vi.fn(async () => []),
+  duckDuckGoSearch: vi.fn(async () => [
+    { title: "Análise independente", url: "https://news.example.net/story", snippet: "Empresas ampliaram testes e investimentos." },
+  ]),
   googleGroundedSearch: vi.fn(async () => ({
     summary: "A pesquisa confirmou avanços recentes no setor.",
     sources: [{ title: "Relatório", url: "https://example.org/report" }],
   })),
-  webSearch: vi.fn(async () => [
-    { title: "Análise independente", url: "https://news.example.net/story", snippet: "Empresas ampliaram testes e investimentos." },
-  ]),
+  hackerNewsSearch: vi.fn(async () => []),
+  redditSearch: vi.fn(async () => []),
 }));
 
 import { research } from "./research_engine";
 
 describe("isolated multi-source research engine", () => {
-  beforeEach(() => vi.restoreAllMocks());
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ query: { search: [] } }), { status: 200 })));
+  });
+  afterEach(() => vi.unstubAllGlobals());
 
   it("uses refined keywords and returns compact, auditable sources", async () => {
     const answer = await research({ GEMINI_API_KEY: "test" } as Env, "Busque por desenvolvimento de carros autônomos", "web");
