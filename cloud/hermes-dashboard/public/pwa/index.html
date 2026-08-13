@@ -120,13 +120,12 @@
                         <button type="button" class="btn-top-action btn-reler" onclick="repeatLastHermesMessagePwa(event)" title="Reler última resposta por voz">🔁 Reler</button>
                         <button type="button" class="btn-top-action btn-parar" onclick="stopHermesAudioPwa()" title="Interromper fala">⏹️ Parar</button>
                         <button type="button" class="btn-top-action btn-limpar" onclick="clearVoiceChatHistoryPwa()" title="Limpar histórico">🗑️ Limpar</button>
-                        <span id="voice-state-badge" class="badge-status-pwa">🟢 Pronta</span>
                     </div>
                 </div>
 
-                <!-- CANVAS DE ONDAS NEURAIS DA BROW -->
+                <!-- CANVAS DO NÚCLEO NEURAL DA BROW -->
                 <div id="neural-wave-wrapper">
-                    <canvas id="neural-wave-canvas"></canvas>
+                    <canvas id="hud-core-canvas" width="360" height="360" style="max-width:145px; max-height:145px; width:145px; height:145px; cursor:pointer;" title="Clique pra falar com o BROW"></canvas>
                     <div class="wave-title" id="voice-transcript-title">Converse com o BROW — digite ou fale</div>
                 </div>
 
@@ -1099,7 +1098,8 @@
     </div>
 
     <!-- JS Core -->
-    <!-- Build timestamp: 2026-08-08T03:05:00Z -->
+    <!-- Build timestamp: 2026-08-13T18:02:00Z -->
+    <script src="/voz-core.js?v=6.7.0"></script>
     <script src="/pwa/pwa.js?v=6.6.2"></script>
 </body>
 </html>

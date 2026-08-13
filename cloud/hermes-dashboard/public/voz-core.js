@@ -237,26 +237,65 @@
   let smoothLevel = 0.06;
   let smoothHeat = 0;
 
-  // ── PARTÍCULAS SUTIS DO NÚCLEO (só 12 pontos para evitar poluição visual) ──
-  const orbitParticles = Array.from({ length: 12 }, () => ({
-    angle: rand(0, Math.PI * 2),
-    radiusOffset: rand(-12, 12),
-    speed: rand(0.004, 0.012) * (Math.random() < 0.5 ? 1 : -1),
-    size: rand(0.8, 1.6),
-    alpha: rand(0.2, 0.6),
-    pulsePhase: rand(0, Math.PI * 2),
-  }));
+  // ── COGNITIVE NEURAL CORE (Portado 1:1 de Nucleo Neural.html) ──
+  const PI = Math.PI;
+  const sin = Math.sin;
+  const cos = Math.cos;
 
-  const spherePoints = [];
-  for (let lat = 0; lat < 9; lat++) {
-    const phi = (lat / 8) * Math.PI;
-    for (let lon = 0; lon < 15; lon++) {
-      const theta = (lon / 15) * Math.PI * 2;
-      spherePoints.push({ x: Math.sin(phi) * Math.cos(theta), y: Math.sin(phi) * Math.sin(theta), z: Math.cos(phi) });
+  const PARTICLE_COUNT = 3200;
+  const particles = [];
+  let baseRadius = 70;
+  let ringWidth = 35;
+
+  function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : { r: 0, g: 245, b: 255 };
+  }
+
+  class Particle {
+    constructor() {
+      this.reset();
+      this.theta = rand(0, PI * 2);
+    }
+
+    reset() {
+      this.theta = 0.0;
+      this.speed = rand(0.0018, 0.0045);
+      this.tFactor = Math.pow(Math.random(), 1.6);
+      this.radMultiplier = rand(0.8, 1.4);
+      this.waveFreq1 = rand(4, 8);
+      this.waveFreq2 = rand(10, 16);
+      this.waveAmp1 = rand(8, 18);
+      this.waveAmp2 = rand(3, 7);
+      this.wavePhase = rand(0, PI * 2);
+      this.type = Math.random() < 0.76 ? 'primary' : 'secondary';
+      this.size = rand(0.6, 2.2);
+      this.baseAlpha = rand(0.18, 0.85);
+    }
+
+    update(t, smoothTyping, smoothSpeak) {
+      const activeSpeed = this.speed * (1.0 + smoothTyping * 1.5 + smoothSpeak * 0.5);
+      this.theta += activeSpeed;
+      if (this.theta > PI * 2) this.theta -= PI * 2;
     }
   }
-  let sphereAngleX = 0;
-  let sphereAngleY = 0;
+
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    particles.push(new Particle());
+  }
+
+  let isSpeaking = false;
+  let speakVolume = 0.0;
+  let isListening = false;
+  let listenVolume = 0.0;
+
+  let smoothSpeakVolume = 0.0;
+  let smoothListenVolume = 0.0;
+  let smoothTypingBoost = 0.0;
 
   function currentAudioLevel() {
     const speaking = typeof isSpeakingOrListening !== "undefined" && isSpeakingOrListening;
@@ -289,145 +328,121 @@
     const cy = h / 2;
     coreCtx.clearRect(0, 0, w, h);
 
-    typingBoost = Math.max(0, typingBoost - 0.02);
-
     const { level, listening, speaking } = currentAudioLevel();
     const heat = currentHeatFactor();
-
-    // Transição ultra suave para o fator de aquecimento da telemetria real do PC
     smoothHeat = lerp(smoothHeat, heat, 0.04);
 
-    // Resposta mais rápida/expressiva ao áudio real (ataque rápido 0.35, queda suave 0.14)
-    const reactiveLevel = Math.max(level, typingBoost * 0.5, hoverBoost * 0.18, smoothHeat * 0.4);
-    const lerpSpeed = reactiveLevel > smoothLevel ? 0.35 : 0.14;
-    smoothLevel = lerp(smoothLevel, reactiveLevel, lerpSpeed);
+    isSpeaking = speaking;
+    speakVolume = level;
+    isListening = listening;
+    listenVolume = level;
 
-    const heatColor = lerpHex(activeTheme.primary, "#ff4d2e", smoothHeat);
-    const heatSecondary = lerpHex(activeTheme.secondary, "#ff8a00", smoothHeat);
+    smoothSpeakVolume = lerp(smoothSpeakVolume, isSpeaking ? speakVolume : 0.0, 0.12);
+    smoothListenVolume = lerp(smoothListenVolume, isListening ? listenVolume : 0.0, 0.12);
+    smoothTypingBoost = lerp(smoothTypingBoost, typingBoost, 0.1);
+    typingBoost = Math.max(0, typingBoost - 0.015);
 
-    const titleEl = document.getElementById("voice-transcript-title");
-    const stateColors = listening ? "#ef4444" : smoothHeat > 0.5 ? heatColor : activeTheme.primary;
-    if (titleEl && !titleEl.dataset.userSet) titleEl.style.color = stateColors;
+    const minDim = Math.min(w, h);
+    baseRadius = Math.max(minDim * 0.24, 45);
+    ringWidth = Math.max(baseRadius * 0.45, 20);
 
-    // Pequena respiração contínua em repouso
-    const idleBreath = Math.sin(t * 0.0022) * 4.5;
-    const baseRadius = 82 + smoothLevel * 26 + idleBreath;
-    const wavePoints = 90;
+    const themeRGB = hexToRgb(activeTheme.primary);
+    const themeRGBSec = hexToRgb(activeTheme.secondary);
 
-    // ── ARCOS NEURAIS EM FORMA DE ONDAS (3 ONDAS CONCÊNTRICAS EXTERNAS) ──
-    const arcRadii = [
-      { r: baseRadius + 18, speed: 0.002, amp: 5, alpha: 0.45, dash: [6, 4] },
-      { r: baseRadius + 38, speed: -0.0015, amp: 8, alpha: 0.35, dash: [] },
-      { r: baseRadius + 60, speed: 0.0012, amp: 11, alpha: 0.25, dash: [12, 6] },
-      { r: baseRadius + 84, speed: -0.001, amp: 14, alpha: 0.15, dash: [] },
-    ];
-
-    arcRadii.forEach((arc, idx) => {
-      coreCtx.save();
-      coreCtx.beginPath();
-      if (arc.dash.length) coreCtx.setLineDash(arc.dash);
-      const arcPoints = 100;
-      for (let i = 0; i <= arcPoints; i++) {
-        const a = (i / arcPoints) * Math.PI * 2;
-        const wave = Math.sin(a * (4 + idx) + t * arc.speed) * (arc.amp * (smoothLevel + 0.3));
-        const r = arc.r + wave;
-        const px = cx + Math.cos(a) * r;
-        const py = cy + Math.sin(a) * r;
-        i === 0 ? coreCtx.moveTo(px, py) : coreCtx.lineTo(px, py);
-      }
-      coreCtx.closePath();
-      coreCtx.strokeStyle = idx % 2 === 0 ? heatColor : heatSecondary;
-      coreCtx.globalAlpha = arc.alpha + smoothLevel * 0.25;
-      coreCtx.lineWidth = 1 + (smoothLevel * 1.2);
-      coreCtx.stroke();
-      coreCtx.restore();
-    });
-
-    // Forma fluida do Núcleo Principal
+    const glowGrad = coreCtx.createRadialGradient(cx, cy, baseRadius * 0.65, cx, cy, baseRadius + ringWidth * 1.2);
+    glowGrad.addColorStop(0, `rgba(${themeRGB.r}, ${themeRGB.g}, ${themeRGB.b}, 0.0)`);
+    glowGrad.addColorStop(0.5, `rgba(${themeRGB.r}, ${themeRGB.g}, ${themeRGB.b}, ${0.06 + smoothSpeakVolume * 0.08})`);
+    glowGrad.addColorStop(1, `rgba(${themeRGB.r}, ${themeRGB.g}, ${themeRGB.b}, 0.0)`);
+    coreCtx.fillStyle = glowGrad;
     coreCtx.beginPath();
-    for (let i = 0; i <= wavePoints; i++) {
-      const a = (i / wavePoints) * Math.PI * 2;
-      const amp = (listening || speaking ? 28 : 7) * (smoothLevel + 0.14);
-      const noise = Math.sin(a * 2 - t * 0.0025) * amp + Math.cos(a * 3 + t * 0.0012) * amp * 0.6;
-      const r = baseRadius + noise;
-      const px = cx + Math.cos(a) * r;
-      const py = cy + Math.sin(a) * r;
-      i === 0 ? coreCtx.moveTo(px, py) : coreCtx.lineTo(px, py);
-    }
-    coreCtx.closePath();
-
-    const grd = coreCtx.createRadialGradient(cx, cy, 12, cx, cy, baseRadius + 14);
-    grd.addColorStop(0, "#01070e");
-    grd.addColorStop(0.5, heatSecondary + "66");
-    grd.addColorStop(0.82, heatColor);
-    grd.addColorStop(1, "transparent");
-    coreCtx.fillStyle = grd;
-    coreCtx.shadowColor = heatColor;
-    coreCtx.shadowBlur = 24 + smoothHeat * 16 + smoothLevel * 18;
+    coreCtx.arc(cx, cy, baseRadius + ringWidth * 1.5, 0, PI * 2);
     coreCtx.fill();
-    coreCtx.shadowBlur = 0;
 
-    // Anel wireframe
-    coreCtx.beginPath();
-    coreCtx.arc(cx, cy, baseRadius * 0.72, 0, Math.PI * 2);
-    coreCtx.strokeStyle = `rgba(255,255,255,${0.12 + smoothLevel * 0.25})`;
-    coreCtx.lineWidth = 0.9;
-    coreCtx.stroke();
+    const opacityBuckets = [0.15, 0.35, 0.55, 0.75, 0.95];
+    const buckets = {
+      primary: opacityBuckets.map(() => []),
+      secondary: opacityBuckets.map(() => [])
+    };
 
-    // Partículas sutis no centro do núcleo (apenas 12)
-    orbitParticles.forEach((p) => {
-      p.angle += p.speed * (1 + smoothLevel * 1.5);
-      const pR = (baseRadius * 0.4) + p.radiusOffset;
-      const px = cx + Math.cos(p.angle) * pR;
-      const py = cy + Math.sin(p.angle) * pR;
-      const alpha = clamp(p.alpha + Math.sin(t * 0.002 + p.pulsePhase) * 0.15, 0.1, 0.7);
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const p = particles[i];
+      p.update(t, smoothTypingBoost, smoothSpeakVolume);
 
-      coreCtx.beginPath();
-      coreCtx.arc(px, py, p.size, 0, Math.PI * 2);
-      coreCtx.fillStyle = "#ffffff";
-      coreCtx.globalAlpha = alpha;
-      coreCtx.fill();
-      coreCtx.globalAlpha = 1.0;
-    });
+      const pBaseRad = baseRadius + (p.tFactor * ringWidth * p.radMultiplier) - (ringWidth * 0.3);
+      const speakWaveScale = 1.0 + smoothSpeakVolume * 2.2;
+      const wave1 = sin(p.theta * p.waveFreq1 - t * 0.0028 + p.wavePhase) * p.waveAmp1 * speakWaveScale;
+      const wave2 = cos(p.theta * p.waveFreq2 + t * 0.0045) * p.waveAmp2 * speakWaveScale;
 
-    // Retículo interno 3D
-    sphereAngleX += 0.005;
-    sphereAngleY += 0.008 + (listening || speaking ? smoothLevel * 0.03 : 0);
-    const cosX = Math.cos(sphereAngleX), sinX = Math.sin(sphereAngleX);
-    const cosY = Math.cos(sphereAngleY), sinY = Math.sin(sphereAngleY);
-    const dynRadius = 34 + (listening || speaking ? smoothLevel * 14 : idleBreath * 0.5);
-    spherePoints.forEach((p) => {
-      const x1 = p.x * cosY - p.z * sinY;
-      const z1 = p.x * sinY + p.z * cosY;
-      const y2 = p.y * cosX - z1 * sinX;
-      const z2 = p.y * sinX + z1 * cosX;
-      const scale = 160 / (160 + z2 * dynRadius);
-      const sx = cx + x1 * dynRadius * scale;
-      const sy = cy + y2 * dynRadius * scale;
-      const ptAlpha = clamp(0.3 + (z2 + 1) * 0.3 + smoothLevel * 0.4, 0.15, 0.95);
+      let r = pBaseRad + wave1 + wave2;
 
-      coreCtx.beginPath();
-      coreCtx.arc(sx, sy, 1.2 * scale, 0, Math.PI * 2);
-      coreCtx.fillStyle = `rgba(255,255,255,${ptAlpha})`;
-      coreCtx.fill();
-    });
+      if (smoothListenVolume > 0.02) {
+        const listenWave = sin(p.theta * 22.0 - t * 0.015) * (smoothListenVolume * 38.0);
+        r += listenWave;
+      }
+      if (smoothTypingBoost > 0.02) {
+        r += rand(-5.5, 5.5) * smoothTypingBoost;
+      }
 
-    // Osciloscópio circular ao redor do núcleo
-    coreCtx.beginPath();
-    coreCtx.lineWidth = 1.2;
-    coreCtx.strokeStyle = heatColor + "bb";
-    const oscR = baseRadius + 32;
-    for (let i = 0; i <= 120; i++) {
-      const a = (i / 120) * Math.PI * 2;
-      const wobble = Math.sin(a * 20 - t * 0.007) * (6 * smoothLevel + 1.5);
-      const r = oscR + wobble;
-      const px = cx + Math.cos(a) * r;
-      const py = cy + Math.sin(a) * r;
-      i === 0 ? coreCtx.moveTo(px, py) : coreCtx.lineTo(px, py);
+      const x = cx + cos(p.theta) * r;
+      const y = cy + sin(p.theta) * r;
+
+      const radialFade = clamp((baseRadius + ringWidth * 1.2 - r) / (ringWidth * 0.8), 0.1, 1.0);
+      let alpha = p.baseAlpha * radialFade * (1.0 + smoothTypingBoost * 0.3);
+      alpha = clamp(alpha, 0.05, 0.98);
+
+      let bucketIdx = 0;
+      let minDiff = 999;
+      for (let b = 0; b < opacityBuckets.length; b++) {
+        const diff = Math.abs(alpha - opacityBuckets[b]);
+        if (diff < minDiff) {
+          minDiff = diff;
+          bucketIdx = b;
+        }
+      }
+
+      buckets[p.type][bucketIdx].push({ x, y, size: p.size });
     }
-    coreCtx.closePath();
-    coreCtx.stroke();
+
+    const colorsDef = {
+      primary: opacityBuckets.map(a => `rgba(${themeRGB.r}, ${themeRGB.g}, ${themeRGB.b}, ${a})`),
+      secondary: opacityBuckets.map(a => `rgba(${themeRGBSec.r}, ${themeRGBSec.g}, ${themeRGBSec.b}, ${a})`)
+    };
+
+    ['primary', 'secondary'].forEach(type => {
+      for (let b = 0; b < opacityBuckets.length; b++) {
+        const points = buckets[type][b];
+        if (points.length === 0) continue;
+
+        coreCtx.beginPath();
+        coreCtx.fillStyle = colorsDef[type][b];
+        const count = points.length;
+        for (let i = 0; i < count; i++) {
+          const pt = points[i];
+          coreCtx.moveTo(pt.x + pt.size, pt.y);
+          coreCtx.arc(pt.x, pt.y, pt.size, 0, PI * 2);
+        }
+        coreCtx.fill();
+      }
+    });
   }
+
+  // Global Javascript API p/ integracao externa (Nucleo Neural.html API)
+  window.BrowCore = {
+    setSpeaking: function(active, volume) {
+      isSpeaking = !!active;
+      speakVolume = clamp(volume || 0.5, 0, 1);
+    },
+    setListening: function(active, volume) {
+      isListening = !!active;
+      listenVolume = clamp(volume || 0.5, 0, 1);
+    },
+    triggerTyping: function() {
+      typingBoost = 1.0;
+    },
+    setTheme: function(themeNameOrHex) {
+      applyTheme(themeNameOrHex);
+    }
+  };
 
   function resizeCore() {
     if (!coreCanvas) return;
