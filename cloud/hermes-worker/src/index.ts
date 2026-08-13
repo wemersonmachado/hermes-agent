@@ -354,7 +354,8 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
           "Responde sempre em texto — peça \"manda em áudio\" pra receber a resposta falada.\n" +
           "/new limpa o histórico · /status verifica o serviço\n" +
           "/resumo semana · /resumo mes · /grafo · /memoria <termo> · /foto <termo>\n" +
-          "Também entende: grave na memória..., exclua a memória sobre..., mostre minhas memórias.",
+          "Também entende: grave/exclua/mostre memórias, agende eventos, crie tarefas e lembretes. " +
+          "Eventos e tarefas com data são avisados automaticamente no Telegram.",
       );
       await markUpdate(env, update.update_id, "done");
       return;
