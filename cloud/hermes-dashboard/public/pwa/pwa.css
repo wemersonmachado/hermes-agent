@@ -251,8 +251,13 @@ body, html {
 
 .pwa-view.active { display: flex; }
 
-/* VIEW DE CHAT — AJUSTE EXATO SEM RESPIRO EXCESSIVO */
+/* VIEW DE CHAT — AJUSTE EXATO DE TELA ÚNICA SEM ROLAGEM */
 #view-voz {
+  display: flex !important;
+  flex-direction: column !important;
+  height: calc(100vh - var(--header-height) - var(--nav-height)) !important;
+  max-height: calc(100vh - var(--header-height) - var(--nav-height)) !important;
+  overflow: hidden !important;
   padding-bottom: 0 !important;
 }
 
@@ -268,10 +273,10 @@ body, html {
 .chat-actions-topbar {
   background: rgba(11, 15, 25, 0.98);
   border-bottom: 1px solid var(--border);
-  padding: 10px 12px;
+  padding: 4px 8px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
   flex-shrink: 0;
   width: 100%;
 }
