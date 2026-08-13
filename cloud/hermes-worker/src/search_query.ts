@@ -7,9 +7,9 @@ const LEADING_SPEECH = [
   /^(?:por favor[,\s]*)/i,
 ];
 
-const SEARCH_COMMANDS = /\b(?:busque|buscar|busca|pesquise|pesquisar|pesquisa|procure|procurar|procura|descubra|descobrir|veja|ver|confira|conferir|checa|pesquisa na internet|busca na internet)\b/gi;
+const SEARCH_COMMANDS = /\b(?:busque|buscar|busca|pesquise|pesquisar|pesquisa|procure|procurar|procura|descubra|descobrir|veja|ver|confira|conferir|checa|traga|pesquisa na internet|busca na internet)\b/gi;
 const NEWS_WRAPPERS = /\b(?:not[ií]cias?|manchetes?|informa[çc][oõ]es?|novidades|atualiza[çc][oõ]es?)\b/gi;
-const REQUEST_FILLERS = /\b(?:pra mim|para mim|por favor|a[ií]|da[ií]|agora|agora mesmo|hoje|mais recentes?|recentes?|atuais?|atualizadas?|na internet|no google|na web|online|o que saiu|me diga|me fale|fala pra mim|traz(?:er)?|mostra(?:r)?)\b/gi;
+const REQUEST_FILLERS = /\b(?:me traga|um resumo|resumo|pra mim|para mim|por favor|a[ií]|da[ií]|agora|agora mesmo|hoje|mais recentes?|recentes?|atuais?|atualizadas?|na internet|no google|na web|online|o que saiu|me diga|me fale|fala pra mim|traz(?:er)?|traga|mostra(?:r)?)\b/gi;
 const SPEECH_FILLERS = /(?:^|[\s,])(p[oô]|tipo|assim|ent[aã]o|né|n[eé]|t[aá]|viu|sabe|cara|mano|bro|ahn+|hum+)(?=$|[\s,.!?])/gi;
 const QUESTION_FRAME = /^(?:qual(?: é| foi)?|quais(?: s[aã]o)?|como (?:est[aá]|t[aá])|o que (?:tem|h[aá]) de|me conte sobre|fale sobre)\s+/i;
 
@@ -36,9 +36,11 @@ export function refineSearchQuery(text: string, options: { news?: boolean } = {}
   for (let pass = 0; pass < 4; pass += 1) {
     const before = query;
     query = query
+      .replace(/^[\s.:;!?/-]*me\s+/i, "")
       .replace(/^[\s.:;!?/-]*(?:traz(?:er)?|mostra(?:r)?|fala(?:r)?|diga|dizer)\s+/i, "")
       .replace(/^[\s.:;!?/-]*(?:o|a|os|as|um|uma)\s+/i, "")
       .replace(/^[\s.:;!?/-]*(?:a[ií]|da[ií]|sobre|por|de|do|da|dos|das)\s+/i, "")
+      .replace(/^[\s.:;!?/-]*(?:das?\s+da|dos?\s+do)\s+/i, "")
       .replace(/^[\s.:;!?/-]+/, "")
       .trim();
     if (query === before) break;

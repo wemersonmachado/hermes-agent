@@ -29,6 +29,7 @@ import {
 } from "./shared";
 import { detectSportsSubject, formatSpecialistAnswer, trySportsSearchSpecialist } from "./search_specialist";
 import { isExplicitSearchRequest, isNewsSearchRequest, refineSearchQuery } from "./search_query";
+import { research } from "./research_engine";
 
 function ownerChatId(env: Env): string {
   return env.TELEGRAM_ALLOWED_USERS.split(",")[0]?.trim() ?? "";
@@ -50,60 +51,6 @@ async function saveTelemetrySnapshot(env: Env, chatId: string, source: "pc" | "p
     method: "POST",
     headers: { prefer: "resolution=merge-duplicates,return=minimal" },
     body: JSON.stringify({ chat_id: chatId, source, payload, updated_at: new Date().toISOString() }),
-  });
-}
-
-const OVERLOAD_CPU_PCT = 90;
-const OVERLOAD_RAM_PCT = 90;
-const OVERLOAD_ALERT_COOLDOWN_MS = 15 * 60 * 1000;
-
-// Várias frases pro mesmo aviso — antes era sempre o mesmo texto fixo,
-// pedido do usuário pra soar menos robótico/repetitivo em uso real.
-// Cada uma cita a métrica real e o processo real (sem inventar dado).
-const OVERLOAD_MESSAGE_TEMPLATES: ((metric: string, pct: number, proc: string, procPct: number) => string)[] = [
-  (metric, pct, proc, procPct) =>
-    `⚠️ Seu PC está sobrecarregado: ${metric} em ${pct}%.\nMaior consumidor: ${proc} (${procPct}%).\n\nSugestão: feche ${proc}, verifique abas/processos em segundo plano, e se for recorrente considere reiniciar o app ou o PC.`,
-  (metric, pct, proc, procPct) =>
-    `🔥 Notei ${metric} em ${pct}% agora — bem acima do normal. O ${proc} está puxando ${procPct}% sozinho. Vale fechar ele um instante e ver se alivia.`,
-  (metric, pct, proc, procPct) =>
-    `👀 Fiquei de olho na sua máquina: ${metric} bateu ${pct}%. O ${proc} é o principal responsável (${procPct}%). Se não estiver usando ele agora, dá pra fechar sem perder nada.`,
-  (metric, pct, proc, procPct) =>
-    `⚙️ Seu PC está trabalhando pesado — ${metric} a ${pct}%, puxado principalmente por ${proc} (${procPct}%). Recomendo pausar ele um pouco ou reiniciar se isso continuar se repetindo.`,
-];
-
-function buildOverloadMessage(metric: string, pct: number, proc: string, procPct: number): string {
-  const template = OVERLOAD_MESSAGE_TEMPLATES[Math.floor(Math.random() * OVERLOAD_MESSAGE_TEMPLATES.length)];
-  return template(metric, pct, proc, procPct);
-}
-
-async function maybeAlertOverload(env: Env, chatId: string, telemetry: any): Promise<void> {
-  const cpu = Number(telemetry?.cpuPercent) || 0;
-  const ram = Number(telemetry?.ramPercent) || 0;
-  if (cpu < OVERLOAD_CPU_PCT && ram < OVERLOAD_RAM_PCT) return;
-
-  const resp = await supabase(env, `hermes_cloud_telemetry?chat_id=eq.${chatId}&source=eq.pc&select=last_alert_at&limit=1`);
-  const rows = resp.ok ? ((await resp.json()) as any[]) : [];
-  const lastAlert = rows[0]?.last_alert_at ? new Date(rows[0].last_alert_at).getTime() : 0;
-  if (Date.now() - lastAlert < OVERLOAD_ALERT_COOLDOWN_MS) return;
-
-  const topProcesses: any[] = Array.isArray(telemetry?.topProcesses) ? telemetry.topProcesses : [];
-  const worst = topProcesses[0];
-  const worstName = worst?.name || "um processo não identificado";
-  const worstPct = Math.round(worst?.cpuPercent ?? worst?.ramPercent ?? 0);
-  const metricLabel = cpu >= OVERLOAD_CPU_PCT ? "CPU" : "RAM";
-  const metricPct = Math.round(cpu >= OVERLOAD_CPU_PCT ? cpu : ram);
-  const message = buildOverloadMessage(metricLabel, metricPct, worstName, worstPct);
-
-  await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ chat_id: Number(chatId), text: message }),
-  }).catch(() => undefined);
-
-  await supabase(env, "hermes_cloud_telemetry?on_conflict=chat_id,source", {
-    method: "POST",
-    headers: { prefer: "resolution=merge-duplicates,return=minimal" },
-    body: JSON.stringify({ chat_id: chatId, source: "pc", payload: telemetry, last_alert_at: new Date().toISOString(), updated_at: new Date().toISOString() }),
   });
 }
 
@@ -285,7 +232,6 @@ export async function handleDashboardRequest(request: Request, env: Env, path: s
   if (resource === "telemetry" && method === "POST") {
     const body = await readJson(request);
     await saveTelemetrySnapshot(env, chatId, "pc", body);
-    await maybeAlertOverload(env, chatId, body);
     return json({ ok: true });
   }
   if (resource === "device-telemetry" && method === "GET") {
@@ -718,11 +664,11 @@ export async function handleDashboardRequest(request: Request, env: Env, path: s
       return json({ ok: true, reply, kind: "sports_fact" });
     }
 
-    const newsShortcut = await tryNewsShortcut(env, text).catch(() => null);
-    if (newsShortcut) {
+    const newsResearch = isNewsSearchRequest(text) ? await research(env, text, "news").catch(() => null) : null;
+    if (newsResearch) {
       await saveDashboardMessage(env, chatId, "user", text);
-      await saveDashboardMessage(env, chatId, "assistant", newsShortcut);
-      return json({ ok: true, reply: newsShortcut, kind: "grounded_news", searchQuery: refineSearchQuery(text, { news: true }) });
+      await saveDashboardMessage(env, chatId, "assistant", newsResearch.reply);
+      return json({ ok: true, reply: newsResearch.reply, kind: "grounded_news", searchQuery: newsResearch.audit.query, researchAudit: newsResearch.audit });
     }
     if (isNewsSearchRequest(text)) {
       const searchQuery = refineSearchQuery(text, { news: true });
@@ -758,12 +704,13 @@ export async function handleDashboardRequest(request: Request, env: Env, path: s
       return json({ ok: true, reply: ownDataResult });
     }
 
-    const searchResult = await tryWebSearchShortcut(env, text).catch(() => null);
+    const webResearch = isExplicitSearchRequest(text) ? await research(env, text, "web").catch(() => null) : null;
+    const searchResult = webResearch?.reply || await tryWebSearchShortcut(env, text).catch(() => null);
     if (searchResult) {
       await saveDashboardMessage(env, chatId, "user", text);
       await extractAndSaveFacts(env, Number(chatId), text);
       await saveDashboardMessage(env, chatId, "assistant", searchResult);
-      return json({ ok: true, reply: searchResult, kind: "web_search", searchQuery: refineSearchQuery(text) });
+      return json({ ok: true, reply: searchResult, kind: "web_search", searchQuery: webResearch?.audit.query || refineSearchQuery(text), researchAudit: webResearch?.audit });
     }
     if (isExplicitSearchRequest(text)) {
       const searchQuery = refineSearchQuery(text);

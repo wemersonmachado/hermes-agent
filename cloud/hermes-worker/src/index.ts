@@ -49,6 +49,7 @@ import {
 } from "./shared";
 import { detectSportsSubject, formatSpecialistAnswer, trySportsSearchSpecialist } from "./search_specialist";
 import { isExplicitSearchRequest, isNewsSearchRequest, refineSearchQuery } from "./search_query";
+import { research } from "./research_engine";
 
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
 
@@ -436,13 +437,13 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
       return;
     }
 
-    const newsShortcut = await tryNewsShortcut(env, userText);
-    if (newsShortcut) {
+    const newsResearch = isNewsSearchRequest(userText) ? await research(env, userText, "news").catch(() => null) : null;
+    if (newsResearch) {
       await saveMessage(env, message, "user", userText);
       await extractAndSaveFacts(env, message.chat.id, userText);
-      await saveMessage(env, message, "assistant", newsShortcut);
-      await sendText(env, message.chat.id, newsShortcut);
-      await maybeSendVoice(env, message.chat.id, userText, newsShortcut, update.update_id);
+      await saveMessage(env, message, "assistant", newsResearch.reply);
+      await sendText(env, message.chat.id, newsResearch.reply);
+      await maybeSendVoice(env, message.chat.id, userText, newsResearch.reply, update.update_id);
       await markUpdate(env, update.update_id, "done");
       return;
     }
@@ -491,7 +492,8 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
       return;
     }
 
-    const searchResult = await tryWebSearchShortcut(env, userText).catch(() => null);
+    const webResearch = isExplicitSearchRequest(userText) ? await research(env, userText, "web").catch(() => null) : null;
+    const searchResult = webResearch?.reply || await tryWebSearchShortcut(env, userText).catch(() => null);
     if (searchResult) {
       await saveMessage(env, message, "user", userText);
       await extractAndSaveFacts(env, message.chat.id, userText);

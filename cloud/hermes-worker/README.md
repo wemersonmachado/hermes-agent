@@ -37,9 +37,15 @@ Telegram e armazenamento R2.
 - Pedidos de notícias passam por um atalho determinístico antes do modelo.
 - Toda notícia deve trazer conteúdo útil além do título, a fonte editorial e
   uma URL verificável. O usuário não precisa pedir "links" explicitamente.
-- A ordem de fallback é: Google Grounding (somente quando devolve fontes),
-  RSS editorial com descrição/link e busca web real. Se nenhuma fonte real
-  responder, o Hermes informa a falha; não completa com fatos inventados.
+- O orquestrador isolado `src/research_engine.ts` consulta em paralelo Google
+  Grounding, Google News RSS, GDELT, RSS editorial e busca web/comunidades. Cada
+  provedor tem orçamento de 4,5 s; falha ou lentidão de uma fonte não bloqueia
+  as demais. Resultados são deduplicados, classificados por relevância e
+  recência e limitados por domínio para preservar diversidade.
+- Respostas só são emitidas quando existe ao menos uma URL HTTP(S) verificável.
+  Se nenhuma fonte real responder, o Hermes informa a falha; não completa com
+  fatos inventados. O dashboard recebe também `researchAudit` com consulta,
+  latência, contagem por provedor e número de fontes selecionadas.
 - O endpoint do painel é `GET /api/dashboard/news?category=...&query=...`.
 
 Todas as pesquisas textuais passam por `src/search_query.ts` antes de chamar
@@ -52,6 +58,8 @@ notícias não ganham um tópico falso. Exemplos:
 - `Busque por desenvolvimento de carros autônomos` →
   `desenvolvimento de carros autônomos`;
 - `Bom dia, bro, traz uma notícia pra mim sobre baterias, pô` → `baterias`.
+- `Me traga um resumo das da Bolsa de Valores do Brasil da semana passada` →
+  `Bolsa de Valores do Brasil da semana passada`.
 
 Toda fonte em respostas conversacionais usa o rótulo compacto
 `[Clique aqui para ler](URL)`. O Telegram converte somente esse marcador em
@@ -78,6 +86,13 @@ portais nunca podem inventar placar ou posição.
 Áudios do Telegram são transcritos apenas internamente. A transcrição completa
 não é mais enviada como uma mensagem `Entendi: "..."`; o usuário recebe somente
 a resposta ao pedido, evitando eco de saudações, repetições e hesitações.
+
+### Telemetria
+
+Telemetria de PC e telefone é armazenada para visualização exclusiva no PWA e
+dashboard. O endpoint de ingestão não envia alertas, métricas ou sugestões ao
+Telegram. Essa separação é um contrato: futuras notificações de telemetria não
+devem ser adicionadas a adaptadores de mensageria.
 
 ### Memória e fotos
 
@@ -107,7 +122,8 @@ npm.cmd run check
 npx.cmd wrangler deploy --dry-run
 ```
 
-Os testes em `src/shared.test.ts` cobrem preservação de conteúdo/link do RSS,
-fontes obrigatórias nas notícias, consulta de agenda sem criação acidental e
-operações seguras de memória. Segredos nunca entram no repositório; configure-os
-com `wrangler secret put`.
+Os testes em `src/shared.test.ts`, `src/search_query.test.ts` e
+`src/research_engine.test.ts` cobrem preservação de conteúdo/link do RSS,
+fontes obrigatórias, refinamento de fala, auditoria multi-fonte, rejeição de
+URLs inseguras, agenda e memória. Segredos nunca entram no repositório;
+configure-os com `wrangler secret put`.

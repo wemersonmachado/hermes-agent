@@ -10,6 +10,8 @@ describe("global search query refinement", () => {
     ["Como está o desenvolvimento de baterias de estado sólido?", "desenvolvimento de baterias de estado sólido"],
     ["Sobre a China e o desenvolvimento da Apple, pô", "China e o desenvolvimento da Apple"],
     ["inteligência artificial generativa", "inteligência artificial generativa"],
+    ["Me traga um resumo das da Bolsa de Valores do Brasil da semana passada", "Bolsa de Valores do Brasil da semana passada"],
+    ["Traga notícias sobre a bolsa de valores", "bolsa de valores"],
   ])("refines %s", (input, expected) => {
     expect(refineSearchQuery(input, { news: /notícia/i.test(input) })).toBe(expected);
   });
