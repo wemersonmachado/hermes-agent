@@ -49,6 +49,15 @@ pergunta. Páginas agregadoras com texto como "acompanhe as notícias" são
 rejeitadas. Se as fontes não confirmarem os dados, o motor declara a falha em
 vez de cair na antiga lista de capas/matérias.
 
+Para o Flamengo, o motor prioriza dados esportivos estruturados. A fonte
+primária usa o host server-to-server da Sofascore; se o datacenter bloquear a
+consulta, o fallback independente TheSportsDB combina os endpoints de últimos
+e próximos eventos, promove jogos recém-encerrados que ainda estejam na fila de
+"próximos" e consulta a tabela da temporada. Somente depois vêm mecanismos de
+pesquisa textual para entidades futuras sem provedor estruturado. Para times já
+mapeados, falha dos dois provedores encerra com mensagem honesta: snippets de
+portais nunca podem inventar placar ou posição.
+
 Áudios do Telegram são transcritos apenas internamente. A transcrição completa
 não é mais enviada como uma mensagem `Entendi: "..."`; o usuário recebe somente
 a resposta ao pedido, evitando eco de saudações, repetições e hesitações.
