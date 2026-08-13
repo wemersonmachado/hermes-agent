@@ -43,6 +43,7 @@ import {
   tryWebSearchShortcut,
   tryCurrencyConversionShortcut,
   tryOwnDataQueryShortcut,
+  tryMemoryCommand,
   transcribeAudioBytes,
 } from "./shared";
 
@@ -337,7 +338,8 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
         "Hermes Cloud Free está online. Envie texto ou áudio pra conversar.\n" +
           "Responde sempre em texto — peça \"manda em áudio\" pra receber a resposta falada.\n" +
           "/new limpa o histórico · /status verifica o serviço\n" +
-          "/resumo semana · /resumo mes · /grafo · /memoria <termo>",
+          "/resumo semana · /resumo mes · /grafo · /memoria <termo> · /foto <termo>\n" +
+          "Também entende: grave na memória..., exclua a memória sobre..., mostre minhas memórias.",
       );
       await markUpdate(env, update.update_id, "done");
       return;
@@ -388,6 +390,18 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
         message.chat.id,
         all.length ? `🔎 Achei isso na memória:\n\n${all.join("\n\n")}` : "Não achei nada relevante na memória sobre isso.",
       );
+      await markUpdate(env, update.update_id, "done");
+      return;
+    }
+
+    const memoryResult = await tryMemoryCommand(env, message.chat.id, userText).catch(() => null);
+    if (memoryResult) {
+      await saveMessage(env, message, "user", userText);
+      await saveMessage(env, message, "assistant", memoryResult.reply);
+      await sendText(env, message.chat.id, memoryResult.reply);
+      for (const fileId of memoryResult.imageFileIds || []) {
+        await telegram(env, "sendPhoto", { chat_id: message.chat.id, photo: fileId });
+      }
       await markUpdate(env, update.update_id, "done");
       return;
     }

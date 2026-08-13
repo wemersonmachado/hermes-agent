@@ -370,7 +370,48 @@ export function detectApiLookups(text: string): ApiLookup[] {
 // mensagem é só um pedido de notícia, devolve os títulos reais direto,
 // sem passar pelo modelo.
 
-export async function fetchGoogleNewsHeadlines(topic: string): Promise<string[] | null> {
+export type NewsItem = {
+  title: string;
+  url: string;
+  source: string;
+  snippet: string;
+  publishedAt: string | null;
+};
+
+function decodeXml(value: string): string {
+  return stripHtmlTags(
+    value
+      .replace(/^<!\[CDATA\[/, "")
+      .replace(/\]\]>$/, "")
+      .trim(),
+  );
+}
+
+export function parseRssItems(xml: string, source: string, limit: number): NewsItem[] {
+  const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((match) => match[1]);
+  const results: NewsItem[] = [];
+  for (const item of items) {
+    const rawTitle = item.match(/<title>([\s\S]*?)<\/title>/)?.[1] || "";
+    const rawLink = item.match(/<link>([\s\S]*?)<\/link>/)?.[1] || "";
+    const rawDescription = item.match(/<description>([\s\S]*?)<\/description>/)?.[1] || "";
+    const rawDate = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1] || "";
+    const title = decodeXml(rawTitle);
+    const url = decodeXml(rawLink);
+    if (!title || !/^https?:\/\//i.test(url)) continue;
+    const parsedDate = rawDate ? new Date(decodeXml(rawDate)) : null;
+    results.push({
+      title,
+      url,
+      source,
+      snippet: decodeXml(rawDescription).slice(0, 320),
+      publishedAt: parsedDate && !Number.isNaN(parsedDate.getTime()) ? parsedDate.toISOString() : null,
+    });
+    if (results.length >= limit) break;
+  }
+  return results;
+}
+
+export async function fetchGoogleNewsHeadlines(topic: string): Promise<NewsItem[] | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 6000);
   try {
@@ -380,16 +421,13 @@ export async function fetchGoogleNewsHeadlines(topic: string): Promise<string[] 
     });
     if (!resp.ok) return null;
     const xml = await resp.text();
-    const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((m) => m[1]);
-    let titles = items
-      .map((item) => item.match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/)?.[1] || "")
-      .filter(Boolean);
+    let items = parseRssItems(xml, "g1.globo.com", 20);
     if (topic) {
       const needle = topic.toLowerCase();
-      titles = titles.filter((t) => t.toLowerCase().includes(needle));
+      items = items.filter((item) => `${item.title} ${item.snippet}`.toLowerCase().includes(needle));
     }
-    titles = titles.slice(0, 6);
-    return titles.length ? titles : null;
+    items = items.slice(0, 6);
+    return items.length ? items : null;
   } catch {
     return null;
   } finally {
@@ -403,8 +441,6 @@ export async function fetchGoogleNewsHeadlines(topic: string): Promise<string[] 
 // aparecia quando cada categoria virava uma query de busca solta (achado
 // 13/08/2026, categoria "futebol" devolvendo anúncio de Mercado Livre).
 // ---------------------------------------------------------------------------
-
-export type NewsItem = { title: string; url: string; source: string };
 
 const NEWS_CATEGORY_FEEDS: Record<string, { url: string; source: string }[]> = {
   politica: [{ url: "https://g1.globo.com/rss/g1/politica/", source: "g1.globo.com" }],
@@ -424,15 +460,7 @@ async function fetchRssItems(feed: { url: string; source: string }, limit: numbe
     });
     if (!resp.ok) return [];
     const xml = await resp.text();
-    const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((m) => m[1]);
-    const out: NewsItem[] = [];
-    for (const item of items) {
-      const title = item.match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/)?.[1]?.trim();
-      const url = item.match(/<link>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/link>/)?.[1]?.trim();
-      if (title && url) out.push({ title, url, source: feed.source });
-      if (out.length >= limit) break;
-    }
-    return out;
+    return parseRssItems(xml, feed.source, limit);
   } catch {
     return [];
   } finally {
@@ -463,7 +491,7 @@ export async function fetchCategoryNews(category: string, query: string, limit =
     } catch {
       /* url malformada — mantém fallback */
     }
-    return { title: r.title, url: r.url, source };
+    return { title: r.title, url: r.url, source, snippet: r.snippet, publishedAt: null };
   });
 }
 
@@ -623,11 +651,19 @@ export async function webSearch(query: string, limit = 5): Promise<WebSearchResu
   return results;
 }
 
-// O usuário só quer o link/fonte quando pede explicitamente — por padrão a
-// resposta é o resumo, não a lista crua de URLs (achado 13/08/2026: "manda
-// os links" lia como robótico/spam quando ninguém pediu link nenhum).
+// Pesquisa factual respeita pedido explícito por links. Notícias são uma
+// exceção: sempre incluem fonte e URL, pois sem isso viram apenas uma capa de
+// manchetes impossível de verificar.
 function wantsLinks(text: string): boolean {
   return /\b(link|links|url|urls|fonte|fontes|site|sites|refer[êe]ncia)\b/i.test(text);
+}
+
+function sourceFromUrl(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "fonte externa";
+  }
 }
 
 const NEWS_INTROS = ["📰 Olha o que saiu agora:", "📰 Aqui está o que encontrei:", "📰 O que tem de novo:"];
@@ -649,19 +685,14 @@ export async function tryNewsShortcut(env: Env, text: string): Promise<string | 
     .replace(/\b(agora|hoje|por favor|pra mim|aqui)\b/g, "")
     .trim();
   const topic = rawTopic && !stopwords.test(rawTopic) ? rawTopic : "";
-  const includeLinks = wantsLinks(text);
-
   // 1ª tentativa: Google de verdade via grounding do Gemini — resumo
   // coerente, não lista de manchete solta (pedido do usuário 13/08/2026).
   if (topic) {
     const grounded = await googleGroundedSearch(env, `notícias mais recentes sobre ${topic} no Brasil hoje`);
-    if (grounded?.summary) {
+    if (grounded?.summary && grounded.sources.length) {
       const intros = NEWS_TOPIC_INTROS(topic);
       const intro = intros[Math.floor(Math.random() * intros.length)];
-      const sourcesTxt =
-        includeLinks && grounded.sources.length
-          ? `\n\n${grounded.sources.slice(0, 4).map((s) => `• ${s.title || s.url}\n  ${s.url}`).join("\n\n")}`
-          : "";
+      const sourcesTxt = `\n\nFontes:\n${grounded.sources.slice(0, 4).map((s) => `• ${s.title || s.url}\n  ${s.url}`).join("\n\n")}`;
       return `${intro}\n\n${grounded.summary}${sourcesTxt}`;
     }
   }
@@ -670,7 +701,11 @@ export async function tryNewsShortcut(env: Env, text: string): Promise<string | 
   if (headlines?.length) {
     const intros = topic ? NEWS_TOPIC_INTROS(topic) : NEWS_INTROS;
     const intro = intros[Math.floor(Math.random() * intros.length)];
-    return `${intro}\n\n${headlines.slice(0, 5).map((h) => `• ${h}`).join("\n")}`;
+    const lines = headlines.slice(0, 5).map((item) => {
+      const detail = item.snippet && item.snippet !== item.title ? `\n  ${item.snippet}` : "";
+      return `• ${item.title}${detail}\n  Fonte: ${item.source} — ${item.url}`;
+    });
+    return `${intro}\n\n${lines.join("\n\n")}`;
   }
   // G1 não tem nada sobre esse tópico específico (o feed é geral, não uma
   // busca) — cai pra busca real na internet em vez de desistir.
@@ -681,9 +716,9 @@ export async function tryNewsShortcut(env: Env, text: string): Promise<string | 
       const intro = intros[Math.floor(Math.random() * intros.length)];
       const lines = found.map((r) => {
         const summary = r.snippet ? r.snippet.slice(0, 160) : r.title;
-        return includeLinks ? `• ${summary}\n  ${r.url}` : `• ${summary}`;
+        return `• ${r.title}\n  ${summary}\n  Fonte: ${sourceFromUrl(r.url)} — ${r.url}`;
       });
-      return `${intro}\n\n${lines.join(includeLinks ? "\n\n" : "\n")}`;
+      return `${intro}\n\n${lines.join("\n\n")}`;
     }
   }
   return null;
@@ -1415,6 +1450,94 @@ export async function answerWithAI(env: Env, messages: StoredMessage[], realtime
     max_tokens: 900,
   })) as { response?: unknown };
   return typeof result.response === "string" && result.response.trim() ? result.response.trim() : "Não consegui gerar uma resposta agora.";
+}
+
+type MemoryCommandResult = { reply: string; imageFileIds?: string[] };
+
+function memorySubject(text: string): string {
+  return text
+    .replace(/^\s*(?:por favor\s+)?(?:grave|grava|salve|salva|memorize|lembre|anote|registre)(?:\s+(?:na|em sua))?\s+(?:mem[oó]ria\s+)?(?:que\s+)?/i, "")
+    .replace(/^\s*(?:por favor\s+)?(?:apague|apaga|delete|deleta|exclua|excluir|remova|remover)(?:\s+(?:da|de sua))?\s+(?:mem[oó]ria\s+)?(?:sobre\s+)?/i, "")
+    .replace(/[.!?]+$/, "")
+    .trim();
+}
+
+// Comandos de memória são executados antes do LLM. Assim o assistente nunca
+// precisa alegar que não consegue salvar/apagar algo que o backend realmente
+// suporta, e uma exclusão só acontece quando há verbo destrutivo explícito.
+export async function tryMemoryCommand(env: Env, chatId: number, text: string): Promise<MemoryCommandResult | null> {
+  const lower = text.toLowerCase().trim();
+  const chatIdStr = String(chatId);
+  const saveIntent = /^(?:por favor\s+)?(?:grave|grava|salve|salva|memorize|lembre|anote|registre)\b/i.test(text);
+  const deleteIntent = /^(?:por favor\s+)?(?:apague|apaga|delete|deleta|exclua|excluir|remova|remover)\b/i.test(text)
+    && /\b(mem[oó]rias?|lembran[çc]as?|fatos?)\b/i.test(text);
+  const listIntent = /\b(o que (?:voc[êe] )?(?:tem|sabe|lembra)|minhas mem[oó]rias|mem[oó]rias salvas)\b/i.test(text);
+  const imageIntent = /^(?:\/foto|\/imagem)\b|\b(?:traga|mostre|mande|recupere|busque).{0,25}(?:foto|imagem)\b/i.test(lower);
+
+  if (saveIntent) {
+    const subject = memorySubject(text);
+    if (subject.length < 3) return { reply: "Diga o que você quer que eu grave na memória." };
+    const response = await supabase(env, "hermes_cloud_memories", {
+      method: "POST",
+      headers: { prefer: "return=representation" },
+      body: JSON.stringify({
+        chat_id: chatIdStr,
+        title: subject.slice(0, 80),
+        summary: subject.slice(0, 2000),
+        main_category: "pessoal",
+        category: "conversa",
+        tags: ["chat"],
+      }),
+    });
+    if (!response.ok) return { reply: "Não consegui gravar essa memória agora. Nada foi confirmado como salvo." };
+    return { reply: `✅ Memória gravada: "${subject.slice(0, 180)}".` };
+  }
+
+  if (deleteIntent) {
+    const subject = memorySubject(text);
+    if (subject.length < 2 || /^(isso|tudo|todas?|todas? as mem[oó]rias?)$/i.test(subject)) {
+      return { reply: "Diga qual memória devo excluir. Para apagar tudo, use a seleção da aba Memória, que exige confirmação." };
+    }
+    const pattern = `*${subject.replace(/[,*()]/g, " ").trim()}*`;
+    const response = await supabase(
+      env,
+      `hermes_cloud_memories?chat_id=eq.${encodeURIComponent(chatIdStr)}&or=(title.ilike.${encodeURIComponent(pattern)},summary.ilike.${encodeURIComponent(pattern)})&select=id,title&limit=6`,
+    );
+    const rows = response.ok ? ((await response.json()) as { id: string; title: string }[]) : [];
+    if (!rows.length) return { reply: `Não encontrei memória manual sobre "${subject}" para excluir.` };
+    if (rows.length > 1) {
+      return { reply: `Encontrei mais de uma memória sobre "${subject}". Exclua a desejada na aba Memória para evitar apagar a errada:\n${rows.map((row) => `• ${row.title} (${row.id.slice(0, 8).toUpperCase()})`).join("\n")}` };
+    }
+    const deletion = await supabase(env, `hermes_cloud_memories?id=eq.${encodeURIComponent(rows[0].id)}&chat_id=eq.${encodeURIComponent(chatIdStr)}`, {
+      method: "DELETE",
+      headers: { prefer: "return=minimal" },
+    });
+    return deletion.ok
+      ? { reply: `🗑️ Memória excluída: "${rows[0].title}".` }
+      : { reply: "Não consegui excluir essa memória agora. Nada foi confirmado como apagado." };
+  }
+
+  if (imageIntent) {
+    const subject = text.replace(/^\s*\/(?:foto|imagem)\s*/i, "").replace(/^.*?\b(?:foto|imagem)(?:s)?\b(?:\s+(?:de|do|da|sobre))?\s*/i, "").trim();
+    const pattern = subject ? `*${subject.replace(/[,*()]/g, " ")}*` : "*";
+    const response = await supabase(
+      env,
+      `hermes_cloud_images?chat_id=eq.${encodeURIComponent(chatIdStr)}&or=(description.ilike.${encodeURIComponent(pattern)},ocr_text.ilike.${encodeURIComponent(pattern)})&select=telegram_file_id,description&order=created_at.desc&limit=3`,
+    );
+    const rows = response.ok ? ((await response.json()) as { telegram_file_id: string; description: string }[]) : [];
+    if (!rows.length) return { reply: subject ? `Não encontrei foto sobre "${subject}" na memória visual.` : "Ainda não há fotos salvas na memória visual." };
+    return { reply: `🖼️ Encontrei ${rows.length} foto(s) na memória visual.`, imageFileIds: rows.map((row) => row.telegram_file_id).filter(Boolean) };
+  }
+
+  if (listIntent) {
+    const response = await supabase(env, `hermes_cloud_memories?chat_id=eq.${encodeURIComponent(chatIdStr)}&select=id,title,summary&order=created_at.desc&limit=10`);
+    const rows = response.ok ? ((await response.json()) as { id: string; title: string; summary?: string }[]) : [];
+    return rows.length
+      ? { reply: `🧠 Memórias manuais mais recentes:\n\n${rows.map((row) => `• ${row.title} (${row.id.slice(0, 8).toUpperCase()})${row.summary && row.summary !== row.title ? ` — ${row.summary.slice(0, 160)}` : ""}`).join("\n")}` }
+      : { reply: "🧠 Nenhuma memória manual foi salva ainda." };
+  }
+
+  return null;
 }
 
 // ---------------------------------------------------------------------------

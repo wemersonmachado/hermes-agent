@@ -550,6 +550,7 @@ function renderNewsTicker() {
                 <span class="news-time">⏰ ${escapeHtml(item.time || 'Agora')}</span>
             </div>
             <div class="news-title" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</div>
+            ${item.summary ? `<div class="news-summary">${escapeHtml(item.summary)}</div>` : ''}
             <div class="news-source">
                 <span>📰 ${escapeHtml(item.source || 'Fonte Externa')}</span>
                 <a href="${escapeHtml(item.url || '#')}" target="_blank" rel="noopener" style="color:var(--cyan); font-weight:700; text-decoration:none;">Ler Matéria ↗</a>
@@ -3929,5 +3930,4 @@ function editFinanceItemFromModal(shortId, oldDesc, oldAmount) {
         renderFinanceKpiModalItems(currentKpiModalType);
     }).catch(() => alert('Erro ao editar item.'));
 }
-
 

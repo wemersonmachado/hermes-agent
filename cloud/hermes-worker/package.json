@@ -5,11 +5,13 @@
   "type": "module",
   "scripts": {
     "check": "tsc --noEmit",
+    "test": "vitest run",
     "deploy": "wrangler deploy",
     "types": "wrangler types"
   },
   "devDependencies": {
     "typescript": "7.0.2",
+    "vitest": "4.1.10",
     "wrangler": "4.121.0"
   }
 }

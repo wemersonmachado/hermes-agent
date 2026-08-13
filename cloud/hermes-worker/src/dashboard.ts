@@ -22,6 +22,7 @@ import {
   tryWebSearchShortcut,
   tryCurrencyConversionShortcut,
   tryOwnDataQueryShortcut,
+  tryMemoryCommand,
   fetchCategoryNews,
   transcribeAudioBytes,
 } from "./shared";
@@ -435,7 +436,16 @@ export async function handleDashboardRequest(request: Request, env: Env, path: s
     const category = url.searchParams.get("category") || "";
     const query = url.searchParams.get("query") || url.searchParams.get("q") || "";
     const news = await fetchCategoryNews(category, query, 8);
-    const items = news.map((n) => ({ title: n.title, source: n.source, url: n.url, badge: category || "notícias", category, time: "agora" }));
+    const items = news.map((n) => ({
+      title: n.title,
+      summary: n.snippet,
+      source: n.source,
+      url: n.url,
+      publishedAt: n.publishedAt,
+      badge: category || "notícias",
+      category,
+      time: n.publishedAt ? new Date(n.publishedAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "agora",
+    }));
     return json({ ok: true, items, updatedAtStr: new Date().toLocaleTimeString("pt-BR") });
   }
 
@@ -686,6 +696,13 @@ export async function handleDashboardRequest(request: Request, env: Env, path: s
     const body = await readJson(request);
     const text = String(body.message || "").trim();
     if (!text) return badRequest("message vazio");
+
+    const memoryResult = await tryMemoryCommand(env, Number(chatId), text).catch(() => null);
+    if (memoryResult) {
+      await saveDashboardMessage(env, chatId, "user", text);
+      await saveDashboardMessage(env, chatId, "assistant", memoryResult.reply);
+      return json({ ok: true, reply: memoryResult.reply, imageFileIds: memoryResult.imageFileIds || [] });
+    }
 
     const newsShortcut = await tryNewsShortcut(env, text).catch(() => null);
     if (newsShortcut) {
