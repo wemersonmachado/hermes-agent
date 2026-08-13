@@ -42,6 +42,23 @@ Telegram e armazenamento R2.
   responder, o Hermes informa a falha; não completa com fatos inventados.
 - O endpoint do painel é `GET /api/dashboard/news?category=...&query=...`.
 
+Todas as pesquisas textuais passam por `src/search_query.ts` antes de chamar
+qualquer provedor. O refinador remove saudações, comandos ("busque", "pesquise",
+"procure"), pedidos de cortesia, interjeições e ruído comum de transcrição,
+preservando o assunto e suas entidades. Consultas são limitadas a 14 termos
+para impedir que uma fala inteira vire query literal; pedidos gerais de
+notícias não ganham um tópico falso. Exemplos:
+
+- `Busque por desenvolvimento de carros autônomos` →
+  `desenvolvimento de carros autônomos`;
+- `Bom dia, bro, traz uma notícia pra mim sobre baterias, pô` → `baterias`.
+
+Toda fonte em respostas conversacionais usa o rótulo compacto
+`[Clique aqui para ler](URL)`. O Telegram converte somente esse marcador em
+HTML seguro e desativa a prévia longa; o dashboard o converte em link com nova
+aba. URLs cruas não devem voltar a ser adicionadas aos formatadores de notícia,
+busca geral ou pesquisa esportiva.
+
 Perguntas factuais sobre clubes conhecidos passam antes pelo motor isolado
 `src/search_specialist.ts`. Ele pesquisa e sintetiza diretamente placar,
 adversário, data, competição, posição e competições em disputa conforme a
