@@ -315,27 +315,32 @@ body, html {
 }
 
 .topbar-row-actions {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
   width: 100%;
+  max-width: 100%;
   align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
 }
 
 .btn-top-action {
+  flex: 1 1 calc(25% - 4px);
+  min-width: 62px;
   border-radius: 14px;
   padding: 6px 4px;
   font-weight: 700;
-  font-size: 11px;
+  font-size: 10.5px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   cursor: pointer;
   transition: all 0.2s ease;
   border: none;
-  width: 100%;
   white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .btn-reler {
@@ -389,6 +394,8 @@ body, html {
 }
 
 .badge-status-pwa {
+  flex: 1 1 calc(25% - 4px);
+  min-width: 62px;
   background: rgba(6, 182, 212, 0.15);
   border: 1px solid rgba(6, 182, 212, 0.4);
   color: #38bdf8;
@@ -401,6 +408,7 @@ body, html {
   align-items: center;
   justify-content: center;
   white-space: nowrap;
+  box-sizing: border-box;
 }
 
 /* CANVAS DE ONDAS NEURAIS */

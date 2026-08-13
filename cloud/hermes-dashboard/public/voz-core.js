@@ -237,13 +237,13 @@
   let smoothLevel = 0.06;
   let smoothHeat = 0;
 
-  // ── PARTÍCULAS ORBITANTES DO NÚCLEO (pedido 13/08/2026: mais vida ao núcleo) ──
-  const orbitParticles = Array.from({ length: 60 }, () => ({
+  // ── PARTÍCULAS SUTIS DO NÚCLEO (só 12 pontos para evitar poluição visual) ──
+  const orbitParticles = Array.from({ length: 12 }, () => ({
     angle: rand(0, Math.PI * 2),
-    radiusOffset: rand(-28, 38),
-    speed: rand(0.006, 0.022) * (Math.random() < 0.5 ? 1 : -1),
-    size: rand(0.9, 2.5),
-    alpha: rand(0.25, 0.9),
+    radiusOffset: rand(-12, 12),
+    speed: rand(0.004, 0.012) * (Math.random() < 0.5 ? 1 : -1),
+    size: rand(0.8, 1.6),
+    alpha: rand(0.2, 0.6),
     pulsePhase: rand(0, Math.PI * 2),
   }));
 
@@ -314,6 +314,36 @@
     const baseRadius = 82 + smoothLevel * 26 + idleBreath;
     const wavePoints = 90;
 
+    // ── ARCOS NEURAIS EM FORMA DE ONDAS (3 ONDAS CONCÊNTRICAS EXTERNAS) ──
+    const arcRadii = [
+      { r: baseRadius + 18, speed: 0.002, amp: 5, alpha: 0.45, dash: [6, 4] },
+      { r: baseRadius + 38, speed: -0.0015, amp: 8, alpha: 0.35, dash: [] },
+      { r: baseRadius + 60, speed: 0.0012, amp: 11, alpha: 0.25, dash: [12, 6] },
+      { r: baseRadius + 84, speed: -0.001, amp: 14, alpha: 0.15, dash: [] },
+    ];
+
+    arcRadii.forEach((arc, idx) => {
+      coreCtx.save();
+      coreCtx.beginPath();
+      if (arc.dash.length) coreCtx.setLineDash(arc.dash);
+      const arcPoints = 100;
+      for (let i = 0; i <= arcPoints; i++) {
+        const a = (i / arcPoints) * Math.PI * 2;
+        const wave = Math.sin(a * (4 + idx) + t * arc.speed) * (arc.amp * (smoothLevel + 0.3));
+        const r = arc.r + wave;
+        const px = cx + Math.cos(a) * r;
+        const py = cy + Math.sin(a) * r;
+        i === 0 ? coreCtx.moveTo(px, py) : coreCtx.lineTo(px, py);
+      }
+      coreCtx.closePath();
+      coreCtx.strokeStyle = idx % 2 === 0 ? heatColor : heatSecondary;
+      coreCtx.globalAlpha = arc.alpha + smoothLevel * 0.25;
+      coreCtx.lineWidth = 1 + (smoothLevel * 1.2);
+      coreCtx.stroke();
+      coreCtx.restore();
+    });
+
+    // Forma fluida do Núcleo Principal
     coreCtx.beginPath();
     for (let i = 0; i <= wavePoints; i++) {
       const a = (i / wavePoints) * Math.PI * 2;
@@ -344,22 +374,19 @@
     coreCtx.lineWidth = 0.9;
     coreCtx.stroke();
 
-    // Partículas orbitantes em torno do núcleo
+    // Partículas sutis no centro do núcleo (apenas 12)
     orbitParticles.forEach((p) => {
-      p.angle += p.speed * (1 + smoothLevel * 2.5);
-      const pR = baseRadius + p.radiusOffset + Math.sin(t * 0.003 + p.pulsePhase) * 4;
+      p.angle += p.speed * (1 + smoothLevel * 1.5);
+      const pR = (baseRadius * 0.4) + p.radiusOffset;
       const px = cx + Math.cos(p.angle) * pR;
       const py = cy + Math.sin(p.angle) * pR;
-      const alpha = clamp(p.alpha + Math.sin(t * 0.002 + p.pulsePhase) * 0.2 + smoothLevel * 0.3, 0.1, 1);
+      const alpha = clamp(p.alpha + Math.sin(t * 0.002 + p.pulsePhase) * 0.15, 0.1, 0.7);
 
       coreCtx.beginPath();
-      coreCtx.arc(px, py, p.size * (1 + smoothLevel * 0.5), 0, Math.PI * 2);
-      coreCtx.fillStyle = Math.random() < 0.25 ? "#ffffff" : (p.radiusOffset > 0 ? heatColor : heatSecondary);
+      coreCtx.arc(px, py, p.size, 0, Math.PI * 2);
+      coreCtx.fillStyle = "#ffffff";
       coreCtx.globalAlpha = alpha;
-      coreCtx.shadowColor = heatColor;
-      coreCtx.shadowBlur = 6;
       coreCtx.fill();
-      coreCtx.shadowBlur = 0;
       coreCtx.globalAlpha = 1.0;
     });
 
