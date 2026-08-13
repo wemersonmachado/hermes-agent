@@ -26,6 +26,7 @@ import {
   fetchCategoryNews,
   transcribeAudioBytes,
   webSearch,
+  looksLikeFactualQuestion,
 } from "./shared";
 import { detectSportsSubject, formatSpecialistAnswer, trySportsSearchSpecialist } from "./search_specialist";
 import { isExplicitSearchRequest, isNewsSearchRequest, refineSearchQuery } from "./search_query";
@@ -704,7 +705,8 @@ export async function handleDashboardRequest(request: Request, env: Env, path: s
       return json({ ok: true, reply: ownDataResult });
     }
 
-    const webResearch = isExplicitSearchRequest(text) ? await research(env, text, "web").catch(() => null) : null;
+    const useResearch = isExplicitSearchRequest(text) || looksLikeFactualQuestion(text);
+    const webResearch = useResearch ? await research(env, text, "web").catch(() => null) : null;
     const searchResult = webResearch?.reply || await tryWebSearchShortcut(env, text).catch(() => null);
     if (searchResult) {
       await saveDashboardMessage(env, chatId, "user", text);

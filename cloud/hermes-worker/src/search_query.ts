@@ -65,6 +65,12 @@ export function isExplicitSearchRequest(text: string): boolean {
 }
 
 export function compactSourceLink(url: string): string {
-  const safeUrl = encodeURI(url).replace(/\)/g, "%29");
+  let safeUrl = url;
+  try {
+    safeUrl = new URL(url).href;
+  } catch {
+    safeUrl = url.replace(/ /g, "%20");
+  }
+  safeUrl = safeUrl.replace(/\)/g, "%29");
   return `[Clique aqui para ler](${safeUrl})`;
 }

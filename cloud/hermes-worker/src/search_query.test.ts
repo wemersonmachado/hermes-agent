@@ -36,5 +36,6 @@ describe("global search query refinement", () => {
 
   it("formats every source as a compact clickable label", () => {
     expect(compactSourceLink("https://example.com/a/very/long/url")).toBe("[Clique aqui para ler](https://example.com/a/very/long/url)");
+    expect(compactSourceLink("https://pt.wikipedia.org/wiki/Ve%C3%ADculo_aut%C3%B4nomo")).not.toContain("%25C3");
   });
 });

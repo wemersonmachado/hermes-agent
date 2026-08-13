@@ -123,11 +123,10 @@ function rankAndDiversify(items: Evidence[], query: string, limit = 5): Evidence
 
 function formatAnswer(query: string, grounded: GroundedSearchResult | null, evidence: Evidence[]): string {
   const factual = grounded?.summary?.trim();
-  const lead = factual || evidence[0]?.snippet || evidence[0]?.title;
-  const details = evidence.slice(factual ? 0 : 1, factual ? 4 : 5).map((item) =>
-    `• ${item.title}\n  Fonte: ${item.source} — ${compactSourceLink(item.url)}`,
+  const details = evidence.slice(0, factual ? 4 : 5).map((item) =>
+    `• ${item.snippet || item.title}\n  Fonte: ${item.source} — ${compactSourceLink(item.url)}`,
   );
-  return `🔎 Sobre ${query}:\n\n${lead}${details.length ? `\n\n${details.join("\n\n")}` : ""}`;
+  return `🔎 Sobre ${query}:\n\n${factual ? `${factual}\n\n` : ""}${details.join("\n\n")}`;
 }
 
 export async function research(env: Env, text: string, mode: ResearchMode): Promise<ResearchAnswer | null> {

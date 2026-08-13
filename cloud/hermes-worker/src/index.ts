@@ -43,6 +43,7 @@ import {
   tryWebSearchShortcut,
   tryCurrencyConversionShortcut,
   tryOwnDataQueryShortcut,
+  looksLikeFactualQuestion,
   tryMemoryCommand,
   transcribeAudioBytes,
   webSearch,
@@ -492,7 +493,8 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
       return;
     }
 
-    const webResearch = isExplicitSearchRequest(userText) ? await research(env, userText, "web").catch(() => null) : null;
+    const useResearch = isExplicitSearchRequest(userText) || looksLikeFactualQuestion(userText);
+    const webResearch = useResearch ? await research(env, userText, "web").catch(() => null) : null;
     const searchResult = webResearch?.reply || await tryWebSearchShortcut(env, userText).catch(() => null);
     if (searchResult) {
       await saveMessage(env, message, "user", userText);
