@@ -24,6 +24,10 @@ const TEAM_ALIASES: Record<string, string> = {
   mengao: "Clube de Regatas do Flamengo",
 };
 
+const STRUCTURED_TEAMS: Record<string, { id: number; display: string }> = {
+  "Clube de Regatas do Flamengo": { id: 5981, display: "Flamengo" },
+};
+
 function fold(value: string): string {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
 }
@@ -49,6 +53,91 @@ function isUsefulAnswer(answer: string): boolean {
   // mostrada pelo usuário ("acompanhe as notícias/resultados...").
   if (/\b(acompanhe|confira|veja)\s+(?:as|os)\s+(?:not[ií]cias|resultados|pr[oó]ximos jogos)\b/i.test(answer)) return false;
   return /\d|venceu|empatou|perdeu|disputa|lidera|colocado|posição/i.test(answer);
+}
+
+async function fetchJson(url: string): Promise<any | null> {
+  const response = await fetch(url, {
+    headers: { "user-agent": "Mozilla/5.0 (compatible; HermesSportsResearch/1.0)" },
+  }).catch(() => null);
+  if (!response?.ok) return null;
+  return response.json().catch(() => null);
+}
+
+function eventDate(timestamp: number): string {
+  return new Date(timestamp * 1000).toLocaleDateString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+function normalizeCompetition(name: string): string {
+  return name.replace(/,\s*(?:Knockout stage|Group stage)$/i, "").trim();
+}
+
+async function structuredSportsAnswer(subject: string): Promise<SpecialistAnswer | null> {
+  const team = STRUCTURED_TEAMS[subject];
+  if (!team) return null;
+  const lastUrl = `https://www.sofascore.com/api/v1/team/${team.id}/events/last/0`;
+  const nextUrl = `https://www.sofascore.com/api/v1/team/${team.id}/events/next/0`;
+  const [lastData, nextData] = await Promise.all([fetchJson(lastUrl), fetchJson(nextUrl)]);
+  const finished = Array.isArray(lastData?.events)
+    ? lastData.events
+      .filter((event: any) => event?.status?.type === "finished" && Number(event.startTimestamp))
+      .sort((a: any, b: any) => Number(b.startTimestamp) - Number(a.startTimestamp))
+    : [];
+  const upcoming = Array.isArray(nextData?.events)
+    ? nextData.events
+      .filter((event: any) => event?.status?.type === "notstarted" && Number(event.startTimestamp))
+      .sort((a: any, b: any) => Number(a.startTimestamp) - Number(b.startTimestamp))
+    : [];
+  const last = finished[0];
+  if (!last) return null;
+
+  const home = String(last.homeTeam?.name || "mandante");
+  const away = String(last.awayTeam?.name || "visitante");
+  const homeScore = Number(last.homeScore?.current);
+  const awayScore = Number(last.awayScore?.current);
+  if (!Number.isFinite(homeScore) || !Number.isFinite(awayScore)) return null;
+  const competition = normalizeCompetition(String(last.tournament?.name || "competição não informada"));
+  let answer = `O último jogo do ${team.display} foi ${home} ${homeScore} x ${awayScore} ${away}, em ${eventDate(last.startTimestamp)}, pela ${competition}.`;
+
+  const leagueEvent = [...finished, ...upcoming].find((event: any) =>
+    Number(event.tournament?.uniqueTournament?.id) === 325 && Number(event.season?.id),
+  );
+  let standingsUrl = "";
+  if (leagueEvent) {
+    standingsUrl = `https://www.sofascore.com/api/v1/unique-tournament/325/season/${leagueEvent.season.id}/standings/total`;
+    const standings = await fetchJson(standingsUrl);
+    const rows = Array.isArray(standings?.standings)
+      ? standings.standings.flatMap((group: any) => Array.isArray(group.rows) ? group.rows : [])
+      : [];
+    const row = rows.find((item: any) => Number(item.team?.id) === team.id);
+    if (row?.position) {
+      answer += ` No Brasileirão, está na ${row.position}ª posição, com ${row.points} pontos em ${row.matches} jogos`;
+      if (Number.isFinite(Number(row.wins)) && Number.isFinite(Number(row.draws)) && Number.isFinite(Number(row.losses))) {
+        answer += ` (${row.wins} vitórias, ${row.draws} empates e ${row.losses} derrotas)`;
+      }
+      answer += ".";
+    }
+  }
+
+  const activeCompetitions = [...new Set(upcoming.map((event: any) => normalizeCompetition(String(event.tournament?.name || ""))).filter(Boolean))];
+  if (activeCompetitions.length) {
+    answer += ` Pelos jogos já programados, segue disputando ${activeCompetitions.length} competição(ões): ${activeCompetitions.join(" e ")}.`;
+  }
+  const next = upcoming[0];
+  if (next) {
+    answer += ` O próximo compromisso é ${next.homeTeam?.name} x ${next.awayTeam?.name}, em ${eventDate(next.startTimestamp)}, pela ${normalizeCompetition(String(next.tournament?.name || "competição"))}.`;
+  }
+
+  const sources: SearchSource[] = [
+    { title: "Sofascore — resultados do Flamengo", url: lastUrl },
+    { title: "Sofascore — próximos jogos do Flamengo", url: nextUrl },
+  ];
+  if (standingsUrl) sources.push({ title: "Sofascore — classificação do Brasileirão", url: standingsUrl });
+  return { answer, sources };
 }
 
 async function synthesizeSearchResults(env: Env, text: string, subject: string, search: SearchProvider): Promise<SpecialistAnswer | null> {
@@ -101,6 +190,9 @@ export async function trySportsSearchSpecialist(
 ): Promise<SpecialistAnswer | null> {
   const subject = detectSportsSubject(text);
   if (!subject) return null;
+
+  const structured = await structuredSportsAnswer(subject).catch(() => null);
+  if (structured) return structured;
 
   if (!env.GEMINI_API_KEY) return search ? synthesizeSearchResults(env, text, subject, search) : null;
 
