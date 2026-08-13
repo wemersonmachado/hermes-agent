@@ -1342,9 +1342,8 @@
                         #hud-col-core #voice-transcript-title { font-size: 9px !important; top: -2px !important; }
                         #hud-col-core > div { display: none !important; }
 
-                        /* ORDER 2: Telemetria viva sem caixa abaixo do núcleo */
-                        #hud-col-telemetry { order: 2; flex: 0 0 auto !important; height: auto !important; max-height: 100px !important; overflow: hidden !important; padding: 2px 4px !important; gap: 2px !important; font-size: 9px !important; background: transparent !important; border: none !important; box-shadow: none !important; }
-                        #hud-col-telemetry > div:nth-child(n+7) { display: none !important; }
+                        /* ORDER 2: Telemetria viva e organizada abaixo do núcleo */
+                        #hud-col-telemetry { order: 2; flex: 0 0 auto !important; height: auto !important; max-height: 160px !important; overflow-y: auto !important; padding: 6px 10px !important; gap: 4px !important; font-size: 10px !important; background: rgba(10,14,24,0.6) !important; border: 1px solid var(--border) !important; border-radius: 10px !important; }
                         #hud-col-telemetry #telemetry-source-badge { display: none !important; }
 
                         /* ORDER 3: Chat no fim ocupando o restante da tela */
@@ -1382,8 +1381,8 @@
                     <!-- GRID: telemetria real | núcleo central | chat real -->
                     <div id="hud-grid" style="position:relative; z-index:2; flex:1; display:grid; grid-template-columns:265px 1fr 320px; gap:10px; padding:10px 12px; min-height:0; overflow:hidden;">
 
-                        <!-- ESQUERDA: telemetria real viva sem caixa -->
-                        <aside id="hud-col-telemetry" class="hud-scrollbar" style="display:flex; flex-direction:column; gap:8px; min-height:0; overflow-y:auto; background:transparent; border:none; padding:4px;">
+                        <!-- ESQUERDA: telemetria real viva do PC -->
+                        <aside id="hud-col-telemetry" class="hud-scrollbar" style="display:flex; flex-direction:column; gap:8px; min-height:0; overflow-y:auto; background:rgba(10,14,24,0.7); border:1px solid var(--border); border-radius:10px; padding:10px;">
                             <div style="font-family:'Orbitron',sans-serif; font-size:10px; font-weight:700; letter-spacing:0.1em; color:var(--cyan); border-bottom:1px solid var(--border); padding-bottom:4px;">◈ TELEMETRIA DO PC</div>
                             <div id="telemetry-source-badge" style="font-size:9px; color:var(--text-muted);">⏳ verificando fonte dos dados…</div>
 
