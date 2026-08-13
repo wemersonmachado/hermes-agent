@@ -8,6 +8,7 @@ type StoredMessage = {
 };
 import { compactSourceLink, isNewsSearchRequest, refineSearchQuery } from "./search_query";
 import { BROW_PERSONALITY_PROMPT } from "./identity";
+import { needsSemanticRecall } from "./context_policy";
 
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
 
@@ -129,6 +130,10 @@ export async function embedText(env: Env, text: string): Promise<number[] | null
 export async function recallRelevantMemories(env: Env, chatId: number, queryText: string): Promise<string[]> {
   const embedding = await embedText(env, queryText).catch(() => null);
   if (!embedding) return [];
+  return recallRelevantMemoriesByEmbedding(env, chatId, embedding);
+}
+
+async function recallRelevantMemoriesByEmbedding(env: Env, chatId: number, embedding: number[]): Promise<string[]> {
   const response = await supabase(env, "rpc/match_hermes_memories", {
     method: "POST",
     body: JSON.stringify({
@@ -971,6 +976,10 @@ export function formatEntityGraph(entities: ExtractedEntity[], edges: ExtractedE
 export async function recallRelevantImages(env: Env, chatId: number, queryText: string): Promise<string[]> {
   const embedding = await embedText(env, queryText).catch(() => null);
   if (!embedding) return [];
+  return recallRelevantImagesByEmbedding(env, chatId, embedding);
+}
+
+async function recallRelevantImagesByEmbedding(env: Env, chatId: number, embedding: number[]): Promise<string[]> {
   const response = await supabase(env, "rpc/match_hermes_images", {
     method: "POST",
     body: JSON.stringify({ query_embedding: embedding, target_chat_id: String(chatId), match_count: 3 }),
@@ -1108,14 +1117,33 @@ export async function googleGroundedSearch(env: Env, query: string): Promise<Gro
   }
 }
 
-export async function synthesizeVoiceReply(env: Env, text: string): Promise<ArrayBuffer | null> {
+export type SynthesizedVoice = { bytes: ArrayBuffer; contentType: "audio/mpeg" | "audio/wav"; fileName: string };
+
+export async function synthesizeVoiceReply(env: Env, text: string): Promise<SynthesizedVoice | null> {
   const clean = stripMarkdownForSpeech(text);
+  const native = await synthesizeWorkersAiVoice(env, clean).catch(() => null);
+  if (native) return native;
   const edge = await synthesizeEdgeVoice(clean).catch(() => null);
-  if (edge) return edge;
+  if (edge) return { bytes: edge, contentType: "audio/mpeg", fileName: "brow.mp3" };
   // Edge TTS é um protocolo não-oficial (WSS reverso) — quando falha
   // (raro, mas acontece: rate-limit, token expirado, timeout), cai pro
   // Gemini TTS antes de desistir, em vez de deixar o pedido sem áudio.
-  return synthesizeGeminiVoice(env, clean).catch(() => null);
+  const gemini = await synthesizeGeminiVoice(env, clean).catch(() => null);
+  return gemini ? { bytes: gemini, contentType: "audio/wav", fileName: "brow.wav" } : null;
+}
+
+async function synthesizeWorkersAiVoice(env: Env, text: string): Promise<SynthesizedVoice | null> {
+  const clipped = text.length > 1200 ? `${text.slice(0, 1200)}…` : text;
+  const result = await env.AI.run("@cf/myshell-ai/melotts", { prompt: clipped, lang: "pt" });
+  if (result instanceof Uint8Array && result.byteLength) {
+    return { bytes: new Uint8Array(result).buffer, contentType: "audio/mpeg", fileName: "brow.mp3" };
+  }
+  const audio = typeof result === "object" && result && "audio" in result ? result.audio : null;
+  if (typeof audio !== "string" || !audio) return null;
+  const binary = atob(audio);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return { bytes: bytes.buffer, contentType: "audio/mpeg", fileName: "brow.mp3" };
 }
 
 async function synthesizeGeminiVoice(env: Env, text: string): Promise<ArrayBuffer | null> {
@@ -1334,12 +1362,20 @@ async function synthesizeEdgeVoice(text: string): Promise<ArrayBuffer | null> {
 }
 
 export async function buildRealtimeContext(env: Env, chatId: number, text: string): Promise<string> {
-  const [lookups, recalled, recalledImages, facts] = await Promise.all([
+  // One embedding feeds both semantic stores. Previously each recall issued
+  // its own Workers AI inference, doubling the slowest part of every normal turn.
+  const embeddingPromise = needsSemanticRecall(text) ? embedText(env, text).catch(() => null) : Promise.resolve(null);
+  const [lookups, facts, embedding] = await Promise.all([
     Promise.all(detectApiLookups(text).map(async (l) => ({ label: l.label, data: await l.fetch() }))),
-    recallRelevantMemories(env, chatId, text),
-    recallRelevantImages(env, chatId, text),
     getFacts(env, chatId),
+    embeddingPromise,
   ]);
+  const [recalled, recalledImages] = embedding
+    ? await Promise.all([
+        recallRelevantMemoriesByEmbedding(env, chatId, embedding),
+        recallRelevantImagesByEmbedding(env, chatId, embedding),
+      ])
+    : [[], []];
   const lines = lookups
     .filter((r) => r.data !== null)
     .map((r) => `${r.label}: ${JSON.stringify(r.data).slice(0, 800)}`);

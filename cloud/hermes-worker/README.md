@@ -109,6 +109,23 @@ segunda transcrição independente no Groq. Versões divergentes passam por uma
 reconciliação restrita que pode corrigir palavras, mas não acrescentar pedidos
 ou intenções. Telegram, dashboard e PWA compartilham exatamente esse pipeline.
 
+Pedidos como `gere o áudio`, `manda em áudio`, `responda por voz` e `quero
+ouvir` são reconhecidos deterministicamente em `src/voice_intent.ts`. Um pedido
+curto de repetição transforma diretamente a última resposta em voz, sem nova
+pesquisa, reconstrução de contexto ou chamada ao modelo. O TTS usa primeiro o
+binding nativo Workers AI e mantém Edge/Gemini como fallbacks; cada resultado
+carrega seu MIME e extensão reais para o Telegram não receber WAV rotulado como
+MP3. Falhas nunca são escondidas atrás de uma promessa textual de áudio.
+
+### Latência
+
+O contexto recente e os fatos estáveis continuam presentes em toda conversa.
+A recuperação semântica de longo prazo — embedding mais duas consultas RPC —
+só roda quando a mensagem se refere a memória, conversa anterior, fotos ou
+documentos (`src/context_policy.ts`). Quando necessária, memória textual e
+visual reutilizam um único embedding. Isso preserva o cérebro central e remove
+inferências e I/O desnecessários do caminho comum de resposta.
+
 ### Agenda e lembretes
 
 Um Cron Trigger executa a cada cinco minutos e entrega no Telegram eventos que

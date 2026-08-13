@@ -740,7 +740,7 @@ export async function handleDashboardRequest(request: Request, env: Env, path: s
     if (!text) return badRequest("text vazio");
     const audio = await synthesizeVoiceReply(env, text);
     if (!audio) return json({ ok: false, error: "tts_failed" }, 502);
-    return new Response(audio, { headers: { "content-type": "audio/mpeg" } });
+    return new Response(audio.bytes, { headers: { "content-type": audio.contentType } });
   }
 
   return json({ ok: false, error: "not_found", resource }, 404);

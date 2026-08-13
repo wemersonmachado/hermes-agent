@@ -48,6 +48,7 @@ import {
   transcribeAudioBytes,
   webSearch,
 } from "./shared";
+import { isAudioReplayRequest, wantsAudioReply } from "./voice_intent";
 import { detectSportsSubject, formatSpecialistAnswer, trySportsSearchSpecialist } from "./search_specialist";
 import { isExplicitSearchRequest, isNewsSearchRequest, refineSearchQuery } from "./search_query";
 import { research } from "./research_engine";
@@ -93,10 +94,10 @@ async function sendText(env: Env, chatId: number, text: string): Promise<void> {
   }
 }
 
-async function sendVoiceNote(env: Env, chatId: number, mp3: ArrayBuffer): Promise<void> {
+async function sendVoiceNote(env: Env, chatId: number, audio: { bytes: ArrayBuffer; contentType: string; fileName: string }): Promise<void> {
   const form = new FormData();
   form.set("chat_id", String(chatId));
-  form.set("voice", new Blob([mp3], { type: "audio/mpeg" }), "brow.mp3");
+  form.set("voice", new Blob([audio.bytes], { type: audio.contentType }), audio.fileName);
   const result = await telegramMultipartResult(env, "sendVoice", form);
   if (!result?.voice) throw new Error("telegram_voice_reclassified");
 }
@@ -179,12 +180,6 @@ async function transcribeVoice(env: Env, fileId: string, mimeType = "audio/ogg")
   return transcribeAudioBytes(env, bytes, mimeType);
 }
 
-const AUDIO_REQUEST_PATTERN = /\b(audio|áudio)\b|\b(manda|gera|gere|cria|crie|envia|fala|toca)\w*\s+(a\s+)?voz\b/i;
-
-function wantsAudioReply(text: string): boolean {
-  return AUDIO_REQUEST_PATTERN.test(text);
-}
-
 async function maybeSendVoice(
   env: Env,
   chatId: number,
@@ -199,9 +194,11 @@ async function maybeSendVoice(
       await sendVoiceNote(env, chatId, audio);
     } else {
       console.error(JSON.stringify({ event: "tts_no_audio", updateId }));
+      await sendText(env, chatId, "Não consegui gerar o áudio agora. Tente novamente em instantes.");
     }
   } catch (err) {
     console.error(JSON.stringify({ event: "tts_failed", updateId, error: String(err) }));
+    await sendText(env, chatId, "Não consegui enviar o áudio agora. Tente novamente em instantes.").catch(() => undefined);
   }
 }
 
@@ -368,6 +365,17 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
     if (command === "/new") {
       await clearHistory(env, message.chat.id);
       await sendText(env, message.chat.id, "Histórico reiniciado.");
+      await markUpdate(env, update.update_id, "done");
+      return;
+    }
+    if (isAudioReplayRequest(userText)) {
+      await telegram(env, "sendChatAction", { chat_id: message.chat.id, action: "record_voice" });
+      const previous = (await history(env, message.chat.id)).reverse().find((item) => item.role === "assistant")?.content;
+      if (!previous) {
+        await sendText(env, message.chat.id, "Ainda não há uma resposta anterior para transformar em áudio.");
+      } else {
+        await maybeSendVoice(env, message.chat.id, userText, previous, update.update_id);
+      }
       await markUpdate(env, update.update_id, "done");
       return;
     }
