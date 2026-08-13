@@ -20,6 +20,26 @@ export function isAudioReplayRequest(text: string): boolean {
   return AUDIO_ONLY.test(normalizeVoiceText(text));
 }
 
+export type VoiceRequest = {
+  wantsAudio: boolean;
+  replayPrevious: boolean;
+  contentText: string;
+};
+
+/** Separates transport instructions from the subject that should reach search/LLM. */
+export function parseVoiceRequest(text: string): VoiceRequest {
+  const wantsAudio = wantsAudioReply(text);
+  const replayPrevious = wantsAudio && isAudioReplayRequest(text);
+  if (!wantsAudio || replayPrevious) return { wantsAudio, replayPrevious, contentText: text.trim() };
+
+  const contentText = text
+    .replace(/^\s*(?:por\s+favor[, ]*)?(?:(?:responda|responde|mande|manda|envie|envia|gere|gera|crie|cria|fale|fala)\s+)?(?:somente\s+|s[oó]\s+)?(?:em|por|com)?\s*(?:um\s+|o\s+|a\s+)?(?:[aá]udio|voz)\s*[:;,\-]?\s*/i, "")
+    .replace(/\s*[,;\-]?\s*(?:e\s+)?(?:responda|responde|mande|manda|envie|envia)?\s*(?:somente\s+|s[oó]\s+)?(?:em|por|com)\s+(?:[aá]udio|voz)(?:\s+por\s+favor)?\s*[.!?]*\s*$/i, "")
+    .trim();
+
+  return { wantsAudio, replayPrevious, contentText: contentText || text.trim() };
+}
+
 function normalizeVoiceText(text: string): string {
   return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }

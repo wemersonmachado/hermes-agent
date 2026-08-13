@@ -1117,19 +1117,44 @@ export async function googleGroundedSearch(env: Env, query: string): Promise<Gro
   }
 }
 
-export type SynthesizedVoice = { bytes: ArrayBuffer; contentType: "audio/mpeg" | "audio/wav"; fileName: string };
+export type SynthesizedVoice = {
+  bytes: ArrayBuffer;
+  contentType: "audio/mpeg";
+  fileName: "brow.mp3";
+  provider: "edge-andrew" | "melotts-backup";
+  fallback: boolean;
+};
+
+const UNSPEAKABLE_META = [
+  /[^.!?\n]*(?:o\s+)?sistema\s+(?:gerar[aá]|vai\s+gerar|est[aá]\s+gerando)\s+(?:o\s+)?[aá]udio[^.!?\n]*[.!?]?/giu,
+  /[^.!?\n]*(?:ou[cç]a|escute)\s+(?:o\s+)?[aá]udio\s+gerado(?:\s+pelo\s+sistema)?[^.!?\n]*[.!?]?/giu,
+  /[^.!?\n]*(?:o\s+)?[aá]udio\s+(?:foi|ser[aá])\s+gerado[^.!?\n]*[.!?]?/giu,
+  /^\s*\[(?:[aá]udio|voz|tts|transcri[cç][aã]o)[^\]]*\]\s*$/gimu,
+];
+
+/** The only boundary allowed to feed TTS. It removes presentation markup and
+ * operational scaffolding, including contaminated replies already in history. */
+export function prepareSpeechPayload(text: string): string | null {
+  let clean = text;
+  for (const pattern of UNSPEAKABLE_META) clean = clean.replace(pattern, " ");
+  clean = stripMarkdownForSpeech(clean)
+    .replace(/^\s*[()]+|[()]+\s*$/g, "")
+    .replace(/^\s*[.,;:!?\-]+\s*/, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  if (!clean || UNSPEAKABLE_META.some((pattern) => new RegExp(pattern.source, pattern.flags.replace("g", "")).test(clean))) return null;
+  return clipSpeechForFastDelivery(clean);
+}
 
 export async function synthesizeVoiceReply(env: Env, text: string): Promise<SynthesizedVoice | null> {
-  const clean = clipSpeechForFastDelivery(stripMarkdownForSpeech(text));
+  const clean = prepareSpeechPayload(text);
+  if (!clean) return null;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const edge = await synthesizeEdgeVoice(clean).catch(() => null);
+    if (edge) return { bytes: edge, contentType: "audio/mpeg", fileName: "brow.mp3", provider: "edge-andrew", fallback: attempt > 0 };
+  }
   const native = await synthesizeWorkersAiVoice(env, clean).catch(() => null);
-  if (native) return native;
-  const edge = await synthesizeEdgeVoice(clean).catch(() => null);
-  if (edge) return { bytes: edge, contentType: "audio/mpeg", fileName: "brow.mp3" };
-  // Edge TTS é um protocolo não-oficial (WSS reverso) — quando falha
-  // (raro, mas acontece: rate-limit, token expirado, timeout), cai pro
-  // Gemini TTS antes de desistir, em vez de deixar o pedido sem áudio.
-  const gemini = await synthesizeGeminiVoice(env, clean).catch(() => null);
-  return gemini ? { bytes: gemini, contentType: "audio/wav", fileName: "brow.wav" } : null;
+  return native ? { ...native, provider: "melotts-backup", fallback: true } : null;
 }
 
 function clipSpeechForFastDelivery(text: string, maxChars = 150): string {
@@ -1149,7 +1174,9 @@ async function synthesizeWorkersAiVoice(env: Env, text: string): Promise<Synthes
     clearTimeout(timer);
   }
   const bytes = aiSpeechBytes(result);
-  return bytes ? { bytes: new Uint8Array(bytes).buffer, contentType: "audio/mpeg", fileName: "brow.mp3" } : null;
+  return bytes
+    ? { bytes: new Uint8Array(bytes).buffer, contentType: "audio/mpeg", fileName: "brow.mp3", provider: "melotts-backup", fallback: true }
+    : null;
 }
 
 function aiSpeechBytes(result: AiTextToSpeechOutput): Uint8Array | null {
@@ -1160,70 +1187,6 @@ function aiSpeechBytes(result: AiTextToSpeechOutput): Uint8Array | null {
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
   return bytes;
-}
-
-async function synthesizeGeminiVoice(env: Env, text: string): Promise<ArrayBuffer | null> {
-  if (!env.GEMINI_API_KEY) return null;
-  const clipped = text.length > 900 ? `${text.slice(0, 900)}…` : text;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 15000);
-  try {
-    const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        signal: controller.signal,
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: clipped }] }],
-          generationConfig: {
-            responseModalities: ["AUDIO"],
-            speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Charon" } } },
-          },
-        }),
-      },
-    );
-    if (!resp.ok) return null;
-    const data = (await resp.json()) as any;
-    const parts = data?.candidates?.[0]?.content?.parts || [];
-    const inline = parts.find((p: any) => p?.inlineData?.data || p?.inline_data?.data);
-    const b64 = inline?.inlineData?.data || inline?.inline_data?.data;
-    if (typeof b64 !== "string") return null;
-    const binary = atob(b64);
-    const pcm = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i += 1) pcm[i] = binary.charCodeAt(i);
-    return pcmToWav(pcm.buffer, 24000, 1);
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-function pcmToWav(pcm: ArrayBuffer, sampleRate: number, channels: number): ArrayBuffer {
-  const payload = new Uint8Array(pcm);
-  const header = new ArrayBuffer(44);
-  const view = new DataView(header);
-  const writeStr = (offset: number, value: string) => {
-    for (let i = 0; i < value.length; i += 1) view.setUint8(offset + i, value.charCodeAt(i));
-  };
-  writeStr(0, "RIFF");
-  view.setUint32(4, 36 + payload.byteLength, true);
-  writeStr(8, "WAVE");
-  writeStr(12, "fmt ");
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);
-  view.setUint16(22, channels, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * channels * 2, true);
-  view.setUint16(32, channels * 2, true);
-  view.setUint16(34, 16, true);
-  writeStr(36, "data");
-  view.setUint32(40, payload.byteLength, true);
-  const wav = new Uint8Array(44 + payload.byteLength);
-  wav.set(new Uint8Array(header));
-  wav.set(payload, 44);
-  return wav.buffer;
 }
 
 async function synthesizeEdgeVoice(text: string): Promise<ArrayBuffer | null> {
@@ -1369,7 +1332,7 @@ async function synthesizeEdgeVoice(text: string): Promise<ArrayBuffer | null> {
     );
     const ssml =
       `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'>` +
-      `<voice name='${EDGE_TTS_VOICE_XML}'><prosody pitch='-10Hz' rate='+40%' volume='+0%'>` +
+      `<voice name='${EDGE_TTS_VOICE_XML}'><prosody pitch='-5Hz' rate='+5%' volume='+0%'>` +
       `${edgeTtsEscapeXml(clipped)}</prosody></voice></speak>`;
     socket.send(
       `X-RequestId:${requestId}\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:${edgeTtsTimestamp()}Z\r\nPath:ssml\r\n\r\n${ssml}`,

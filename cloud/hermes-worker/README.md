@@ -112,10 +112,13 @@ ou intenções. Telegram, dashboard e PWA compartilham exatamente esse pipeline.
 Pedidos como `gere o áudio`, `manda em áudio`, `responda por voz` e `quero
 ouvir` são reconhecidos deterministicamente em `src/voice_intent.ts`. Um pedido
 curto de repetição transforma diretamente a última resposta em voz, sem nova
-pesquisa, reconstrução de contexto ou chamada ao modelo. O TTS usa primeiro o
-binding nativo Workers AI e mantém Edge/Gemini como fallbacks; cada resultado
-carrega seu MIME e extensão reais para o Telegram não receber WAV rotulado como
-MP3. A modalidade é exclusiva: quando voz é solicitada, a resposta é enviada
+pesquisa, reconstrução de contexto ou chamada ao modelo. Antes da síntese,
+`prepareSpeechPayload` remove instruções de transporte e mensagens operacionais
+— inclusive de respostas antigas já salvas — para que frases como “o sistema
+gerará o áudio” nunca sejam faladas. O TTS tenta duas vezes a voz fixa
+AndrewMultilingualNeural (`pitch=-5Hz`, `rate=+5%`) e só então usa MeloTTS como
+backup MP3. Gemini/WAV não participa do Telegram. A modalidade é exclusiva:
+quando voz é solicitada, a resposta é enviada
 somente como mensagem de voz, nunca duplicada em texto. Falhas nunca são
 escondidas atrás de uma promessa textual de áudio.
 
@@ -138,6 +141,9 @@ só roda quando a mensagem se refere a memória, conversa anterior, fotos ou
 documentos (`src/context_policy.ts`). Quando necessária, memória textual e
 visual reutilizam um único embedding. Isso preserva o cérebro central e remove
 inferências e I/O desnecessários do caminho comum de resposta.
+O armazenamento de mensagens também não bloqueia mais a resposta esperando o
+embedding: o texto é persistido primeiro e o vetor é preenchido com
+`ctx.waitUntil`, preservando a memória sem colocar inferência no caminho crítico.
 
 ### Agenda e lembretes
 

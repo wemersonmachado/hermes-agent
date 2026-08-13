@@ -48,7 +48,7 @@ import {
   transcribeAudioBytes,
   webSearch,
 } from "./shared";
-import { isAudioReplayRequest, wantsAudioReply } from "./voice_intent";
+import { parseVoiceRequest } from "./voice_intent";
 import { detectSportsSubject, formatSpecialistAnswer, trySportsSearchSpecialist } from "./search_specialist";
 import { isExplicitSearchRequest, isNewsSearchRequest, refineSearchQuery } from "./search_query";
 import { research } from "./research_engine";
@@ -131,21 +131,33 @@ async function saveMessage(
   message: TelegramMessage,
   role: StoredMessage["role"],
   content: string,
+  ctx?: ExecutionContext,
 ): Promise<void> {
-  const embedding = await embedText(env, content).catch(() => null);
   const response = await supabase(env, "hermes_cloud_messages", {
     method: "POST",
-    headers: { prefer: "return=minimal" },
+    headers: { prefer: ctx ? "return=representation" : "return=minimal" },
     body: JSON.stringify({
       chat_id: String(message.chat.id),
       user_id: String(message.from?.id ?? message.chat.id),
       telegram_message_id: role === "user" ? message.message_id : null,
       role,
       content,
-      embedding,
     }),
   });
   if (!response.ok) throw new Error(`Supabase save failed: ${response.status}`);
+  if (!ctx) return;
+  const rows = (await response.json().catch(() => [])) as { id?: string }[];
+  const id = rows[0]?.id;
+  if (!id) return;
+  ctx.waitUntil((async () => {
+    const embedding = await embedText(env, content).catch(() => null);
+    if (!embedding) return;
+    await supabase(env, `hermes_cloud_messages?id=eq.${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { prefer: "return=minimal" },
+      body: JSON.stringify({ embedding }),
+    });
+  })().catch((error) => console.error(JSON.stringify({ event: "embedding_backfill_failed", id, error: String(error) }))));
 }
 
 // ---------------------------------------------------------------------------
@@ -195,6 +207,8 @@ async function sendRequestedVoice(
       console.log(JSON.stringify({
         event: "tts_delivered",
         updateId,
+        provider: audio.provider,
+        fallback: audio.fallback,
         synthesisMs: synthesizedAt - startedAt,
         telegramMs: Date.now() - synthesizedAt,
         bytes: audio.bytes.byteLength,
@@ -215,11 +229,11 @@ async function sendRequestedVoice(
 async function deliverReply(
   env: Env,
   chatId: number,
-  userText: string,
+  audioRequested: boolean,
   replyText: string,
   updateId: number,
 ): Promise<void> {
-  if (!wantsAudioReply(userText)) {
+  if (!audioRequested) {
     await sendText(env, chatId, replyText);
     return;
   }
@@ -323,7 +337,7 @@ async function processIncomingImage(env: Env, message: TelegramMessage): Promise
 }
 
 
-async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
+async function processUpdate(env: Env, update: TelegramUpdate, ctx: ExecutionContext): Promise<void> {
   if (!(await claimUpdate(env, update))) return;
   const message = update.message;
   try {
@@ -355,9 +369,7 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
     }
 
     let userText = message.text?.trim() ?? "";
-    let isVoiceInput = false;
     if (!userText && message.voice) {
-      isVoiceInput = true;
       await telegram(env, "sendChatAction", { chat_id: message.chat.id, action: "typing" });
       userText = await transcribeVoice(env, message.voice.file_id, message.voice.mime_type || "audio/ogg");
       if (!userText) {
@@ -369,7 +381,9 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
       // inteira de volta. Isso evita repetir saudações, hesitações e o pedido.
     }
 
-    const command = userText.toLowerCase();
+    const voiceRequest = parseVoiceRequest(userText);
+    const requestText = voiceRequest.contentText;
+    const command = requestText.toLowerCase();
     if (command === "/start" || command === "/help") {
       await sendText(
         env,
@@ -395,13 +409,13 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
       await markUpdate(env, update.update_id, "done");
       return;
     }
-    if (isAudioReplayRequest(userText)) {
+    if (voiceRequest.replayPrevious) {
       await telegram(env, "sendChatAction", { chat_id: message.chat.id, action: "record_voice" });
       const previous = (await history(env, message.chat.id)).reverse().find((item) => item.role === "assistant")?.content;
       if (!previous) {
         await sendText(env, message.chat.id, "Ainda não há uma resposta anterior para transformar em áudio.");
       } else {
-        await deliverReply(env, message.chat.id, userText, previous, update.update_id);
+        await deliverReply(env, message.chat.id, true, previous, update.update_id);
       }
       await markUpdate(env, update.update_id, "done");
       return;
@@ -428,8 +442,8 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
       await markUpdate(env, update.update_id, "done");
       return;
     }
-    if (userText.toLowerCase().startsWith("/memoria ")) {
-      const term = userText.slice("/memoria ".length).trim();
+    if (requestText.toLowerCase().startsWith("/memoria ")) {
+      const term = requestText.slice("/memoria ".length).trim();
       await telegram(env, "sendChatAction", { chat_id: message.chat.id, action: "typing" });
       const [found, foundImages] = await Promise.all([
         recallRelevantMemories(env, message.chat.id, term),
@@ -445,11 +459,11 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
       return;
     }
 
-    const memoryResult = await tryMemoryCommand(env, message.chat.id, userText).catch(() => null);
+    const memoryResult = await tryMemoryCommand(env, message.chat.id, requestText).catch(() => null);
     if (memoryResult) {
-      await saveMessage(env, message, "user", userText);
-      await saveMessage(env, message, "assistant", memoryResult.reply);
-      await sendText(env, message.chat.id, memoryResult.reply);
+      await saveMessage(env, message, "user", requestText, ctx);
+      await saveMessage(env, message, "assistant", memoryResult.reply, ctx);
+      await deliverReply(env, message.chat.id, voiceRequest.wantsAudio, memoryResult.reply, update.update_id);
       for (const fileId of memoryResult.imageFileIds || []) {
         await telegram(env, "sendPhoto", { chat_id: message.chat.id, photo: fileId });
       }
@@ -457,104 +471,105 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
       return;
     }
 
-    if (!isVoiceInput) {
-      await telegram(env, "sendChatAction", { chat_id: message.chat.id, action: "typing" });
-    }
+    await telegram(env, "sendChatAction", {
+      chat_id: message.chat.id,
+      action: voiceRequest.wantsAudio ? "record_voice" : "typing",
+    }).catch(() => undefined);
 
-    const sportsResult = await trySportsSearchSpecialist(env, userText, webSearch).catch(() => null);
-    const sportsSubject = detectSportsSubject(userText);
+    const sportsResult = await trySportsSearchSpecialist(env, requestText, webSearch).catch(() => null);
+    const sportsSubject = detectSportsSubject(requestText);
     if (sportsResult || sportsSubject) {
       const reply = sportsResult
         ? formatSpecialistAnswer(sportsResult)
         : `Não consegui confirmar agora os dados atuais de ${sportsSubject}. Prefiro não inventar placar, posição ou competições; tente novamente em instantes.`;
-      await saveMessage(env, message, "user", userText);
-      await saveMessage(env, message, "assistant", reply);
-      await deliverReply(env, message.chat.id, userText, reply, update.update_id);
+      await saveMessage(env, message, "user", requestText, ctx);
+      await saveMessage(env, message, "assistant", reply, ctx);
+      await deliverReply(env, message.chat.id, voiceRequest.wantsAudio, reply, update.update_id);
       await markUpdate(env, update.update_id, "done");
       return;
     }
 
-    const newsResearch = isNewsSearchRequest(userText) ? await research(env, userText, "news").catch(() => null) : null;
+    const newsResearch = isNewsSearchRequest(requestText) ? await research(env, requestText, "news").catch(() => null) : null;
     if (newsResearch) {
-      await saveMessage(env, message, "user", userText);
-      await extractAndSaveFacts(env, message.chat.id, userText);
-      await saveMessage(env, message, "assistant", newsResearch.reply);
-      await deliverReply(env, message.chat.id, userText, newsResearch.reply, update.update_id);
+      await saveMessage(env, message, "user", requestText, ctx);
+      await extractAndSaveFacts(env, message.chat.id, requestText);
+      await saveMessage(env, message, "assistant", newsResearch.reply, ctx);
+      await deliverReply(env, message.chat.id, voiceRequest.wantsAudio, newsResearch.reply, update.update_id);
       await markUpdate(env, update.update_id, "done");
       return;
     }
-    if (isNewsSearchRequest(userText)) {
-      const topic = refineSearchQuery(userText, { news: true });
+    if (isNewsSearchRequest(requestText)) {
+      const topic = refineSearchQuery(requestText, { news: true });
       const reply = topic
         ? `Não consegui confirmar notícias atuais sobre ${topic} em fontes reais agora. Tente novamente em instantes.`
         : "Não consegui confirmar as notícias atuais em fontes reais agora. Tente novamente em instantes.";
-      await saveMessage(env, message, "user", userText);
-      await saveMessage(env, message, "assistant", reply);
-      await deliverReply(env, message.chat.id, userText, reply, update.update_id);
+      await saveMessage(env, message, "user", requestText, ctx);
+      await saveMessage(env, message, "assistant", reply, ctx);
+      await deliverReply(env, message.chat.id, voiceRequest.wantsAudio, reply, update.update_id);
       await markUpdate(env, update.update_id, "done");
       return;
     }
 
-    const currencyResult = await tryCurrencyConversionShortcut(userText).catch(() => null);
+    const currencyResult = await tryCurrencyConversionShortcut(requestText).catch(() => null);
     if (currencyResult) {
-      await saveMessage(env, message, "user", userText);
-      await extractAndSaveFacts(env, message.chat.id, userText);
-      await saveMessage(env, message, "assistant", currencyResult);
-      await deliverReply(env, message.chat.id, userText, currencyResult, update.update_id);
+      await saveMessage(env, message, "user", requestText, ctx);
+      await extractAndSaveFacts(env, message.chat.id, requestText);
+      await saveMessage(env, message, "assistant", currencyResult, ctx);
+      await deliverReply(env, message.chat.id, voiceRequest.wantsAudio, currencyResult, update.update_id);
       await markUpdate(env, update.update_id, "done");
       return;
     }
 
-    const actionResult = await tryActionRouter(env, message.chat.id, userText).catch(() => null);
+    const actionResult = await tryActionRouter(env, message.chat.id, requestText).catch(() => null);
     if (actionResult) {
-      await saveMessage(env, message, "user", userText);
-      await extractAndSaveFacts(env, message.chat.id, userText);
-      await saveMessage(env, message, "assistant", actionResult);
-      await deliverReply(env, message.chat.id, userText, actionResult, update.update_id);
+      await saveMessage(env, message, "user", requestText, ctx);
+      await extractAndSaveFacts(env, message.chat.id, requestText);
+      await saveMessage(env, message, "assistant", actionResult, ctx);
+      await deliverReply(env, message.chat.id, voiceRequest.wantsAudio, actionResult, update.update_id);
       await markUpdate(env, update.update_id, "done");
       return;
     }
 
-    const ownDataResult = await tryOwnDataQueryShortcut(env, message.chat.id, userText).catch(() => null);
+    const ownDataResult = await tryOwnDataQueryShortcut(env, message.chat.id, requestText).catch(() => null);
     if (ownDataResult) {
-      await saveMessage(env, message, "user", userText);
-      await extractAndSaveFacts(env, message.chat.id, userText);
-      await saveMessage(env, message, "assistant", ownDataResult);
-      await deliverReply(env, message.chat.id, userText, ownDataResult, update.update_id);
+      await saveMessage(env, message, "user", requestText, ctx);
+      await extractAndSaveFacts(env, message.chat.id, requestText);
+      await saveMessage(env, message, "assistant", ownDataResult, ctx);
+      await deliverReply(env, message.chat.id, voiceRequest.wantsAudio, ownDataResult, update.update_id);
       await markUpdate(env, update.update_id, "done");
       return;
     }
 
-    const useResearch = isExplicitSearchRequest(userText) || looksLikeFactualQuestion(userText);
-    const webResearch = useResearch ? await research(env, userText, "web").catch(() => null) : null;
-    const searchResult = webResearch?.reply || await tryWebSearchShortcut(env, userText).catch(() => null);
+    const useResearch = isExplicitSearchRequest(requestText) || looksLikeFactualQuestion(requestText);
+    const webResearch = useResearch ? await research(env, requestText, "web").catch(() => null) : null;
+    const searchResult = webResearch?.reply || await tryWebSearchShortcut(env, requestText).catch(() => null);
     if (searchResult) {
-      await saveMessage(env, message, "user", userText);
-      await extractAndSaveFacts(env, message.chat.id, userText);
-      await saveMessage(env, message, "assistant", searchResult);
-      await deliverReply(env, message.chat.id, userText, searchResult, update.update_id);
+      await saveMessage(env, message, "user", requestText, ctx);
+      await extractAndSaveFacts(env, message.chat.id, requestText);
+      await saveMessage(env, message, "assistant", searchResult, ctx);
+      await deliverReply(env, message.chat.id, voiceRequest.wantsAudio, searchResult, update.update_id);
       await markUpdate(env, update.update_id, "done");
       return;
     }
-    if (isExplicitSearchRequest(userText)) {
-      const query = refineSearchQuery(userText);
+    if (isExplicitSearchRequest(requestText)) {
+      const query = refineSearchQuery(requestText);
       const reply = `Não consegui confirmar resultados reais sobre ${query || "esse assunto"} agora. Tente novamente em instantes.`;
-      await saveMessage(env, message, "user", userText);
-      await saveMessage(env, message, "assistant", reply);
-      await deliverReply(env, message.chat.id, userText, reply, update.update_id);
+      await saveMessage(env, message, "user", requestText, ctx);
+      await saveMessage(env, message, "assistant", reply, ctx);
+      await deliverReply(env, message.chat.id, voiceRequest.wantsAudio, reply, update.update_id);
       await markUpdate(env, update.update_id, "done");
       return;
     }
 
-    await saveMessage(env, message, "user", userText);
-    await extractAndSaveFacts(env, message.chat.id, userText);
+    await saveMessage(env, message, "user", requestText, ctx);
+    await extractAndSaveFacts(env, message.chat.id, requestText);
     const [currentHistory, realtimeContext] = await Promise.all([
       history(env, message.chat.id),
-      buildRealtimeContext(env, message.chat.id, userText),
+      buildRealtimeContext(env, message.chat.id, requestText),
     ]);
-    const response = await answerWithAI(env, currentHistory, realtimeContext, wantsAudioReply(userText));
-    await saveMessage(env, message, "assistant", response);
-    await deliverReply(env, message.chat.id, userText, response, update.update_id);
+    const response = await answerWithAI(env, currentHistory, realtimeContext, voiceRequest.wantsAudio);
+    await saveMessage(env, message, "assistant", response, ctx);
+    await deliverReply(env, message.chat.id, voiceRequest.wantsAudio, response, update.update_id);
 
     await markUpdate(env, update.update_id, "done");
   } catch (error) {
@@ -600,7 +615,7 @@ export default {
     // background lifetime could expire after a slow model call, leaving the
     // user with text but no voice. Keep the request alive until Telegram has
     // accepted the selected response modality; claimUpdate keeps retries safe.
-    await processUpdate(env, update);
+    await processUpdate(env, update, ctx);
     return json({ ok: true });
   },
   async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
