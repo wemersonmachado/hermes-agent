@@ -2441,6 +2441,7 @@ function formatTelegramTime(dateObj) {
 function parseMarkdownToHtml(text) {
     if (!text) return '';
     let html = escapeHtml(text);
+    html = html.replace(/\[Clique aqui para ler\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:var(--cyan); font-weight:700;">Clique aqui para ler ↗</a>');
     html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     html = html.replace(/\*([^*]+)\*/g, '<strong>$1</strong>');
     html = html.replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.3); padding:2px 6px; border-radius:4px; font-family:monospace;">$1</code>');
@@ -3930,4 +3931,3 @@ function editFinanceItemFromModal(shortId, oldDesc, oldAmount) {
         renderFinanceKpiModalItems(currentKpiModalType);
     }).catch(() => alert('Erro ao editar item.'));
 }
-
