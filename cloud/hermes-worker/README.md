@@ -29,3 +29,48 @@ Telegram e armazenamento R2.
 - Supabase: `Brow` (`yfnkfoourakhjydvliuv`)
 - R2: `hermes-agent-storage`
 - Rotas: `GET /` e `POST /telegram`
+
+## Contratos de comportamento
+
+### Notícias e pesquisa atual
+
+- Pedidos de notícias passam por um atalho determinístico antes do modelo.
+- Toda notícia deve trazer conteúdo útil além do título, a fonte editorial e
+  uma URL verificável. O usuário não precisa pedir "links" explicitamente.
+- A ordem de fallback é: Google Grounding (somente quando devolve fontes),
+  RSS editorial com descrição/link e busca web real. Se nenhuma fonte real
+  responder, o Hermes informa a falha; não completa com fatos inventados.
+- O endpoint do painel é `GET /api/dashboard/news?category=...&query=...`.
+
+### Memória e fotos
+
+Os comandos abaixo funcionam no Telegram, dashboard e PWA antes do LLM:
+
+- `grave na memória que ...` salva uma memória manual;
+- `mostre minhas memórias` lista as memórias manuais recentes e seus IDs;
+- `exclua a memória sobre ...` apaga somente quando há um único resultado;
+- `/memoria <termo>` pesquisa conversa e memória visual semanticamente;
+- `/foto <termo>` (ou `mostre a foto de ...`) recupera até três fotos salvas
+  no Telegram usando o `telegram_file_id` persistido.
+
+Pedidos vagos para apagar tudo não são executados pelo chat. Exclusão em lote
+fica na aba Memória e exige confirmação. Fotos recebidas são armazenadas no R2;
+descrição/OCR, embedding, chave R2 e `telegram_file_id` ficam no Supabase.
+
+Consultas como "qual é a minha agenda amanhã?" nunca são tratadas como comando
+de criação. Criação exige verbo explícito, como `agende`, `marque` ou `crie`.
+
+## Validação antes do deploy
+
+Na pasta `cloud/hermes-worker`:
+
+```powershell
+npm.cmd test
+npm.cmd run check
+npx.cmd wrangler deploy --dry-run
+```
+
+Os testes em `src/shared.test.ts` cobrem preservação de conteúdo/link do RSS,
+fontes obrigatórias nas notícias, consulta de agenda sem criação acidental e
+operações seguras de memória. Segredos nunca entram no repositório; configure-os
+com `wrangler secret put`.
