@@ -2,7 +2,10 @@
   "$schema": "../hermes-worker/node_modules/wrangler/config-schema.json",
   "name": "brow-dashboard",
   "main": "worker-entry.js",
-  "compatibility_date": "2026-08-13",
+  "compatibility_date": "2026-08-11",
+  "vars": {
+    "HERMES_WORKER_URL": "https://hermes-cloud-recovery.clienteswell.workers.dev"
+  },
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",

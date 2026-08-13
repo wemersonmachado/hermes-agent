@@ -3,7 +3,7 @@
 // No local fake state: every create/edit/delete here is a real network call.
 document.addEventListener("DOMContentLoaded", () => {
     fetchCloudStatus();
-    setInterval(fetchCloudStatus, 15000);
+    setInterval(() => { if (!document.hidden) fetchCloudStatus(); }, 60000);
     initCustomNewsTopics();
     loadDashboardOverview();
     renderScheduledSearches();
@@ -97,7 +97,7 @@ async function pollChatHistorySync() {
 function initChatHistorySync() {
     fullReconcileChatHistory().finally(() => {
         pollChatHistorySync();
-        setInterval(pollChatHistorySync, 3000);
+        setInterval(() => { if (!document.hidden) pollChatHistorySync(); }, 30000);
     });
 }
 
@@ -1150,7 +1150,7 @@ async function pollFinancesSync() {
     try { await loadFinances(); } catch (e) { /* silencioso -- tenta de novo no próximo tick */ }
     finally { financeSyncPolling = false; }
 }
-function initFinanceSync() { setInterval(pollFinancesSync, 5000); }
+function initFinanceSync() { setInterval(() => { if (!document.hidden) pollFinancesSync(); }, 60000); }
 
 /* ── LOCALIZAÇÃO (aba Automação) — 08/08/2026 ──
    GPS via navigator.geolocation (o navegador pede permissão nativamente) ou
@@ -2872,10 +2872,10 @@ function initPcTelemetry() {
     // tentativa imediata pra não esperar 1.5s pro dashboard "descobrir" que
     // o agente já está rodando.
     pollRealTelemetryAgent();
-    setInterval(pollRealTelemetryAgent, 3000);
+    setInterval(() => { if (!document.hidden) pollRealTelemetryAgent(); }, 60000);
 
     pollMobileDeviceTelemetry();
-    setInterval(pollMobileDeviceTelemetry, 15000);
+    setInterval(() => { if (!document.hidden) pollMobileDeviceTelemetry(); }, 60000);
 
     function countFrames() {
         frameCount++;

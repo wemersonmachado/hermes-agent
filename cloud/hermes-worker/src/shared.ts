@@ -1489,11 +1489,48 @@ export async function answerWithAI(
   const system = systemPrompt() + realtimeContext + (audioMode
     ? "\n\n[MODO DE SAÍDA: ÁUDIO] Responda de forma natural e objetiva, com no máximo 25 palavras. Dê primeiro o fato principal. Não mencione geração, sistema, arquivo, link ou transcrição de áudio."
     : "");
-  const result = (await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fast", {
-    messages: [{ role: "system", content: system }, ...messages],
-    max_tokens: audioMode ? 55 : 700,
-  })) as { response?: unknown };
-  return typeof result.response === "string" && result.response.trim() ? result.response.trim() : "Não consegui gerar uma resposta agora.";
+  // Transporte e modelo não podem compartilhar o mesmo ponto único de
+  // falha. Gemini usa uma cota independente; Workers AI fica como fallback.
+  if (env.GEMINI_API_KEY) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 18000);
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${env.GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          signal: controller.signal,
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: system }] },
+            contents: messages.map((message) => ({
+              role: message.role === "assistant" ? "model" : "user",
+              parts: [{ text: message.content }],
+            })),
+            generationConfig: { maxOutputTokens: audioMode ? 55 : 700, temperature: 0.35 },
+          }),
+        },
+      );
+      if (response.ok) {
+        const data = (await response.json()) as any;
+        const text = data?.candidates?.[0]?.content?.parts?.map((part: any) => part.text).filter(Boolean).join(" ").trim();
+        if (text) return text;
+      }
+    } catch {
+      // Cai para Workers AI abaixo.
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  try {
+    const result = (await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fast", {
+      messages: [{ role: "system", content: system }, ...messages],
+      max_tokens: audioMode ? 55 : 700,
+    })) as { response?: unknown };
+    return typeof result.response === "string" && result.response.trim() ? result.response.trim() : "Não consegui gerar uma resposta agora.";
+  } catch {
+    return "Estou temporariamente sem acesso ao motor de linguagem. Tente novamente em instantes.";
+  }
 }
 
 type MemoryCommandResult = { reply: string; imageFileIds?: string[] };

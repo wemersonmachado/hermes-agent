@@ -1,13 +1,13 @@
 /* BROW PWA — Service Worker v6.6.2 */
-const CACHE_NAME = 'brow-pwa-v7-0-0';
+const CACHE_NAME = 'brow-pwa-v7-0-1';
 const ASSETS_TO_CACHE = [
   '/pwa/',
   '/pwa/index.html',
   '/pwa/manifest.json',
-  '/pwa/pwa.css?v=7.0.0',
-  '/pwa/pwa-mobile.css?v=7.0.0',
-  '/pwa/pwa.js?v=7.0.0',
-  '/pwa/pwa-sync.js?v=7.0.0',
+  '/pwa/pwa.css?v=7.0.1',
+  '/pwa/pwa-mobile.css?v=7.0.1',
+  '/pwa/pwa.js?v=7.0.1',
+  '/pwa/pwa-sync.js?v=7.0.1',
   '/pwa/icons/icons/icon-192.png',
   '/pwa/icons/icons/icon-512.png'
 ];

@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Polling de Telemetria Real do PC via HTTPS (/api/hermes/telemetry) 1:1 com o Dashboard
   pollRealTelemetryAgentPwa();
-  setInterval(pollRealTelemetryAgentPwa, 1500);
+  setInterval(() => { if (!document.hidden) pollRealTelemetryAgentPwa(); }, 60000);
 
   initFinanceSyncPwa();
   initHermesAlivenessPwa();
@@ -1027,7 +1027,7 @@ async function pollFinancesSyncPwa() {
   try { await loadFinances(); } catch (e) { /* silencioso -- tenta de novo no próximo tick */ }
   finally { pwaFinanceSyncPolling = false; }
 }
-function initFinanceSyncPwa() { setInterval(pollFinancesSyncPwa, 5000); }
+function initFinanceSyncPwa() { setInterval(() => { if (!document.hidden) pollFinancesSyncPwa(); }, 60000); }
 
 /* ── LOCALIZAÇÃO (aba Automação) — 08/08/2026, espelha o dashboard ── */
 async function loadLocationSettingsPwa() {
