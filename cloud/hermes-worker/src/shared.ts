@@ -1120,7 +1120,7 @@ export async function googleGroundedSearch(env: Env, query: string): Promise<Gro
 export type SynthesizedVoice = { bytes: ArrayBuffer; contentType: "audio/mpeg" | "audio/wav"; fileName: string };
 
 export async function synthesizeVoiceReply(env: Env, text: string): Promise<SynthesizedVoice | null> {
-  const clean = stripMarkdownForSpeech(text);
+  const clean = clipSpeechForFastDelivery(stripMarkdownForSpeech(text));
   const native = await synthesizeWorkersAiVoice(env, clean).catch(() => null);
   if (native) return native;
   const edge = await synthesizeEdgeVoice(clean).catch(() => null);
@@ -1132,18 +1132,34 @@ export async function synthesizeVoiceReply(env: Env, text: string): Promise<Synt
   return gemini ? { bytes: gemini, contentType: "audio/wav", fileName: "brow.wav" } : null;
 }
 
+function clipSpeechForFastDelivery(text: string, maxChars = 150): string {
+  if (text.length <= maxChars) return text;
+  const candidate = text.slice(0, maxChars);
+  const sentenceEnd = Math.max(candidate.lastIndexOf("."), candidate.lastIndexOf("!"), candidate.lastIndexOf("?"));
+  return `${(sentenceEnd >= 80 ? candidate.slice(0, sentenceEnd + 1) : candidate).trim()}…`;
+}
+
 async function synthesizeWorkersAiVoice(env: Env, text: string): Promise<SynthesizedVoice | null> {
-  const clipped = text.length > 1200 ? `${text.slice(0, 1200)}…` : text;
-  const result = await env.AI.run("@cf/myshell-ai/melotts", { prompt: clipped, lang: "pt" });
-  if (result instanceof Uint8Array && result.byteLength) {
-    return { bytes: new Uint8Array(result).buffer, contentType: "audio/mpeg", fileName: "brow.mp3" };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 18000);
+  let result: AiTextToSpeechOutput;
+  try {
+    result = await env.AI.run("@cf/myshell-ai/melotts", { prompt: text, lang: "pt" }, { signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
   }
+  const bytes = aiSpeechBytes(result);
+  return bytes ? { bytes: new Uint8Array(bytes).buffer, contentType: "audio/mpeg", fileName: "brow.mp3" } : null;
+}
+
+function aiSpeechBytes(result: AiTextToSpeechOutput): Uint8Array | null {
+  if (result instanceof Uint8Array) return new Uint8Array(result);
   const audio = typeof result === "object" && result && "audio" in result ? result.audio : null;
   if (typeof audio !== "string" || !audio) return null;
   const binary = atob(audio);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
-  return { bytes: bytes.buffer, contentType: "audio/mpeg", fileName: "brow.mp3" };
+  return bytes;
 }
 
 async function synthesizeGeminiVoice(env: Env, text: string): Promise<ArrayBuffer | null> {
@@ -1501,11 +1517,18 @@ export async function extractAndSaveFacts(env: Env, chatId: number, text: string
   }
 }
 
-export async function answerWithAI(env: Env, messages: StoredMessage[], realtimeContext: string): Promise<string> {
-  const system = systemPrompt() + realtimeContext;
+export async function answerWithAI(
+  env: Env,
+  messages: StoredMessage[],
+  realtimeContext: string,
+  audioMode = false,
+): Promise<string> {
+  const system = systemPrompt() + realtimeContext + (audioMode
+    ? "\n\n[MODO DE SAÍDA: ÁUDIO] Responda de forma natural e objetiva, com no máximo 25 palavras. Dê primeiro o fato principal. Não mencione geração, sistema, arquivo, link ou transcrição de áudio."
+    : "");
   const result = (await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fast", {
     messages: [{ role: "system", content: system }, ...messages],
-    max_tokens: 900,
+    max_tokens: audioMode ? 55 : 700,
   })) as { response?: unknown };
   return typeof result.response === "string" && result.response.trim() ? result.response.trim() : "Não consegui gerar uma resposta agora.";
 }

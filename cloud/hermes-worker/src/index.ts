@@ -180,25 +180,52 @@ async function transcribeVoice(env: Env, fileId: string, mimeType = "audio/ogg")
   return transcribeAudioBytes(env, bytes, mimeType);
 }
 
-async function maybeSendVoice(
+async function sendRequestedVoice(
+  env: Env,
+  chatId: number,
+  replyText: string,
+  updateId: number,
+): Promise<boolean> {
+  const startedAt = Date.now();
+  try {
+    const audio = await synthesizeVoiceReply(env, replyText);
+    if (audio) {
+      const synthesizedAt = Date.now();
+      await sendVoiceNote(env, chatId, audio);
+      console.log(JSON.stringify({
+        event: "tts_delivered",
+        updateId,
+        synthesisMs: synthesizedAt - startedAt,
+        telegramMs: Date.now() - synthesizedAt,
+        bytes: audio.bytes.byteLength,
+        contentType: audio.contentType,
+      }));
+      return true;
+    } else {
+      console.error(JSON.stringify({ event: "tts_no_audio", updateId }));
+    }
+  } catch (err) {
+    console.error(JSON.stringify({ event: "tts_failed", updateId, error: String(err) }));
+  }
+  return false;
+}
+
+/** Select exactly one response modality. Audio requests never receive the
+ * generated answer as text; a text error is used only if voice delivery fails. */
+async function deliverReply(
   env: Env,
   chatId: number,
   userText: string,
   replyText: string,
   updateId: number,
 ): Promise<void> {
-  if (!wantsAudioReply(userText)) return;
-  try {
-    const audio = await synthesizeVoiceReply(env, replyText);
-    if (audio) {
-      await sendVoiceNote(env, chatId, audio);
-    } else {
-      console.error(JSON.stringify({ event: "tts_no_audio", updateId }));
-      await sendText(env, chatId, "Não consegui gerar o áudio agora. Tente novamente em instantes.");
-    }
-  } catch (err) {
-    console.error(JSON.stringify({ event: "tts_failed", updateId, error: String(err) }));
-    await sendText(env, chatId, "Não consegui enviar o áudio agora. Tente novamente em instantes.").catch(() => undefined);
+  if (!wantsAudioReply(userText)) {
+    await sendText(env, chatId, replyText);
+    return;
+  }
+  await telegram(env, "sendChatAction", { chat_id: chatId, action: "record_voice" }).catch(() => undefined);
+  if (!(await sendRequestedVoice(env, chatId, replyText, updateId))) {
+    await sendText(env, chatId, "Não consegui gerar o áudio agora. Tente novamente em instantes.");
   }
 }
 
@@ -374,7 +401,7 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
       if (!previous) {
         await sendText(env, message.chat.id, "Ainda não há uma resposta anterior para transformar em áudio.");
       } else {
-        await maybeSendVoice(env, message.chat.id, userText, previous, update.update_id);
+        await deliverReply(env, message.chat.id, userText, previous, update.update_id);
       }
       await markUpdate(env, update.update_id, "done");
       return;
@@ -442,8 +469,7 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
         : `Não consegui confirmar agora os dados atuais de ${sportsSubject}. Prefiro não inventar placar, posição ou competições; tente novamente em instantes.`;
       await saveMessage(env, message, "user", userText);
       await saveMessage(env, message, "assistant", reply);
-      await sendText(env, message.chat.id, reply);
-      await maybeSendVoice(env, message.chat.id, userText, reply, update.update_id);
+      await deliverReply(env, message.chat.id, userText, reply, update.update_id);
       await markUpdate(env, update.update_id, "done");
       return;
     }
@@ -453,8 +479,7 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
       await saveMessage(env, message, "user", userText);
       await extractAndSaveFacts(env, message.chat.id, userText);
       await saveMessage(env, message, "assistant", newsResearch.reply);
-      await sendText(env, message.chat.id, newsResearch.reply);
-      await maybeSendVoice(env, message.chat.id, userText, newsResearch.reply, update.update_id);
+      await deliverReply(env, message.chat.id, userText, newsResearch.reply, update.update_id);
       await markUpdate(env, update.update_id, "done");
       return;
     }
@@ -465,7 +490,7 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
         : "Não consegui confirmar as notícias atuais em fontes reais agora. Tente novamente em instantes.";
       await saveMessage(env, message, "user", userText);
       await saveMessage(env, message, "assistant", reply);
-      await sendText(env, message.chat.id, reply);
+      await deliverReply(env, message.chat.id, userText, reply, update.update_id);
       await markUpdate(env, update.update_id, "done");
       return;
     }
@@ -475,8 +500,7 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
       await saveMessage(env, message, "user", userText);
       await extractAndSaveFacts(env, message.chat.id, userText);
       await saveMessage(env, message, "assistant", currencyResult);
-      await sendText(env, message.chat.id, currencyResult);
-      await maybeSendVoice(env, message.chat.id, userText, currencyResult, update.update_id);
+      await deliverReply(env, message.chat.id, userText, currencyResult, update.update_id);
       await markUpdate(env, update.update_id, "done");
       return;
     }
@@ -486,8 +510,7 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
       await saveMessage(env, message, "user", userText);
       await extractAndSaveFacts(env, message.chat.id, userText);
       await saveMessage(env, message, "assistant", actionResult);
-      await sendText(env, message.chat.id, actionResult);
-      await maybeSendVoice(env, message.chat.id, userText, actionResult, update.update_id);
+      await deliverReply(env, message.chat.id, userText, actionResult, update.update_id);
       await markUpdate(env, update.update_id, "done");
       return;
     }
@@ -497,8 +520,7 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
       await saveMessage(env, message, "user", userText);
       await extractAndSaveFacts(env, message.chat.id, userText);
       await saveMessage(env, message, "assistant", ownDataResult);
-      await sendText(env, message.chat.id, ownDataResult);
-      await maybeSendVoice(env, message.chat.id, userText, ownDataResult, update.update_id);
+      await deliverReply(env, message.chat.id, userText, ownDataResult, update.update_id);
       await markUpdate(env, update.update_id, "done");
       return;
     }
@@ -510,8 +532,7 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
       await saveMessage(env, message, "user", userText);
       await extractAndSaveFacts(env, message.chat.id, userText);
       await saveMessage(env, message, "assistant", searchResult);
-      await sendText(env, message.chat.id, searchResult);
-      await maybeSendVoice(env, message.chat.id, userText, searchResult, update.update_id);
+      await deliverReply(env, message.chat.id, userText, searchResult, update.update_id);
       await markUpdate(env, update.update_id, "done");
       return;
     }
@@ -520,7 +541,7 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
       const reply = `Não consegui confirmar resultados reais sobre ${query || "esse assunto"} agora. Tente novamente em instantes.`;
       await saveMessage(env, message, "user", userText);
       await saveMessage(env, message, "assistant", reply);
-      await sendText(env, message.chat.id, reply);
+      await deliverReply(env, message.chat.id, userText, reply, update.update_id);
       await markUpdate(env, update.update_id, "done");
       return;
     }
@@ -531,10 +552,9 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
       history(env, message.chat.id),
       buildRealtimeContext(env, message.chat.id, userText),
     ]);
-    const response = await answerWithAI(env, currentHistory, realtimeContext);
+    const response = await answerWithAI(env, currentHistory, realtimeContext, wantsAudioReply(userText));
     await saveMessage(env, message, "assistant", response);
-    await sendText(env, message.chat.id, response);
-    await maybeSendVoice(env, message.chat.id, userText, response, update.update_id);
+    await deliverReply(env, message.chat.id, userText, response, update.update_id);
 
     await markUpdate(env, update.update_id, "done");
   } catch (error) {
@@ -576,7 +596,11 @@ export default {
     }
 
     const update = (await request.json()) as TelegramUpdate;
-    ctx.waitUntil(processUpdate(env, update));
+    // Voice synthesis used to run in waitUntil after the immediate ACK. That
+    // background lifetime could expire after a slow model call, leaving the
+    // user with text but no voice. Keep the request alive until Telegram has
+    // accepted the selected response modality; claimUpdate keeps retries safe.
+    await processUpdate(env, update);
     return json({ ok: true });
   },
   async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {

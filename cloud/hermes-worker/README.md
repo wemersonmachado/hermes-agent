@@ -115,7 +115,20 @@ curto de repetição transforma diretamente a última resposta em voz, sem nova
 pesquisa, reconstrução de contexto ou chamada ao modelo. O TTS usa primeiro o
 binding nativo Workers AI e mantém Edge/Gemini como fallbacks; cada resultado
 carrega seu MIME e extensão reais para o Telegram não receber WAV rotulado como
-MP3. Falhas nunca são escondidas atrás de uma promessa textual de áudio.
+MP3. A modalidade é exclusiva: quando voz é solicitada, a resposta é enviada
+somente como mensagem de voz, nunca duplicada em texto. Falhas nunca são
+escondidas atrás de uma promessa textual de áudio.
+
+O webhook aguarda a confirmação final do Telegram antes de responder. O
+processamento não fica mais pendurado em `waitUntil`, cuja janela podia terminar
+depois do texto e antes do TTS. Reentregas continuam idempotentes por
+`claimUpdate`.
+
+Para manter a voz responsiva no plano gratuito, respostas solicitadas em áudio
+priorizam o fato principal e são limitadas a 25 palavras/150 caracteres antes
+da síntese. Isso evita que a geração de uma fala longa mantenha o usuário sem
+qualquer resposta por 30–45 segundos. O evento estruturado `tts_delivered`
+registra separadamente tempos de síntese e entrega ao Telegram.
 
 ### Latência
 
