@@ -96,7 +96,7 @@ async function sendText(env: Env, chatId: number, text: string): Promise<void> {
 async function sendVoiceNote(env: Env, chatId: number, mp3: ArrayBuffer): Promise<void> {
   const form = new FormData();
   form.set("chat_id", String(chatId));
-  form.set("voice", new Blob([mp3], { type: "audio/mpeg" }), "hermes.mp3");
+  form.set("voice", new Blob([mp3], { type: "audio/mpeg" }), "brow.mp3");
   const result = await telegramMultipartResult(env, "sendVoice", form);
   if (!result?.voice) throw new Error("telegram_voice_reclassified");
 }
@@ -350,7 +350,7 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
       await sendText(
         env,
         message.chat.id,
-        "Hermes Cloud Free está online. Envie texto ou áudio pra conversar.\n" +
+        "Brow está online. Envie texto ou áudio para conversar.\n" +
           "Responde sempre em texto — peça \"manda em áudio\" pra receber a resposta falada.\n" +
           "/new limpa o histórico · /status verifica o serviço\n" +
           "/resumo semana · /resumo mes · /grafo · /memoria <termo> · /foto <termo>\n" +
@@ -361,7 +361,7 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
       return;
     }
     if (command === "/status") {
-      await sendText(env, message.chat.id, "Hermes Cloud Free: online, custo zero, Supabase + Cloudflare, voz + dados em tempo real ativos.");
+      await sendText(env, message.chat.id, "Brow: online, Supabase + Cloudflare, voz e dados em tempo real ativos.");
       await markUpdate(env, update.update_id, "done");
       return;
     }
@@ -532,7 +532,7 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
   } catch (error) {
     console.error(JSON.stringify({ event: "update_failed", updateId: update.update_id, error: String(error) }));
     await markUpdate(env, update.update_id, "error").catch(() => undefined);
-    if (message) await sendText(env, message.chat.id, "O Hermes encontrou um erro temporário. Tente novamente.");
+    if (message) await sendText(env, message.chat.id, "O Brow encontrou um erro temporário. Tente novamente.");
   }
 }
 

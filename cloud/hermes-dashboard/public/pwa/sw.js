@@ -1,4 +1,4 @@
-/* HERMES PWA — Service Worker v6.6.2 */
+/* BROW PWA — Service Worker v6.6.2 */
 const CACHE_NAME = 'hermes-pwa-v6-6-2';
 const ASSETS_TO_CACHE = [
   '/pwa/',
@@ -15,7 +15,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[HERMES PWA SW] Caching App Shell v6.6.2');
+      console.log('[BROW PWA SW] Caching App Shell v6.6.2');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
@@ -28,7 +28,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cache) => {
           if (cache !== CACHE_NAME) {
-            console.log('[HERMES PWA SW] Removendo cache antigo:', cache);
+            console.log('[BROW PWA SW] Removendo cache antigo:', cache);
             return caches.delete(cache);
           }
         })
@@ -81,7 +81,7 @@ self.addEventListener('fetch', (event) => {
 
 // Suporte para Notificações Push
 self.addEventListener('push', (event) => {
-  const data = event.data ? event.data.json() : { title: 'HERMES PWA', body: 'Nova atualização do seu Segundo Cérebro AI!' };
+  const data = event.data ? event.data.json() : { title: 'BROW PWA', body: 'Nova atualização do seu Segundo Cérebro AI!' };
   const options = {
     body: data.body,
     icon: '/pwa/icons/icon-192.png',

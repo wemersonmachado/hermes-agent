@@ -7,6 +7,7 @@ type StoredMessage = {
   content: string;
 };
 import { compactSourceLink, isNewsSearchRequest, refineSearchQuery } from "./search_query";
+import { BROW_PERSONALITY_PROMPT } from "./identity";
 
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
 
@@ -21,7 +22,8 @@ export function systemPrompt(): string {
   });
   const horaAgora = now.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
   return (
-    "Você é Hermes, um assistente pessoal útil, direto e confiável. Responda em português do Brasil. " +
+    BROW_PERSONALITY_PROMPT +
+    "Responda em português do Brasil. " +
     "Esta é a edição cloud gratuita: não afirme ter executado terminal, navegador ou editado arquivos locais. " +
     "Quando o contexto abaixo trouxer um bloco '[O QUE VOCÊ JÁ SABE SOBRE O USUÁRIO]', esses fatos são permanentes " +
     "e confirmados — use-os direto (nome, preferências etc.) sem perguntar de novo e sem dizer que não sabe. " +

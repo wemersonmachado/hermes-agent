@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HERMES — Segundo Cérebro AI</title>
+    <title>BROW — Segundo Cérebro AI</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -19,7 +19,7 @@
     <aside id="sidebar" class="sidebar">
         <div class="sidebar-logo">
             <span class="logo-brain">🧠</span>
-            <span class="logo-text">HERMES</span>
+            <span class="logo-text">BROW</span>
             <button class="mobile-close-btn" onclick="closeMobileSidebar()" title="Fechar Menu">✕</button>
         </div>
         <nav class="sidebar-nav">
@@ -102,7 +102,7 @@
             <div class="agent-pill">
                 <span class="agent-avatar">🤖</span>
                 <div class="agent-info">
-                    <p class="agent-name">HERMES AI</p>
+                    <p class="agent-name">BROW AI</p>
                     <p class="agent-status"><span class="dot-green"></span> Motor Ativo</p>
                 </div>
             </div>
@@ -126,7 +126,7 @@
                     </svg>
                 </button>
                 <div class="hd-brand">
-                    <h1 class="brand-name">HERMES — Segundo Cérebro AI</h1>
+                    <h1 class="brand-name">BROW — Segundo Cérebro AI</h1>
                     <span class="version-chip">v2.0.0 PROD</span>
                 </div>
             </div>
@@ -303,7 +303,7 @@
                     </div>
                 </div>
 
-                <!-- 3. AÇÕES RÁPIDAS (09/08/2026: substituiu o card "Chat com HERMES").
+                <!-- 3. AÇÕES RÁPIDAS (09/08/2026: substituiu o card "Chat com BROW").
                      Achado da auditoria de redundância: esse mini-chat não usava o LLM
                      completo (/api/chat, com memória/finanças/skills/dispositivos/
                      autoconhecimento) -- só respondia briefing local ou Deep Research cru,
@@ -326,7 +326,7 @@
                             </h2>
                         </div>
                         <div style="display:flex; gap:10px; flex-wrap:wrap; padding:4px 0;">
-                            <button class="btn btn-primary" onclick="switchMainTab('voz'); return false;">🧠 Conversar com a HERMES (Cérebro Central)</button>
+                            <button class="btn btn-primary" onclick="switchMainTab('voz'); return false;">🧠 Conversar com o BROW (Cérebro Central)</button>
                             <button class="btn btn-ghost" onclick="testFinancialGuard()" title="Guardião Financeiro">🛡️ Guardião Financeiro</button>
                             <button class="btn btn-ghost" onclick="showGraphOverview()" title="Grafo de Conhecimento">🕸️ Grafo de Conhecimento</button>
                             <button class="btn btn-ghost" onclick="triggerBriefing()">✨ Gerar Briefing</button>
@@ -336,16 +336,16 @@
 
                 <!-- 4. RODAPÉ DO DASHBOARD (STATUS DOS PROVEDORES & MÓDULOS) -->
                 <div class="row row-bottom">
-                    <!-- Coluna estreita: HERMES Cloud Status + Dispositivos Conectados empilhados -->
+                    <!-- Coluna estreita: BROW Cloud Status + Dispositivos Conectados empilhados -->
                     <div class="col-stack">
-                    <!-- HERMES Cloud Status Card -->
+                    <!-- BROW Cloud Status Card -->
                     <section class="card wa-card">
                         <div class="card-hd">
                             <h2 class="card-title">
                                 <svg viewBox="0 0 24 24" class="title-icon" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
                                 </svg>
-                                Status dos 14 Provedores & Conexão (HERMES Cloud)
+                                Status dos 14 Provedores & Conexão (BROW Cloud)
                             </h2>
                             <button class="btn btn-ghost btn-sm" onclick="fetchCloudStatus()">Atualizar Status</button>
                         </div>
@@ -354,7 +354,7 @@
                                 <p class="qr-hint">Verificando conexão com o Worker...</p>
                             </div>
                             <div class="wa-info-block">
-                                <p id="wa-info-text" class="wa-info-text">Conectando à HERMES Cloud...</p>
+                                <p id="wa-info-text" class="wa-info-text">Conectando ao BROW Cloud...</p>
                             </div>
                         </div>
                     </section>
@@ -407,14 +407,14 @@
             <div id="view-memoria" class="main-tab-view">
                 <section class="card">
                     <div class="card-hd">
-                        <h2 class="card-title">🧠 Central de Memória Permanente da HERMES</h2>
+                        <h2 class="card-title">🧠 Central de Memória Permanente do BROW</h2>
                         <span class="badge badge-info">Busca Inteligente Rápida</span>
                     </div>
 
                     <!-- BARRA DE BUSCA E FILTROS RÁPIDOS DA MEMÓRIA -->
                     <div class="mem-search-bar mb-3">
                         <div class="form-row mb-2">
-                            <input type="text" id="memory-search-input" class="input f2" placeholder="🔍 Pesquisar qualquer fato, hábito ou pessoa na memória da HERMES..." oninput="filterMemories()">
+                            <input type="text" id="memory-search-input" class="input f2" placeholder="🔍 Pesquisar qualquer fato, hábito ou pessoa na memória do BROW..." oninput="filterMemories()">
                             <div class="tab-pills memory-filter-pills">
                                 <button class="tab-btn active" onclick="filterMemoryCategory('all', this)">Todas</button>
                                 <button class="tab-btn" onclick="filterMemoryCategory('priorities', this)">🎯 Prioridades</button>
@@ -431,7 +431,7 @@
                     <div class="mem-cat-card border-purple">
                         <div class="mem-cat-hd" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                             <div style="display:flex; align-items:center; gap:10px;">
-                                <h3 class="mem-cat-title" style="margin:0;">🧠 Memórias salvas na HERMES</h3>
+                                <h3 class="mem-cat-title" style="margin:0;">🧠 Memórias salvas no BROW</h3>
                                 <span id="memory-full-count" class="badge badge-info">0</span>
                             </div>
                             <div class="batch-actions-bar" style="display:flex; align-items:center; gap:8px;">
@@ -442,7 +442,7 @@
                                 <button id="btn-delete-selected-memories" class="btn btn-danger btn-sm" onclick="deleteSelectedMemoriesReal()" style="display:none;">🗑️ Apagar Memórias Selecionadas (<span id="selected-memories-count">0</span>)</button>
                             </div>
                         </div>
-                        <ul id="memory-full-list" class="data-list mem-scroll-list"><li class="text-muted">Carregando memórias reais da HERMES...</li></ul>
+                        <ul id="memory-full-list" class="data-list mem-scroll-list"><li class="text-muted">Carregando memórias reais do BROW...</li></ul>
                     </div>
 
                     <!-- Adicionar memória real -->
@@ -450,7 +450,7 @@
                         <div class="mem-cat-hd"><h3 class="mem-cat-title">➕ Memorizar novo fato</h3></div>
                         <form onsubmit="submitMemoryForm(event)">
                             <div class="form-row">
-                                <input type="text" id="memory-input-text" placeholder="Fato, preferência ou hábito para a HERMES gravar..." required class="input f2">
+                                <input type="text" id="memory-input-text" placeholder="Fato, preferência ou hábito para o BROW gravar..." required class="input f2">
                                 <select id="memory-input-category" class="input f1">
                                     <option value="priorities">🎯 Prioridade / Trabalho</option>
                                     <option value="habits">💡 Hábito / Pessoal</option>
@@ -458,7 +458,7 @@
                                     <option value="decisions">📝 Decisão / Anotação</option>
                                     <option value="goals">🚩 Meta / OKR</option>
                                 </select>
-                                <button type="submit" class="btn btn-primary">Memorizar na HERMES</button>
+                                <button type="submit" class="btn btn-primary">Memorizar no BROW</button>
                             </div>
                             <div id="memory-form-status" class="form-status"></div>
                         </form>
@@ -817,7 +817,7 @@
                     <div class="tab-grid-1col">
                         <section class="card">
                             <div class="card-hd"><h2 class="card-title">📎 Importar Extrato / Recibo / PDF / Excel</h2></div>
-                            <p class="text-muted" style="margin:0 0 10px;">Envie uma foto de recibo, extrato bancário (PDF/CSV/Excel) ou nota fiscal. A HERMES lê, separa cada transação por categoria e lança tudo automaticamente.</p>
+                            <p class="text-muted" style="margin:0 0 10px;">Envie uma foto de recibo, extrato bancário (PDF/CSV/Excel) ou nota fiscal. A BROW lê, separa cada transação por categoria e lança tudo automaticamente.</p>
                             <input type="file" id="fin-upload-input" accept="image/*,.pdf,.csv,.xls,.xlsx,.doc,.docx" onchange="uploadFinanceReceipt(event)" class="input">
                             <div id="fin-upload-status" class="text-muted" style="margin-top:8px;"></div>
                         </section>
@@ -837,7 +837,7 @@
                             <span class="badge badge-info" id="doc-count-badge-tab">0 Arquivos</span>
                         </div>
                         <p class="text-muted" style="font-size:12px; margin-bottom:12px;">
-                            Arquivos armazenados no R2 com extração automática OCR/Text. Todos os documentos ficam instantaneamente integrados à **Mente & Memória da HERMES**.
+                            Arquivos armazenados no R2 com extração automática OCR/Text. Todos os documentos ficam instantaneamente integrados à **Mente & Memória do BROW**.
                         </p>
 
                         <!-- BARRA DE BUSCA E FILTROS -->
@@ -891,7 +891,7 @@
                                 <input type="date" id="doc-form-validity" class="input">
 
                                 <button type="submit" class="btn btn-primary mt-2" style="background:var(--cyan); color:#000; font-weight:800;">
-                                    📤 Salvar e Compartilhar com a Memória HERMES
+                                    📤 Salvar e Compartilhar com a Memório BROW
                                 </button>
                             </div>
                         </form>
@@ -954,7 +954,7 @@
                                     <button type="button" class="btn btn-ghost btn-xs" onclick="setDaysAhead(180, 'tab-goal-target-date')">+180 dias</button>
                                     <button type="button" class="btn btn-ghost btn-xs" onclick="setDaysAhead(365, 'tab-goal-target-date')">+1 ano</button>
                                 </div>
-                                <button type="submit" class="btn btn-primary mt-2">Cadastrar Meta na HERMES</button>
+                                <button type="submit" class="btn btn-primary mt-2">Cadastrar Meta no BROW</button>
                             </div>
                         </form>
                     </section>
@@ -1012,7 +1012,7 @@
                         <span class="badge badge-info">Google & DuckDuckGo API</span>
                     </div>
                     <div class="form-col">
-                        <p class="text-2 mb-2">Digite uma pesquisa para a HERMES buscar notícias e artigos na web em tempo real com links verificados:</p>
+                        <p class="text-2 mb-2">Digite uma pesquisa para o BROW buscar notícias e artigos na web em tempo real com links verificados:</p>
                         <form onsubmit="executeWebSearch(event)">
                             <div class="form-row">
                                 <input type="text" id="search-query-input" placeholder="Digite sua pesquisa, ex: Lançamentos AI 2026, Mercado Dólar..." required class="input f2">
@@ -1106,7 +1106,7 @@
                     <section class="card">
                         <div class="card-hd"><h2 class="card-title">📍 Localização</h2></div>
                         <div class="form-col gap-2">
-                            <p class="text-2">Usada pela HERMES pra avisar sobre chuva/calor no briefing diário. GPS tem prioridade; sem permissão, usa a cidade digitada ou um padrão.</p>
+                            <p class="text-2">Usada pelo BROW pra avisar sobre chuva/calor no briefing diário. GPS tem prioridade; sem permissão, usa a cidade digitada ou um padrão.</p>
                             <div id="location-current-label" class="text-muted" style="font-size:12px;">Carregando localização atual...</div>
                             <div style="display:flex; gap:8px; flex-wrap:wrap;">
                                 <button type="button" class="btn btn-secondary btn-sm" onclick="useGpsLocation()">📍 Usar minha localização (GPS)</button>
@@ -1126,7 +1126,7 @@
                             <span class="badge badge-info">Cron Cloud Active</span>
                         </div>
                         <div class="form-col gap-2">
-                            <p class="text-2">Configure tópicos de interesse (ex: Futebol, IA, Mercado) para a HERMES pesquisar na web e enviar um resumo diário completo no horário escolhido diretamente no Telegram:</p>
+                            <p class="text-2">Configure tópicos de interesse (ex: Futebol, IA, Mercado) para o BROW pesquisar na web e enviar um resumo diário completo no horário escolhido diretamente no Telegram:</p>
                             
                             <!-- Chips de Seleção Rápida de Tópicos -->
                             <div class="p-label mb-1">Escolha um tópico popular ou digite um personalizado:</div>
@@ -1258,15 +1258,15 @@
                             <button class="btn btn-ghost btn-xs" onclick="showGraphOverview()">Consultar Grafo</button>
                         </div>
                         <div id="auto-graph-box" class="p-card">
-                            <p class="text-2">O Grafo de Conhecimento da HERMES conecta fatos, pessoas, projetos e finanças de forma semântica.</p>
+                            <p class="text-2">O Grafo de Conhecimento do BROW conecta fatos, pessoas, projetos e finanças de forma semântica.</p>
                         </div>
                     </section>
                 </div>
 
-                <!-- SEÇÃO 5 (RODAPÉ): STATUS DOS PROVEDORES (HERMES CLOUD) -->
+                <!-- SEÇÃO 5 (RODAPÉ): STATUS DOS PROVEDORES (BROW CLOUD) -->
                 <section class="card">
                     <div class="card-hd">
-                        <h2 class="card-title">🤖 Status real dos provedores (HERMES Cloud)</h2>
+                        <h2 class="card-title">🤖 Status real dos provedores (BROW Cloud)</h2>
                         <span class="badge badge-info">Cron a cada minuto</span>
                     </div>
                     <ul id="automation-status-box" class="data-list">
@@ -1297,7 +1297,7 @@
                     </form>
 
                     <div id="skills-list" class="form-col gap-2 mt-2">
-                        <p class="text-muted">Carregando skills registradas na HERMES Cloud...</p>
+                        <p class="text-muted">Carregando skills registradas no BROW Cloud...</p>
                     </div>
                 </section>
             </div>
@@ -1322,7 +1322,7 @@
                     <!-- HEADER -->
                     <div class="card-hd" style="position:relative; z-index:2; flex-shrink:0; height:52px; min-height:52px; max-height:52px; overflow:hidden; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:0 16px;">
                         <h2 class="card-title" style="margin:0; white-space:nowrap;">
-                            🧠 HERMES — Cérebro Central
+                            🧠 BROW — Cérebro Central
                             <span class="card-eyebrow" style="margin-left:8px;">Assistente Neural Viva</span>
                         </h2>
                         <div style="display:flex; gap:10px; align-items:center; flex-wrap:nowrap; flex-shrink:0;">
@@ -1331,8 +1331,8 @@
                                 <button type="button" id="mode-btn-text" class="mode-btn" onclick="setChatMode('text')" title="Responder apenas em texto">💬 Texto</button>
                                 <button type="button" id="mode-btn-audio" class="mode-btn" onclick="setChatMode('audio')" title="Responder apenas em voz">🎙️ Áudio</button>
                             </div>
-                            <button type="button" class="btn btn-primary btn-sm" onclick="repeatLastHermesMessage(event); return false;" title="Reler última resposta da HERMES por voz" style="border-radius:18px; padding:4px 14px; font-weight:600; font-size:11px;">🔁 Reler Voz</button>
-                            <button type="button" class="btn btn-danger btn-sm" onclick="stopHermesAudio()" title="Interromper fala/áudio da HERMES" style="border-radius:18px; padding:4px 14px; font-weight:600; font-size:11px;">⏹️ Parar Áudio</button>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="repeatLastHermesMessage(event); return false;" title="Reler última resposta do BROW por voz" style="border-radius:18px; padding:4px 14px; font-weight:600; font-size:11px;">🔁 Reler Voz</button>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="stopHermesAudio()" title="Interromper fala/áudio do BROW" style="border-radius:18px; padding:4px 14px; font-weight:600; font-size:11px;">⏹️ Parar Áudio</button>
                             <button type="button" class="btn btn-ghost btn-sm text-red" onclick="clearVoiceChatHistory()" title="Limpar todo o histórico do chat" style="border-radius:18px; padding:4px 14px; font-weight:600; font-size:11px; border:1px solid rgba(239,68,68,0.3);">🗑️ Limpar Chat</button>
                             <span id="voice-state-badge" class="badge badge-info" style="font-size:11px; padding:5px 10px; border-radius:14px; font-weight:600; min-width:90px; max-width:90px; text-align:center; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; display:inline-block; flex-shrink:0;">🟢 Pronta</span>
                             <span id="hud-clock" style="font-family:'Share Tech Mono', monospace; font-size:11px; color:var(--cyan); min-width:64px; text-align:right; flex-shrink:0;">00:00:00</span>
@@ -1392,8 +1392,8 @@
                         <main style="display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; min-height:0;">
                             <div style="position:absolute; width:320px; height:320px; border:1px solid rgba(45,212,255,0.06); border-radius:50%; pointer-events:none; animation:hudRotate 50s linear infinite;"></div>
                             <div style="position:absolute; width:340px; height:340px; border:1px dashed rgba(45,212,255,0.08); border-radius:50%; pointer-events:none; animation:hudRotateCcw 65s linear infinite;"></div>
-                            <div id="voice-transcript-title" style="position:absolute; top:6px; font-family:'Orbitron',sans-serif; font-size:11px; letter-spacing:0.12em; color:rgba(45,212,255,0.75); text-shadow:0 0 8px rgba(45,212,255,0.4); text-align:center; max-width:92%; z-index:3;">Converse com a HERMES — digite ou fale</div>
-                            <canvas id="hud-core-canvas" width="360" height="360" style="max-width:340px; max-height:340px; cursor:pointer;" title="Clique pra falar com a HERMES"></canvas>
+                            <div id="voice-transcript-title" style="position:absolute; top:6px; font-family:'Orbitron',sans-serif; font-size:11px; letter-spacing:0.12em; color:rgba(45,212,255,0.75); text-shadow:0 0 8px rgba(45,212,255,0.4); text-align:center; max-width:92%; z-index:3;">Converse com o BROW — digite ou fale</div>
+                            <canvas id="hud-core-canvas" width="360" height="360" style="max-width:340px; max-height:340px; cursor:pointer;" title="Clique pra falar com o BROW"></canvas>
                         </main>
 
                         <!-- DIREITA: chat real (mesmo pipeline do Telegram/PWA) -->
@@ -1402,7 +1402,7 @@
                             <audio id="edge-tts-player" style="display:none;"></audio>
                             <div style="flex-shrink:0; display:flex; gap:8px; align-items:center; border-top:1px solid var(--border); padding-top:8px;">
                                 <button type="button" id="btn-mic-toggle" class="btn btn-ghost" onclick="toggleVoiceInput()" title="Falar por voz" style="padding:8px 12px; font-size:18px; border-radius:50%; min-width:42px;"><span id="mic-icon">🎙️</span></button>
-                                <input type="text" id="voice-chat-input" placeholder="Mensagem para a HERMES..." class="input f1" style="border-radius:20px;" autocomplete="off">
+                                <input type="text" id="voice-chat-input" placeholder="Mensagem para o BROW..." class="input f1" style="border-radius:20px;" autocomplete="off">
                                 <button type="button" class="btn btn-primary" onclick="sendVoiceChatMessage()" style="border-radius:20px; padding:8px 18px;">Enviar</button>
                             </div>
                         </aside>

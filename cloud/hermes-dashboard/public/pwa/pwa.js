@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   HERMES PWA — LÓGICA COMPLETA DE FINANÇAS EXECUTIVAS CÓPIA FIEL 1:1 DA IMAGEM
+   BROW PWA — LÓGICA COMPLETA DE FINANÇAS EXECUTIVAS CÓPIA FIEL 1:1 DA IMAGEM
    E STREAMING COMPATÍVEL COM /api/chat (V6.0.0 EXECUTIVE FINANCIAL DASHBOARD)
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -98,8 +98,8 @@ document.addEventListener('DOMContentLoaded', () => {
 function initServiceWorker() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/pwa/sw.js')
-      .then((reg) => console.log('[HERMES] Service Worker ativo:', reg.scope))
-      .catch((err) => console.warn('[HERMES] Erro SW:', err));
+      .then((reg) => console.log('[BROW] Service Worker ativo:', reg.scope))
+      .catch((err) => console.warn('[BROW] Erro SW:', err));
   }
 }
 
@@ -116,7 +116,7 @@ function installPwaApp() {
   if (!deferredInstallPrompt) return;
   deferredInstallPrompt.prompt();
   deferredInstallPrompt.userChoice.then((choice) => {
-    if (choice.outcome === 'accepted') console.log('[HERMES] PWA Instalado!');
+    if (choice.outcome === 'accepted') console.log('[BROW] PWA Instalado!');
     deferredInstallPrompt = null;
     const banner = document.getElementById('pwa-install-banner');
     if (banner) banner.classList.remove('active');
@@ -338,8 +338,8 @@ function loadChatMessagesFromStoragePwa() {
       chatHistory = [
         {
           id: 'init-1',
-          text: '✈️ **HERMES Neural Assistant**\n\nOlá! Sou a HERMES, sua assistente neural conectada 24/7 ao seu Telegram e Segundo Cérebro. Como posso te ajudar hoje?',
-          sender: '✈️ HERMES',
+          text: '✈️ **BROW Neural Assistant**\n\nOlá! Sou o BROW, seu assistente neural conectado 24/7 ao seu Telegram e Segundo Cérebro. Como posso te ajudar hoje?',
+          sender: '✈️ BROW',
           isUser: false,
           timestamp: formatTimeNow()
         }
@@ -375,7 +375,7 @@ function formatTimeNow() {
   return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-// 5. ONDAS NEURAIS DA HERMES
+// 5. ONDAS NEURAIS DA BROW
 function initNeuralWaveCanvasPwa() {
   waveCanvas = document.getElementById('neural-wave-canvas');
   if (!waveCanvas) return;
@@ -486,13 +486,13 @@ function stopHermesAudioPwa() {
   const badge = document.getElementById('voice-state-badge');
   const title = document.getElementById('voice-transcript-title');
   if (badge) badge.textContent = '🟢 Pronta';
-  if (title) title.textContent = 'Converse com a HERMES — digite ou fale';
+  if (title) title.textContent = 'Converse com o BROW — digite ou fale';
 }
 
 function repeatLastHermesMessagePwa(e) {
   if (e && e.preventDefault) e.preventDefault();
   const lastHermesMsg = [...chatHistory].reverse().find(m => (!m.isUser && m.text) || (m.role === 'assistant' && m.content));
-  const textToSpeak = lastHermesMsg ? (lastHermesMsg.text || lastHermesMsg.content) : "Olá! Sou a HERMES, sua assistente neural pronta para ajudar.";
+  const textToSpeak = lastHermesMsg ? (lastHermesMsg.text || lastHermesMsg.content) : "Olá! Sou o BROW, seu assistente neural pronto para ajudar.";
   speakWithEdgeTTS(textToSpeak);
 }
 
@@ -502,7 +502,7 @@ function clearVoiceChatHistoryPwa() {
     {
       id: 'init-1',
       text: '✈️ Histórico zerado com sucesso! Como posso ajudar você agora?',
-      sender: '✈️ HERMES',
+      sender: '✈️ BROW',
       isUser: false,
       timestamp: formatTimeNow()
     }
@@ -579,13 +579,13 @@ async function sendChatMessage() {
     }
 
     if (!replyText.trim()) {
-      replyText = 'Olá! Sou a HERMES, sua assistente neural. Como posso te ajudar?';
+      replyText = 'Olá! Sou o BROW, seu assistente neural. Como posso te ajudar?';
     }
 
     const agentMsgObj = {
       id: (Date.now() + 1).toString(),
       text: replyText,
-      sender: '✈️ HERMES',
+      sender: '✈️ BROW',
       isUser: false,
       timestamp: nowStr
     };
@@ -604,15 +604,15 @@ async function sendChatMessage() {
     } else {
       isSpeakingOrListening = false;
       if (badge) badge.textContent = '🟢 Pronta';
-      if (title) title.textContent = 'Converse com a HERMES — digite ou fale';
+      if (title) title.textContent = 'Converse com o BROW — digite ou fale';
     }
 
   } catch (err) {
     removeTypingIndicator(typingId);
     isSpeakingOrListening = false;
     if (badge) badge.textContent = '❌ Erro';
-    console.error('[HERMES] Erro ao conectar com /api/chat:', err);
-    appendMessageBubble('hermes', '⚠️ Erro de conexão com a HERMES: ' + err.message, nowStr);
+    console.error('[BROW] Erro ao conectar com /api/chat:', err);
+    appendMessageBubble('hermes', '⚠️ Erro de conexão com o BROW: ' + err.message, nowStr);
     scrollToChatBottom();
   }
 }
@@ -706,7 +706,7 @@ function appendTypingIndicator() {
   div.id = id;
   div.className = 'msg-bubble msg-hermes';
   div.style.opacity = '0.75';
-  div.innerHTML = '✨ <em>HERMES está pensando...</em>';
+  div.innerHTML = '✨ <em>BROW está pensando...</em>';
   container.appendChild(div);
   return id;
 }
@@ -735,7 +735,7 @@ async function speakWithEdgeTTS(textToSpeak) {
   const finish = () => {
     isSpeakingOrListening = false;
     if (badge) badge.textContent = '🟢 Pronta';
-    if (title) title.textContent = 'Converse com a HERMES — digite ou fale';
+    if (title) title.textContent = 'Converse com o BROW — digite ou fale';
   };
 
   try {
@@ -793,7 +793,7 @@ function initSpeechRecognition() {
     const title = document.getElementById('voice-transcript-title');
     if (btn) btn.classList.remove('recording');
     if (badge) badge.textContent = '🟢 Pronta';
-    if (title) title.textContent = 'Converse com a HERMES — digite ou fale';
+    if (title) title.textContent = 'Converse com o BROW — digite ou fale';
   };
 }
 
@@ -812,7 +812,7 @@ function toggleMicInput() {
     isSpeakingOrListening = false;
     if (btn) btn.classList.remove('recording');
     if (badge) badge.textContent = '🟢 Pronta';
-    if (title) title.textContent = 'Converse com a HERMES — digite ou fale';
+    if (title) title.textContent = 'Converse com o BROW — digite ou fale';
   } else {
     try {
       speechRecognition.start();
@@ -834,7 +834,7 @@ function loadDocuments() {
   if (!el) return;
 
   if (globalDocuments.length === 0) {
-    el.innerHTML = '<div style="color:var(--text-muted);">Nenhum documento salvo. Envie PDF, Excel, Word ou fotos acima para a HERMES ler e analisar!</div>';
+    el.innerHTML = '<div style="color:var(--text-muted);">Nenhum documento salvo. Envie PDF, Excel, Word ou fotos acima para o BROW ler e analisar!</div>';
     return;
   }
 
@@ -852,7 +852,7 @@ function loadDocuments() {
           <div class="item-sub" style="margin-top:4px;">${escapeHtml(d.content ? d.content.slice(0, 90) + '...' : 'Documento ativo')} • Data: ${d.date || 'Hoje'}</div>
         </div>
         <div style="display:flex; gap:6px; flex-wrap:wrap;">
-          <button class="btn-action" style="padding:4px 10px; font-size:11px;" onclick="analyzeDocumentPwa('${d.id}')">📄 Ler com HERMES</button>
+          <button class="btn-action" style="padding:4px 10px; font-size:11px;" onclick="analyzeDocumentPwa('${d.id}')">📄 Ler com BROW</button>
           <button class="btn-edit" onclick="openEditModalPwa('document', '${d.id}', '${escapeHtml(d.title)}', '${escapeHtml(d.content || '')}')">Editar</button>
           <button class="btn-delete" onclick="deleteDocumentPwa('${d.id}')">Excluir</button>
         </div>
@@ -891,7 +891,7 @@ function uploadAndAnalyzeDocumentPwa(file) {
     alert(`✅ Documento "${title}" anexado e salvo com sucesso!`);
     loadDocuments();
 
-    if (confirm(`Deseja que a HERMES leia e analise o documento "${title}" agora no chat?`)) {
+    if (confirm(`Deseja que o BROW leia e analise o documento "${title}" agora no chat?`)) {
       switchPwaTab('voz');
       const chatInput = document.getElementById('chat-input-field');
       if (chatInput) chatInput.value = `Leia e faça uma síntese executiva deste documento "${title}":\n\n${content.slice(0, 1500)}`;
@@ -916,7 +916,7 @@ function analyzeDocumentPwa(docId) {
 }
 
 function deleteDocumentPwa(id) {
-  if (!confirm('Excluir este documento da HERMES?')) return;
+  if (!confirm('Excluir este documento do BROW?')) return;
   globalDocuments = globalDocuments.filter(d => d.id !== id);
   localStorage.setItem('pwa_documents_v1', JSON.stringify(globalDocuments));
   loadDocuments();
@@ -1053,7 +1053,7 @@ function useGpsLocationPwa() {
 
 /* ── TELEMETRIA DO DISPOSITIVO (PWA) — 08/08/2026 ──
    GPS contínuo, bateria, rede e Bluetooth do celular, com push periódico
-   pro Worker (/api/hermes/device-telemetry) pra HERMES e o dashboard verem
+   pro Worker (/api/hermes/device-telemetry) pro BROW e o dashboard verem
    o dispositivo como "conectado". Cada capacidade é isolada com feature
    detection própria -- navegador sem suporte (ex: Battery API removida do
    Safari/Firefox, Bluetooth ausente no iOS) mostra "não suportado" em vez
@@ -1243,8 +1243,8 @@ async function pushDeviceTelemetrySnapshotPwa() {
   } catch (e) { /* offline -- tenta de novo no próximo tick */ }
 }
 
-/* ── "VIDA" DA HERMES (PWA) — espelha app.js, mesmos bancos de frases ── */
-const HERMES_USER_NAME_PWA = 'Well';
+/* ── "VIDA" DA BROW (PWA) — espelha app.js, mesmos bancos de frases ── */
+const BROW_USER_NAME_PWA = 'Well';
 const IDLE_THRESHOLD_MS_PWA = 12 * 60 * 1000;
 const IDLE_NUDGE_COOLDOWN_MS_PWA = 25 * 60 * 1000;
 const LATE_NIGHT_COOLDOWN_MS_PWA = 45 * 60 * 1000;
@@ -1288,26 +1288,26 @@ const IDLE_CHECKIN_PHRASES_PWA = [
 ];
 
 const LATE_NIGHT_PHRASES_PWA = [
-  `${HERMES_USER_NAME_PWA}, já passa da meia-noite — que tal encerrar por hoje e descansar?`,
-  `Reparei que já é bem tarde, ${HERMES_USER_NAME_PWA}. Um bom sono ajuda muito amanhã.`,
-  `${HERMES_USER_NAME_PWA}, cuidado com o sono — o dia de amanhã agradece um descanso agora.`,
-  `Já é madrugada, ${HERMES_USER_NAME_PWA}. Recomendo dar uma pausa e ir dormir.`,
-  `Horário tardio por aqui, ${HERMES_USER_NAME_PWA} — sua saúde agradece um descanso.`,
-  `${HERMES_USER_NAME_PWA}, sei que tem coisa pra fazer, mas dormir bem também é produtivo.`,
-  `Já é tarde demais pra continuar sem descanso, ${HERMES_USER_NAME_PWA}. Que tal parar por aqui?`,
-  `${HERMES_USER_NAME_PWA}, sono de qualidade rende mais que mais uma hora acordado agora.`,
-  `Vi que já passou da meia-noite, ${HERMES_USER_NAME_PWA} — vale considerar ir descansar.`,
-  `${HERMES_USER_NAME_PWA}, seu corpo agradece se você desligar um pouco mais cedo hoje.`,
-  `Vida de madrugada acordado cobra caro depois, ${HERMES_USER_NAME_PWA}. Bora descansar?`,
-  `${HERMES_USER_NAME_PWA}, o que for importante ainda vai estar aqui amanhã cedo, descansado.`,
-  `Notei o horário, ${HERMES_USER_NAME_PWA} — uma boa noite de sono faz muita diferença.`,
-  `${HERMES_USER_NAME_PWA}, só um lembrete gentil: dormir bem também é cuidar de você.`,
-  `Já é tarde da noite, ${HERMES_USER_NAME_PWA}. Recomendo fechar por aqui e descansar a mente.`,
-  `${HERMES_USER_NAME_PWA}, produtividade também vem de dormir direito — considere uma pausa.`,
-  `Hora avançada por aqui, ${HERMES_USER_NAME_PWA}. Vale a pena priorizar o descanso agora.`,
-  `${HERMES_USER_NAME_PWA}, sei que é tentador continuar, mas seu descanso importa mais agora.`,
-  `Já virou a madrugada, ${HERMES_USER_NAME_PWA} — talvez seja hora de recarregar as energias.`,
-  `${HERMES_USER_NAME_PWA}, cuide de você também: um bom sono hoje rende um dia melhor amanhã.`,
+  `${BROW_USER_NAME_PWA}, já passa da meia-noite — que tal encerrar por hoje e descansar?`,
+  `Reparei que já é bem tarde, ${BROW_USER_NAME_PWA}. Um bom sono ajuda muito amanhã.`,
+  `${BROW_USER_NAME_PWA}, cuidado com o sono — o dia de amanhã agradece um descanso agora.`,
+  `Já é madrugada, ${BROW_USER_NAME_PWA}. Recomendo dar uma pausa e ir dormir.`,
+  `Horário tardio por aqui, ${BROW_USER_NAME_PWA} — sua saúde agradece um descanso.`,
+  `${BROW_USER_NAME_PWA}, sei que tem coisa pra fazer, mas dormir bem também é produtivo.`,
+  `Já é tarde demais pra continuar sem descanso, ${BROW_USER_NAME_PWA}. Que tal parar por aqui?`,
+  `${BROW_USER_NAME_PWA}, sono de qualidade rende mais que mais uma hora acordado agora.`,
+  `Vi que já passou da meia-noite, ${BROW_USER_NAME_PWA} — vale considerar ir descansar.`,
+  `${BROW_USER_NAME_PWA}, seu corpo agradece se você desligar um pouco mais cedo hoje.`,
+  `Vida de madrugada acordado cobra caro depois, ${BROW_USER_NAME_PWA}. Bora descansar?`,
+  `${BROW_USER_NAME_PWA}, o que for importante ainda vai estar aqui amanhã cedo, descansado.`,
+  `Notei o horário, ${BROW_USER_NAME_PWA} — uma boa noite de sono faz muita diferença.`,
+  `${BROW_USER_NAME_PWA}, só um lembrete gentil: dormir bem também é cuidar de você.`,
+  `Já é tarde da noite, ${BROW_USER_NAME_PWA}. Recomendo fechar por aqui e descansar a mente.`,
+  `${BROW_USER_NAME_PWA}, produtividade também vem de dormir direito — considere uma pausa.`,
+  `Hora avançada por aqui, ${BROW_USER_NAME_PWA}. Vale a pena priorizar o descanso agora.`,
+  `${BROW_USER_NAME_PWA}, sei que é tentador continuar, mas seu descanso importa mais agora.`,
+  `Já virou a madrugada, ${BROW_USER_NAME_PWA} — talvez seja hora de recarregar as energias.`,
+  `${BROW_USER_NAME_PWA}, cuide de você também: um bom sono hoje rende um dia melhor amanhã.`,
 ];
 
 let lastAnyInteractionAtPwa = Date.now();
@@ -1503,7 +1503,7 @@ function renderExecutiveFinancesDashboardPwa(apiData) {
   setEl('pwa-goal-margem-label', `Objetivo: ${(globalFinanceBudget.marginTarget ?? 12).toFixed(1)}%`);
 
   // 2. Atualizar Tabela DRE -- achado 07/08/2026: "Custo de bens vendidos"
-  // era um chute fixo (34%/66%) sem dado real por trás; a HERMES não
+  // era um chute fixo (34%/66%) sem dado real por trás; o BROW não
   // rastreia custo de mercadoria (não é revenda), então o correto é
   // declarar honestamente R$0 em vez de inventar um número.
   const custoBens = 0;
@@ -1740,7 +1740,7 @@ function renderDocumentsPwa(items) {
         <div class="item-info">
           <div class="item-title" style="color:var(--cyan);">${fileIcon} ${escapeHtml(d.title || d.sourceName || 'Documento')}</div>
           <div class="item-sub">Categoria: <strong>${escapeHtml(d.category || 'documento')}</strong> • ${dateStr}${sizeStr}</div>
-          <div style="font-size:10.5px; color:var(--emerald); margin-top:2px;">🧠 Compartilhado com a Memória HERMES</div>
+          <div style="font-size:10.5px; color:var(--emerald); margin-top:2px;">🧠 Compartilhado com a Memório BROW</div>
         </div>
         <div style="display:flex; gap:6px;">
           <button class="btn-edit" onclick="viewOrDownloadDocumentPwa('${escapeHtml(fullId || shortId)}')">Abrir</button>
@@ -1769,7 +1769,7 @@ async function handleDocDropzoneSelectPwa(event) {
       const data = await res.json();
       if (!data.ok) throw new Error(data.message || 'Erro no upload');
     }
-    alert(`✅ ${files.length} documento(s) salvo(s) e integrado(s) à Memória HERMES!`);
+    alert(`✅ ${files.length} documento(s) salvo(s) e integrado(s) à Memório BROW!`);
     input.value = '';
     loadDocuments();
     loadOverview();
@@ -1783,7 +1783,7 @@ function viewOrDownloadDocumentPwa(docId) {
 }
 
 async function deleteDocumentPwa(docId) {
-  if (!confirm('Deseja remover este documento do R2 e da Memória HERMES?')) return;
+  if (!confirm('Deseja remover este documento do R2 e da Memório BROW?')) return;
   try {
     globalDocumentsPwa = globalDocumentsPwa.filter(d => d.id !== docId && (d.id && d.id.slice(0, 8).toUpperCase() !== docId.slice(0, 8).toUpperCase()));
     renderDocumentsPwa(globalDocumentsPwa);
@@ -1878,7 +1878,7 @@ async function addMemoryPwa() {
 }
 
 async function deleteMemoryPwa(shortId) {
-  if (!confirm('Excluir esta memória da HERMES?')) return;
+  if (!confirm('Excluir esta memória do BROW?')) return;
   try {
     await fetch(`/api/hermes/memories/${shortId}`, { method: 'DELETE' });
     alert('🗑️ Memória excluída!');
@@ -2040,7 +2040,7 @@ function addGoalPwa() {
   }).catch(() => {});
 
   input.value = '';
-  alert('✅ Meta cadastrada na HERMES!');
+  alert('✅ Meta cadastrada no BROW!');
   loadGoals();
   loadOverview();
 }
@@ -2289,7 +2289,7 @@ async function loadSystemStatusPwa() {
         <div>🗄️ Supabase Postgres: <strong style="color:var(--cyan);">${data.bindings?.supabase ? '✅ OK' : '❌ Não'}</strong></div>
       </div>`;
   } catch (e) {
-    box.innerHTML = '<div style="color:var(--emerald); font-size:12px;">⚡ Provedores HERMES Cloud: 100% Operacionais (Cron a cada minuto).</div>';
+    box.innerHTML = '<div style="color:var(--emerald); font-size:12px;">⚡ Provedores BROW Cloud: 100% Operacionais (Cron a cada minuto).</div>';
   }
 }
 
@@ -2472,7 +2472,7 @@ async function showGraphOverviewPwa() {
 }
 
 async function runBriefingPwa() {
-  alert('📊 Gerando Briefing Proativo da HERMES...');
+  alert('📊 Gerando Briefing Proativo do BROW...');
   try {
     const res = await fetch('/api/chat', {
       method: 'POST',

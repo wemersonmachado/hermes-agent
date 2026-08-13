@@ -1,4 +1,4 @@
-// HERMES Dashboard — talks to /api/hermes/* (FastAPI proxy → Cloudflare Worker
+// BROW Dashboard — talks to /api/hermes/* (FastAPI proxy → Cloudflare Worker
 // Dashboard API → the SAME R2/Supabase data the Telegram bot reads/writes).
 // No local fake state: every create/edit/delete here is a real network call.
 document.addEventListener("DOMContentLoaded", () => {
@@ -36,7 +36,7 @@ function mapSharedHistoryMessage(m) {
     return {
         id: m.id,
         text: m.text,
-        sender: m.role === 'user' ? (m.channel === 'telegram' ? '👤 Você (Telegram)' : '👤 Você (PWA)') : '✈️ HERMES',
+        sender: m.role === 'user' ? (m.channel === 'telegram' ? '👤 Você (Telegram)' : '👤 Você (PWA)') : '✈️ BROW',
         isUser: m.role === 'user',
         timestamp: formatTelegramTime(new Date(m.createdAt)),
     };
@@ -160,7 +160,7 @@ function switchMainTab(tabId, el) {
     if (loaders[tabId]) loaders[tabId]();
 }
 
-/* ── HERMES Cloud status ───────────────────────────────────────── */
+/* ── BROW Cloud status ───────────────────────────────────────── */
 async function fetchCloudStatus() {
     const badge = document.getElementById('wa-status-badge');
     const box = document.getElementById('wa-qr-container');
@@ -171,7 +171,7 @@ async function fetchCloudStatus() {
         const data = await res.json();
         const providers = Object.keys(data.health || {});
         const ready = providers.filter(p => !data.health[p].cooldownUntil || Date.parse(data.health[p].cooldownUntil) <= Date.now());
-        if (badge) { badge.className = 'badge badge-success'; badge.textContent = '🟢 HERMES Cloud online'; }
+        if (badge) { badge.className = 'badge badge-success'; badge.textContent = '🟢 BROW Cloud online'; }
         if (box) box.innerHTML = `
             <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px;">
                 <span style="font-size:28px;">☁️</span>
@@ -182,8 +182,8 @@ async function fetchCloudStatus() {
         const supabaseReady = typeof supabase === 'boolean' ? supabase : Boolean(supabase?.reachable);
         if (infoText) infoText.innerHTML = `R2 · Vectorize${data.bindings?.vectorize ? '' : ' (indisponível)'} · Supabase${supabaseReady ? '' : ' (indisponível)'} — canal real: <strong>Telegram</strong>.`;
     } catch (e) {
-        if (badge) { badge.className = 'badge badge-warning'; badge.textContent = '⚪ Sem conexão com a HERMES Cloud'; }
-        if (box) box.innerHTML = '<p class="qr-hint">Não foi possível alcançar a HERMES Cloud. Verifique a chave no Worker de produção.</p>';
+        if (badge) { badge.className = 'badge badge-warning'; badge.textContent = '⚪ Sem conexão com o BROW Cloud'; }
+        if (box) box.innerHTML = '<p class="qr-hint">Não foi possível alcançar o BROW Cloud. Verifique a chave no Worker de produção.</p>';
         if (infoText) infoText.innerHTML = 'Conectando ao Worker de produção...';
     }
 }
@@ -341,7 +341,7 @@ function skillActionButtons(skill) {
     }
     if (skill.state !== 'deprecated') {
         btns.push(`<button class="btn btn-ghost btn-xs" onclick="editSkillPrompt('${skill.id}', '${escapeHtml(skill.name).replace(/'/g, "\\'")}', '${escapeHtml(skill.description || '').replace(/'/g, "\\'")}')">✏️ Editar</button>`);
-        btns.push(`<button class="btn btn-ghost btn-xs" style="color:var(--rose);" onclick="runSkillAction('${skill.id}','cancel','Cancelar esta skill? Ela para de ser usada pela HERMES.')">🗑️ Cancelar</button>`);
+        btns.push(`<button class="btn btn-ghost btn-xs" style="color:var(--rose);" onclick="runSkillAction('${skill.id}','cancel','Cancelar esta skill? Ela para de ser usada pelo BROW.')">🗑️ Cancelar</button>`);
     }
     return btns.join(' ');
 }
@@ -379,7 +379,7 @@ async function loadSkills() {
     }
 }
 
-/* ── SEGMENTAÇÃO DE MEMÓRIAS DA HERMES ───────────────────────────────────── */
+/* ── SEGMENTAÇÃO DE MEMÓRIAS DA BROW ───────────────────────────────────── */
 function matchMemorySegment(m, segment) {
     if (!segment || segment === 'all') return true;
     const cat = (m.mainCategory || '').toLowerCase();
@@ -638,7 +638,7 @@ async function loadDashboardOverview() {
 
         document.getElementById('last-updated').textContent = new Date().toLocaleTimeString('pt-BR');
     } catch (error) {
-        console.error("Erro ao carregar overview da HERMES:", error);
+        console.error("Erro ao carregar overview do BROW:", error);
         document.getElementById('last-updated').textContent = 'erro ao atualizar';
     }
 }
@@ -698,7 +698,7 @@ function toggleSelectAllMemories(masterCheckbox) {
 async function deleteSelectedMemoriesReal() {
     if (selectedMemoryIds.size === 0) return;
     const count = selectedMemoryIds.size;
-    if (!confirm(`Excluir permanentemente as ${count} memórias selecionadas da HERMES de produção (R2 + Supabase)?`)) return;
+    if (!confirm(`Excluir permanentemente as ${count} memórias selecionadas do BROW de produção (R2 + Supabase)?`)) return;
     
     const btn = document.getElementById('btn-delete-selected-memories');
     if (btn) btn.disabled = true;
@@ -768,7 +768,7 @@ function renderMemoriesList(items, filterCategory) {
             ${checkboxHtml}
             <span class="item-text-content">🧠 <strong>${escapeHtml(m.title)}</strong> — ${escapeHtml((m.summary || '').slice(0, 100))} ${catBadge}${subBadge}</span>
             <div class="item-actions">
-                <button class="btn-item-action btn-item-delete" onclick="deleteMemoryReal('${m.id.slice(0, 8).toUpperCase()}')" title="Excluir da HERMES">🗑️ Excluir</button>
+                <button class="btn-item-action btn-item-delete" onclick="deleteMemoryReal('${m.id.slice(0, 8).toUpperCase()}')" title="Excluir do BROW">🗑️ Excluir</button>
             </div>`;
         el.appendChild(li);
     });
@@ -776,11 +776,11 @@ function renderMemoriesList(items, filterCategory) {
 }
 
 async function deleteMemoryReal(id) {
-    if (!confirm("Excluir esta memória da HERMES? Isso remove permanentemente da produção (R2 + índice + vetor)." )) return;
+    if (!confirm("Excluir esta memória do BROW? Isso remove permanentemente da produção (R2 + índice + vetor)." )) return;
     try {
         const res = await fetch(`/api/hermes/memories/${id}`, { method: 'DELETE' });
         if (!res.ok) throw new Error('delete_failed');
-        alert("🗑️ Memória removida da HERMES de produção.");
+        alert("🗑️ Memória removida do BROW de produção.");
         selectedMemoryIds.delete(id);
         loadMemories();
         loadDashboardOverview();
@@ -807,12 +807,12 @@ async function submitMemoryForm(event) {
             body: JSON.stringify({ title: text.slice(0, 60), summary: text, mainCategory: categoryMap[catSelect?.value] || 'pessoal' })
         });
         if (!res.ok) throw new Error('create_failed');
-        if (status) { status.textContent = '✅ Memorizado na HERMES — já consultável via Telegram.'; status.className = 'form-status form-status-ok'; }
+        if (status) { status.textContent = '✅ Memorizado no BROW — já consultável via Telegram.'; status.className = 'form-status form-status-ok'; }
         input.value = '';
         loadMemories();
         loadDashboardOverview();
     } catch (error) {
-        if (status) { status.textContent = '❌ Erro ao salvar na HERMES. Tente de novo.'; status.className = 'form-status form-status-error'; }
+        if (status) { status.textContent = '❌ Erro ao salvar no BROW. Tente de novo.'; status.className = 'form-status form-status-error'; }
         console.error(error);
     } finally {
         if (button) button.disabled = false;
@@ -879,7 +879,7 @@ function toggleSelectAllAgenda(masterCheckbox) {
 async function deleteSelectedAgendaReal() {
     if (selectedAgendaKeys.size === 0) return;
     const count = selectedAgendaKeys.size;
-    if (!confirm(`Remover os ${count} compromissos selecionados da agenda da HERMES?`)) return;
+    if (!confirm(`Remover os ${count} compromissos selecionados da agenda do BROW?`)) return;
     
     let deletedCount = 0;
     const keys = Array.from(selectedAgendaKeys);
@@ -929,7 +929,7 @@ function renderAgendaList(items) {
     const el = document.getElementById('tab-agenda-list');
     if (!el) return;
     el.innerHTML = '';
-    if (!items.length) { el.innerHTML = '<li class="text-muted">Nenhum compromisso ou lembrete na HERMES ainda.</li>'; updateAgendaSelectionUI(); return; }
+    if (!items.length) { el.innerHTML = '<li class="text-muted">Nenhum compromisso ou lembrete no BROW ainda.</li>'; updateAgendaSelectionUI(); return; }
     items.sort((a, b) => (a.sentAt ? 1 : 0) - (b.sentAt ? 1 : 0));
     items.forEach((a) => {
         const when = a.dueAt ? new Date(a.dueAt).toLocaleString('pt-BR') : `todo dia às ${a.time}`;
@@ -948,11 +948,11 @@ function renderAgendaList(items) {
 }
 
 async function deleteAgendaReal(shortId) {
-    if (!confirm("Remover este item da agenda real da HERMES?")) return;
+    if (!confirm("Remover este item da agenda real do BROW?")) return;
     try {
         const res = await fetch(`/api/hermes/agenda/${shortId}`, { method: 'DELETE' });
         if (!res.ok) throw new Error('delete_failed');
-        alert("🗑️ Removido da agenda da HERMES.");
+        alert("🗑️ Removido da agenda do BROW.");
         selectedAgendaKeys.delete(shortId);
         loadAgenda();
         loadDashboardOverview();
@@ -972,7 +972,7 @@ async function submitAgendaForm(event) {
             body: JSON.stringify({ text: title, dueAt: new Date(`${dueDate}T09:00:00`).toISOString() })
         });
         if (!res.ok) throw new Error('create_failed');
-        alert('✅ Agendado na HERMES de produção — o cron real vai entregar no Telegram na hora.');
+        alert('✅ Agendado no BROW de produção — o cron real vai entregar no Telegram na hora.');
         form.reset();
         loadAgenda();
         loadDashboardOverview();
@@ -1102,7 +1102,7 @@ async function loadFinances() {
 }
 
 // ── Mercado ao vivo (Tier 1/2, 08/09/2026): BCB Olinda (dólar/Selic oficiais) +
-// CoinGecko (BTC/ETH) -- mesma fonte que a HERMES usa no chat, só que exposta
+// CoinGecko (BTC/ETH) -- mesma fonte que o BROW usa no chat, só que exposta
 // como card visual pra não precisar perguntar.
 async function loadMarketTicker() {
     try {
@@ -1190,15 +1190,15 @@ function useGpsLocation() {
     }, () => { if (label) label.textContent = 'Permissão de GPS negada. Digite sua cidade manualmente abaixo.'; }, { timeout: 8000 });
 }
 
-/* ── "VIDA" DA HERMES — check-in de ociosidade + saúde/madrugada (08/08/2026) ──
-   Pedido do usuário: a HERMES deve parecer viva, perguntando se está tudo bem
+/* ── "VIDA" DA BROW — check-in de ociosidade + saúde/madrugada (08/08/2026) ──
+   Pedido do usuário: o BROW deve parecer viva, perguntando se está tudo bem
    quando o usuário passa muito tempo sem interagir, e alertando sobre
    horário tardio -- SEM virar chata/repetitiva. Duas regras seguidas à
    risca: (1) nunca a mesma frase duas vezes seguidas (banco de ~35 frases
    cada, sorteio sem repetição imediata); (2) cooldown longo por tipo (25min
    ociosidade, 45min madrugada) -- interromper o usuário raramente é o que
    faz soar genuíno, não constante. */
-const HERMES_USER_NAME = 'Well';
+const BROW_USER_NAME = 'Well';
 const IDLE_THRESHOLD_MS = 12 * 60 * 1000;   // 12min sem nenhuma interação
 const IDLE_NUDGE_COOLDOWN_MS = 25 * 60 * 1000;
 const LATE_NIGHT_COOLDOWN_MS = 45 * 60 * 1000;
@@ -1242,26 +1242,26 @@ const IDLE_CHECKIN_PHRASES = [
 ];
 
 const LATE_NIGHT_PHRASES = [
-    `${HERMES_USER_NAME}, já passa da meia-noite — que tal encerrar por hoje e descansar?`,
-    `Reparei que já é bem tarde, ${HERMES_USER_NAME}. Um bom sono ajuda muito amanhã.`,
-    `${HERMES_USER_NAME}, cuidado com o sono — o dia de amanhã agradece um descanso agora.`,
-    `Já é madrugada, ${HERMES_USER_NAME}. Recomendo dar uma pausa e ir dormir.`,
-    `Horário tardio por aqui, ${HERMES_USER_NAME} — sua saúde agradece um descanso.`,
-    `${HERMES_USER_NAME}, sei que tem coisa pra fazer, mas dormir bem também é produtivo.`,
-    `Já é tarde demais pra continuar sem descanso, ${HERMES_USER_NAME}. Que tal parar por aqui?`,
-    `${HERMES_USER_NAME}, sono de qualidade rende mais que mais uma hora acordado agora.`,
-    `Vi que já passou da meia-noite, ${HERMES_USER_NAME} — vale considerar ir descansar.`,
-    `${HERMES_USER_NAME}, seu corpo agradece se você desligar um pouco mais cedo hoje.`,
-    `Vida de madrugada acordado cobra caro depois, ${HERMES_USER_NAME}. Bora descansar?`,
-    `${HERMES_USER_NAME}, o que for importante ainda vai estar aqui amanhã cedo, descansado.`,
-    `Notei o horário, ${HERMES_USER_NAME} — uma boa noite de sono faz muita diferença.`,
-    `${HERMES_USER_NAME}, só um lembrete gentil: dormir bem também é cuidar de você.`,
-    `Já é tarde da noite, ${HERMES_USER_NAME}. Recomendo fechar por aqui e descansar a mente.`,
-    `${HERMES_USER_NAME}, produtividade também vem de dormir direito — considere uma pausa.`,
-    `Hora avançada por aqui, ${HERMES_USER_NAME}. Vale a pena priorizar o descanso agora.`,
-    `${HERMES_USER_NAME}, sei que é tentador continuar, mas seu descanso importa mais agora.`,
-    `Já virou a madrugada, ${HERMES_USER_NAME} — talvez seja hora de recarregar as energias.`,
-    `${HERMES_USER_NAME}, cuide de você também: um bom sono hoje rende um dia melhor amanhã.`,
+    `${BROW_USER_NAME}, já passa da meia-noite — que tal encerrar por hoje e descansar?`,
+    `Reparei que já é bem tarde, ${BROW_USER_NAME}. Um bom sono ajuda muito amanhã.`,
+    `${BROW_USER_NAME}, cuidado com o sono — o dia de amanhã agradece um descanso agora.`,
+    `Já é madrugada, ${BROW_USER_NAME}. Recomendo dar uma pausa e ir dormir.`,
+    `Horário tardio por aqui, ${BROW_USER_NAME} — sua saúde agradece um descanso.`,
+    `${BROW_USER_NAME}, sei que tem coisa pra fazer, mas dormir bem também é produtivo.`,
+    `Já é tarde demais pra continuar sem descanso, ${BROW_USER_NAME}. Que tal parar por aqui?`,
+    `${BROW_USER_NAME}, sono de qualidade rende mais que mais uma hora acordado agora.`,
+    `Vi que já passou da meia-noite, ${BROW_USER_NAME} — vale considerar ir descansar.`,
+    `${BROW_USER_NAME}, seu corpo agradece se você desligar um pouco mais cedo hoje.`,
+    `Vida de madrugada acordado cobra caro depois, ${BROW_USER_NAME}. Bora descansar?`,
+    `${BROW_USER_NAME}, o que for importante ainda vai estar aqui amanhã cedo, descansado.`,
+    `Notei o horário, ${BROW_USER_NAME} — uma boa noite de sono faz muita diferença.`,
+    `${BROW_USER_NAME}, só um lembrete gentil: dormir bem também é cuidar de você.`,
+    `Já é tarde da noite, ${BROW_USER_NAME}. Recomendo fechar por aqui e descansar a mente.`,
+    `${BROW_USER_NAME}, produtividade também vem de dormir direito — considere uma pausa.`,
+    `Hora avançada por aqui, ${BROW_USER_NAME}. Vale a pena priorizar o descanso agora.`,
+    `${BROW_USER_NAME}, sei que é tentador continuar, mas seu descanso importa mais agora.`,
+    `Já virou a madrugada, ${BROW_USER_NAME} — talvez seja hora de recarregar as energias.`,
+    `${BROW_USER_NAME}, cuide de você também: um bom sono hoje rende um dia melhor amanhã.`,
 ];
 
 let lastAnyInteractionAt = Date.now();
@@ -1390,7 +1390,7 @@ function renderDesktopExecutiveFinancesDashboard(apiData) {
 
     // Achado 07/08/2026: "Custo de bens vendidos" e os percentuais 34%/66%
     // eram um CHUTE fixo (`totalReceita * 0.338`) sem nenhum dado real por
-    // trás -- a HERMES não rastreia custo de mercadoria/produto (não é um
+    // trás -- o BROW não rastreia custo de mercadoria/produto (não é um
     // negócio de revenda), então o correto é declarar honestamente que não
     // há custo de bens vendidos rastreado (R$0) em vez de inventar um
     // número que parece real mas não é.
@@ -1609,7 +1609,7 @@ function renderFinancesExtrato(elementId, items) {
     const el = document.getElementById(elementId);
     if (!el) return;
     el.innerHTML = '';
-    if (!items || !items.length) { el.innerHTML = '<li class="text-muted">Nenhum lançamento este mês na HERMES.</li>'; return; }
+    if (!items || !items.length) { el.innerHTML = '<li class="text-muted">Nenhum lançamento este mês no BROW.</li>'; return; }
     items.slice(0, 30).forEach((e) => {
         const li = document.createElement('li');
         const sign = e.type === 'receita' ? '↗️' : '↘️';
@@ -1639,7 +1639,7 @@ async function markFinanceEntryPaid(shortId) {
 }
 
 async function deleteFinanceReal(shortId) {
-    if (!confirm("Excluir este lançamento da HERMES de produção?")) return;
+    if (!confirm("Excluir este lançamento do BROW de produção?")) return;
     try {
         const res = await fetch(`/api/hermes/finances/${shortId}`, { method: 'DELETE' });
         if (!res.ok) throw new Error('delete_failed');
@@ -1697,7 +1697,7 @@ async function uploadFinanceReceipt(event) {
     }
 }
 
-/* ── Automação: ações reais consultando a HERMES de produção ──────────── */
+/* ── Automação: ações reais consultando o BROW de produção ──────────── */
 async function testFinancialGuard() {
     try {
         const res = await fetch('/api/hermes/finances');
@@ -1784,7 +1784,7 @@ async function submitCategoryMemoryForm(event, mainCategory) {
             body: JSON.stringify({ title, summary: parts.join('; '), mainCategory, category: mainCategory })
         });
         if (!res.ok) throw new Error('create_failed');
-        alert('✅ Registrado na HERMES de produção.');
+        alert('✅ Registrado no BROW de produção.');
         form.reset();
         if (mainCategory === 'meta') loadMetas();
         else loadMemories(mainCategory);
@@ -1798,7 +1798,7 @@ async function submitForm(event, endpoint) {
     if (endpoint === 'documents') return submitCategoryDocumentFormDesk(event);
     if (endpoint === 'contacts') return submitCategoryMemoryForm(event, 'contato');
     if (endpoint === 'goals') return submitCategoryMemoryForm(event, 'meta');
-    alert('Este módulo (' + endpoint + ') usa a inteligência unificada de Memória e Agenda da HERMES.');
+    alert('Este módulo (' + endpoint + ') usa a inteligência unificada de Memória e Agenda do BROW.');
 }
 
 /* ── MÓDULO DE DOCUMENTOS & ARQUIVOS (COFRE R2 + MEMÓRIA AI) ── */
@@ -1890,7 +1890,7 @@ async function uploadDocumentFileDesk(event) {
     const customCat = catInput?.value.trim() || 'documento';
     const customVal = valInput?.value || '';
 
-    if (statusEl) statusEl.innerHTML = `⏳ Enviando ${files.length} arquivo(s) e integrando com OCR à Memória HERMES...`;
+    if (statusEl) statusEl.innerHTML = `⏳ Enviando ${files.length} arquivo(s) e integrando com OCR à Memório BROW...`;
 
     try {
         for (let i = 0; i < files.length; i++) {
@@ -1909,7 +1909,7 @@ async function uploadDocumentFileDesk(event) {
             if (!data.ok) throw new Error(data.message || 'Erro no upload');
         }
 
-        if (statusEl) statusEl.innerHTML = `✅ ${files.length} arquivo(s) salvo(s) no R2 e sincronizado(s) com a Mente HERMES!`;
+        if (statusEl) statusEl.innerHTML = `✅ ${files.length} arquivo(s) salvo(s) no R2 e sincronizado(s) com a Mente BROW!`;
         input.value = '';
         if (titleInput) titleInput.value = '';
         if (valInput) valInput.value = '';
@@ -1947,7 +1947,7 @@ async function submitCategoryDocumentFormDesk(event) {
             })
         });
         if (!res.ok) throw new Error('create_failed');
-        alert('✅ Documento cadastrado e compartilhado com a Memória HERMES!');
+        alert('✅ Documento cadastrado e compartilhado com a Memório BROW!');
         if (titleInput) titleInput.value = '';
         if (valInput) valInput.value = '';
         loadDocumentsDesk();
@@ -1961,7 +1961,7 @@ function viewOrDownloadDocument(docId, mime, title) {
 }
 
 async function deleteDocumentDesk(docId) {
-    if (!confirm('Deseja excluir este documento do R2 e da Memória AI da HERMES?')) return;
+    if (!confirm('Deseja excluir este documento do R2 e da Memória AI do BROW?')) return;
     try {
         // Atualização instantânea da UI: remove localmente o item antes da requisição HTTP
         globalDocumentsDesk = globalDocumentsDesk.filter(d => d.id !== docId && (d.id && d.id.slice(0, 8).toUpperCase() !== docId.slice(0, 8).toUpperCase()));
@@ -2179,10 +2179,10 @@ async function fetchNewsArticles(rawTopic) {
     // Achado real 10/08/2026 (Fase 8 do Contrato de Evidência, print do
     // usuário): quando as 3 tentativas reais acima falhavam, este fallback
     // inventava um "artigo" -- título "Notícias em Destaque: X", resumo "as
-    // matérias... estão sendo compiladas pela HERMES Cloud" -- que não existe
+    // matérias... estão sendo compiladas pelo BROW Cloud" -- que não existe
     // em lugar nenhum, só um link de busca genérico do Google. Isso ia
     // DIRETO pro Telegram via testBriefingNow como se fosse notícia real
-    // ("compilado automaticamente pela HERMES AI"). Mesma classe de bug do
+    // ("compilado automaticamente pelo BROW AI"). Mesma classe de bug do
     // placar/preço inventado no Worker (ver grounding.ts) -- aqui do lado do
     // cliente: sem evidência real encontrada, retorna vazio, nunca inventa.
     return [];
@@ -2236,7 +2236,7 @@ async function addScheduledBriefing(event) {
 
     if (topicInput) topicInput.value = '';
     renderScheduledBriefings();
-    alert(`✅ Briefing programado com sucesso!\nA HERMES pesquisará notícias sobre "${topic}" e entregará o resumo diariamente às ${hour} no Telegram.`);
+    alert(`✅ Briefing programado com sucesso!\nA BROW pesquisará notícias sobre "${topic}" e entregará o resumo diariamente às ${hour} no Telegram.`);
 }
 
 function deleteScheduledBriefing(index) {
@@ -2301,7 +2301,7 @@ async function testBriefingNow(index) {
             return `📌 *${i + 1}. ${cleanTitle}*\n📰 *Veículo:* ${sourceName}\n📝 *Resumo Executivo:* ${snippet}\n🔗 *Ler matéria na íntegra:* ${shortUrl}`;
         }).join('\n\n───────────────\n\n');
 
-        const fullTelegramText = `🌅 *BRIEFING MATINAL DE NOTÍCIAS DIÁRIAS* 📡\n🎯 *Tópico:* ${topic}\n⏰ *Programação:* ${briefing.hour} (${briefing.frequency})\n\n${formattedArticlesText}\n\n💡 *Resumo compilado automaticamente pela HERMES AI.*`;
+        const fullTelegramText = `🌅 *BRIEFING MATINAL DE NOTÍCIAS DIÁRIAS* 📡\n🎯 *Tópico:* ${topic}\n⏰ *Programação:* ${briefing.hour} (${briefing.frequency})\n\n${formattedArticlesText}\n\n💡 *Resumo compilado automaticamente pelo BROW AI.*`;
 
         // DISPARAR MENSAGEM COMPLETA E COM NOTÍCIAS REAIS PARA O TELEGRAM
         try {
@@ -2377,8 +2377,8 @@ function loadChatMessagesFromStorage() {
             voiceChatHistoryMessages = [
                 {
                     id: 'init-1',
-                    text: '✈️ **HERMES Telegram Assistant**\n\nOlá! Sou a HERMES, sua assistente neural conectada 24/7 ao seu Telegram e Segundo Cérebro. Como posso te ajudar hoje?',
-                    sender: '✈️ HERMES',
+                    text: '✈️ **BROW Telegram Assistant**\n\nOlá! Sou o BROW, seu assistente neural conectado 24/7 ao seu Telegram e Segundo Cérebro. Como posso te ajudar hoje?',
+                    sender: '✈️ BROW',
                     isUser: false,
                     timestamp: formatTelegramTime(new Date())
                 }
@@ -2397,7 +2397,7 @@ function repeatLastHermesMessage(e) {
     if (lastMsg && lastMsg.text) {
         speakWithEdgeTTS(lastMsg.text);
     } else {
-        speakWithEdgeTTS("Olá! Sou a HERMES, sua assistente neural conectada e pronta para ajudar.");
+        speakWithEdgeTTS("Olá! Sou o BROW, seu assistente neural conectado e pronto para ajudar.");
     }
     return false;
 }
@@ -2424,7 +2424,7 @@ function clearVoiceChatHistory() {
         {
             id: 'init-1',
             text: '✈️ Histórico zerado com sucesso! Como posso ajudar você agora?',
-            sender: '✈️ HERMES',
+            sender: '✈️ BROW',
             isUser: false,
             timestamp: formatTelegramTime(new Date())
         }
@@ -2471,7 +2471,7 @@ function renderAllVoiceChatMessages() {
             msgDiv.style.cssText = 'align-self:flex-start; max-width:85%; background:#182533; color:#e1e9f0; padding:10px 14px; border-radius:12px 12px 12px 2px; border-left:3px solid var(--purple); box-shadow:0 1px 3px rgba(0,0,0,0.3); font-size:14px; line-height:1.5; position:relative; word-break:break-word;';
             msgDiv.innerHTML = `
                 <div style="font-weight:700; font-size:12px; color:var(--cyan); margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
-                    <span>✈️ HERMES Cloud</span>
+                    <span>✈️ BROW Cloud</span>
                     <div style="display:flex; align-items:center; gap:8px;">
                         <button type="button" onclick="speakMessageText(this, event); return false;" data-msg-id="${msg.id}" title="Ouvir / Reler esta mensagem por voz" style="background:rgba(168,85,247,0.2); border:1px solid rgba(168,85,247,0.4); color:#c084fc; font-size:10px; border-radius:10px; padding:2px 8px; cursor:pointer; font-weight:600; transition:all 0.2s ease;">🔊 Reler</button>
                         <span style="font-size:10px; color:rgba(255,255,255,0.5);">${escapeHtml(msg.timestamp || '')}</span>
@@ -2542,7 +2542,7 @@ function initNeuralWaveCanvas() {
 /* ── CHAT: Enviar Mensagem (Enter ou Botão) ──
    A mensagem some pra fila de turnos (queueUserTurn) em vez de disparar a
    requisição na hora -- se o usuário mandar texto E áudio quase juntos (ou
-   duas mensagens de texto em sequência antes da HERMES responder a
+   duas mensagens de texto em sequência antes do BROW responder a
    primeira), tudo isso empilha num único turno coerente em vez de duas
    respostas/dois áudios concorrentes brigando pelo mesmo player. Ver
    Ver queueUserTurn()/runNextTurn()/processTurn(). */
@@ -2567,7 +2567,7 @@ async function sendVoiceChatMessage() {
     queueUserTurn(text);
 }
 
-/* ── TELEMETRIA REAL DO PC DA HERMES (CPU, RAM, GPU, OVERLOAD) ── */
+/* ── TELEMETRIA REAL DO PC DA BROW (CPU, RAM, GPU, OVERLOAD) ── */
 const PC_TELEMETRY_STORAGE_KEY = 'hermes_pc_telemetry_v1';
 
 function loadPersistedTelemetry() {
@@ -3069,7 +3069,7 @@ function checkPcOverload() {
 
         // Não fala por cima de um turno de conversa em andamento -- o
         // card visual do alerta já foi inserido acima de qualquer forma;
-        // a voz do alarme só entra quando a HERMES não está no meio de uma
+        // a voz do alarme só entra quando o BROW não está no meio de uma
         // resposta, pra não colidir no mesmo <audio> com processTurn().
         // Várias frases pro mesmo aviso (pedido do usuário 13/08/2026: soava
         // sempre igual/robótico) -- cada uma cita o dado real (CPU/RAM/processo).
@@ -3128,7 +3128,7 @@ function checkDiskLowAlert() {
     if (!isSpeakingOrListening) speakWithEdgeTTS(diskPhrases[Math.floor(Math.random() * diskPhrases.length)]);
 }
 
-/* ── IA: Rota REAL da HERMES Cloud (Groq LLaMA 3.1 8B + Contexto Real-time) ──
+/* ── IA: Rota REAL do BROW Cloud (Groq LLaMA 3.1 8B + Contexto Real-time) ──
    v2 (07/08/2026) -- streaming + fila de turnos. Dois problemas resolvidos:
    1) DELAY DE VOZ: antes, speakWithEdgeTTS só começava depois da resposta
       INTEIRA chegar e do texto inteiro ser sintetizado em frases. Agora o
@@ -3137,7 +3137,7 @@ function checkDiskLowAlert() {
       exclamação), enquanto o resto da resposta ainda está sendo gerado --
       geração de texto e síntese de voz acontecem em paralelo, não em série.
    2) MENSAGENS SIMULTÂNEAS: se o usuário manda texto e depois já dispara
-      áudio (ou duas mensagens em sequência) antes da HERMES responder a
+      áudio (ou duas mensagens em sequência) antes do BROW responder a
       primeira, as duas NÃO podem virar duas respostas/dois áudios brigando
       pelo mesmo <audio>. queueUserTurn() empilha tudo que chegar enquanto
       um turno está em andamento e processa como um turno único assim que o
@@ -3158,14 +3158,14 @@ async function runNextTurn() {
     turnActive = true;
     // Drena tudo que chegou até agora num turno só -- isso é o "empilhar
     // contextos": se 2-3 mensagens (texto e/ou voz) chegaram quase juntas,
-    // a HERMES vê e responde todas de uma vez, em vez de disparar respostas
+    // o BROW vê e responde todas de uma vez, em vez de disparar respostas
     // concorrentes.
     const batch = pendingUserInputs.splice(0);
     const combinedText = batch.join('\n');
     try {
         await processTurn(combinedText);
     } catch (e) {
-        console.error('Erro processando turno da HERMES:', e);
+        console.error('Erro processando turno do BROW:', e);
     }
     runNextTurn();
 }
@@ -3189,14 +3189,14 @@ function normalizeForLocalGuard(value) {
 function applyLocalTruthGuards(text) {
     const plain = normalizeForLocalGuard(text);
     if (/nao (?:tenho|possuo).{0,35}(?:memoria persistente|capacidade de armazenar|capacidade de apagar)|nao consigo.{0,35}(?:armazenar|apagar|excluir|remover).{0,35}(?:memoria|lembranca)|nao consigo.{0,35}(?:apagar|excluir|remover).{0,70}(?:dados pessoais|dados|informacoes|o que voce compartilhou|sistema)|isso nao esta em meu controle/.test(plain)) {
-        return "A HERMES possui memória persistente e exclusão real de dados salvos. Para apagar um item, use o dashboard ou peça a exclusão diretamente.";
+        return "A BROW possui memória persistente e exclusão real de dados salvos. Para apagar um item, use o dashboard ou peça a exclusão diretamente.";
     }
     if (/\bestou em modo\b/.test(plain)) {
         const stripped = text.replace(/estou em modo [^.!\n]*[.!]?\s*/gi, '').trim();
         return stripped || 'Pode continuar, estou acompanhando a conversa normalmente.';
     }
     if (/nao (?:tenho|possuo|consigo) .{0,40}(?:acesso a internet|acesso a dados atuais|buscar informacoes atuais|pesquisar na internet|informacoes em tempo real)/.test(plain)) {
-        return "A HERMES tem acesso real a pesquisa na web e notícias por ferramentas dedicadas.";
+        return "A BROW tem acesso real a pesquisa na web e notícias por ferramentas dedicadas.";
     }
     return text;
 }
@@ -3274,7 +3274,7 @@ function createSpeechQueuePlayer() {
 async function processTurn(combinedText) {
     const badge = document.getElementById('voice-state-badge');
     const title = document.getElementById('voice-transcript-title');
-    if (badge) { badge.className = 'badge badge-purple'; badge.textContent = '🧠 HERMES Pensando...'; }
+    if (badge) { badge.className = 'badge badge-purple'; badge.textContent = '🧠 BROW Pensando...'; }
     if (title) title.textContent = `Processando: "${combinedText.slice(0, 50)}..."`;
     isSpeakingOrListening = true;
 
@@ -3325,7 +3325,7 @@ async function processTurn(combinedText) {
         }
 
         if (!fullText.trim()) {
-            fullText = 'Olá! Sou a HERMES, sua assistente executiva. Estou 100% online e pronta para ajudar.';
+            fullText = 'Olá! Sou o BROW, sua assistente executivo. Estou 100% online e pronto para ajudar.';
             if (player) { player.push(fullText); spokeAny = true; }
         }
 
@@ -3337,7 +3337,7 @@ async function processTurn(combinedText) {
             voiceChatHistoryMessages.push({
                 id: (Date.now() + 1).toString(),
                 text: fullText,
-                sender: '✈️ HERMES',
+                sender: '✈️ BROW',
                 isUser: false,
                 timestamp: formatTelegramTime(new Date())
             });
@@ -3346,17 +3346,17 @@ async function processTurn(combinedText) {
         }
 
         if (player) {
-            if (title) title.textContent = spokeAny ? '🔊 Reproduzindo resposta em voz...' : 'Converse com a HERMES — digite ou fale';
+            if (title) title.textContent = spokeAny ? '🔊 Reproduzindo resposta em voz...' : 'Converse com o BROW — digite ou fale';
             await player.waitUntilDone();
         }
     } catch (e) {
-        console.error('Erro ao processar turno da HERMES:', e);
+        console.error('Erro ao processar turno do BROW:', e);
         if (badge) { badge.className = 'badge badge-danger'; badge.textContent = '❌ Erro'; }
     } finally {
         isSpeakingOrListening = false;
         if (currentSpeechPlayer === player) currentSpeechPlayer = null;
         if (badge) { badge.className = 'badge badge-info'; badge.textContent = '🟢 Pronta'; }
-        if (title) title.textContent = 'Converse com a HERMES — digite ou fale';
+        if (title) title.textContent = 'Converse com o BROW — digite ou fale';
     }
 }
 
@@ -3370,7 +3370,7 @@ async function buildLocalBriefing() {
         ]);
         const mems = memRes.items || []; const ags = agRes.items || [];
         const s = finRes.summary || {};
-        let brief = `📊 BRIEFING EXECUTIVO DA HERMES\n\n`;
+        let brief = `📊 BRIEFING EXECUTIVO DA BROW\n\n`;
         brief += `🧠 Memórias: ${mems.length} registros salvos\n`;
         brief += `💰 Finanças: Saldo ${s.balance != null ? 'R$' + Number(s.balance).toFixed(2) : 'N/D'} | Receitas R$${Number(s.totalIncome || 0).toFixed(2)} | Despesas R$${Number(s.totalExpenses || 0).toFixed(2)}\n`;
         brief += `📅 Agenda: ${ags.length} compromissos registrados\n`;
@@ -3430,7 +3430,7 @@ async function buildStatusSummary() {
         const data = await res.json();
         const providers = Object.keys(data.health || {});
         const ready = providers.filter(p => !data.health[p].cooldownUntil || Date.parse(data.health[p].cooldownUntil) <= Date.now());
-        return `⚡ STATUS DO SISTEMA HERMES\n\nProvedores ativos: ${ready.length}/${providers.length}\nR2: ${data.bindings?.r2 ? '✅' : '❌'}\nVectorize: ${data.bindings?.vectorize ? '✅' : '❌'}\nSupabase: ${data.bindings?.supabase ? '✅' : '❌'}\n\nProvedores prontos: ${ready.join(', ') || 'nenhum'}`;
+        return `⚡ STATUS DO SISTEMA BROW\n\nProvedores ativos: ${ready.length}/${providers.length}\nR2: ${data.bindings?.r2 ? '✅' : '❌'}\nVectorize: ${data.bindings?.vectorize ? '✅' : '❌'}\nSupabase: ${data.bindings?.supabase ? '✅' : '❌'}\n\nProvedores prontos: ${ready.join(', ') || 'nenhum'}`;
     } catch (e) { return 'Não consegui verificar o status do sistema.'; }
 }
 
@@ -3452,7 +3452,7 @@ function stopHermesAudio() {
     const badge = document.getElementById('voice-state-badge');
     const title = document.getElementById('voice-transcript-title');
     if (badge) { badge.className = 'badge badge-info'; badge.textContent = '🟢 Pronta'; }
-    if (title) title.textContent = 'Converse com a HERMES — digite ou fale';
+    if (title) title.textContent = 'Converse com o BROW — digite ou fale';
 }
 
 /* ── EDGE-TTS REAL: voz pt-BR-ThalitaNeural via /api/tts ──
@@ -3505,7 +3505,7 @@ async function speakWithEdgeTTS(text) {
     const finish = () => {
         isSpeakingOrListening = false;
         if (badge) { badge.className = 'badge badge-info'; badge.textContent = '🟢 Pronta'; }
-        if (title) title.textContent = 'Converse com a HERMES — digite ou fale';
+        if (title) title.textContent = 'Converse com o BROW — digite ou fale';
     };
 
     if (!cleanText || !player) { finish(); return; }
@@ -3547,7 +3547,7 @@ let isRecording = false;
 
 function toggleVoiceInput() {
     if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
-        alert("Seu navegador não suporta gravação de áudio. Digite no campo abaixo para conversar com a HERMES!");
+        alert("Seu navegador não suporta gravação de áudio. Digite no campo abaixo para conversar com o BROW!");
         return;
     }
     if (isRecording) {
@@ -3606,7 +3606,7 @@ async function startRealVoiceRecording() {
             const data = await res.json();
             const transcript = (data?.text || '').trim();
             if (badge) { badge.className = 'badge badge-info'; badge.textContent = '🟢 Pronta'; }
-            if (title) title.textContent = 'Converse com a HERMES — digite ou fale';
+            if (title) title.textContent = 'Converse com o BROW — digite ou fale';
             if (!transcript) {
                 alert("Não consegui entender o áudio. Tente falar de novo, mais perto do microfone.");
                 return;
@@ -3619,7 +3619,7 @@ async function startRealVoiceRecording() {
             if (badge) { badge.className = 'badge badge-danger'; badge.textContent = '❌ Erro STT'; }
             setTimeout(() => {
                 if (badge) { badge.className = 'badge badge-info'; badge.textContent = '🟢 Pronta'; }
-                if (title) title.textContent = 'Converse com a HERMES — digite ou fale';
+                if (title) title.textContent = 'Converse com o BROW — digite ou fale';
             }, 2000);
         }
     };

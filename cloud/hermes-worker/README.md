@@ -1,7 +1,11 @@
-# Hermes Cloud Free
+# Brow — Cloud Free
 
 Variante gratuita e isolada do Hermes para Cloudflare Workers, Telegram,
 Supabase e o bucket R2 `hermes-agent-storage`.
+
+> **Identidade pública:** o agente se chama **Brow**. `Hermes` permanece apenas
+> em nomes técnicos legados (rotas, tabelas, bindings e projeto Cloudflare),
+> cuja troca quebraria compatibilidade com dados e clientes existentes.
 
 ## Garantias
 
@@ -32,6 +36,16 @@ Telegram e armazenamento R2.
 
 ## Contratos de comportamento
 
+### Identidade e personalidade
+
+A fonte única da identidade é `src/identity.ts`, compartilhada por todas as
+chamadas ao modelo. Brow é sereno, elegante, preciso, proativo e usa humor seco
+somente quando apropriado. Ele começa pelo resultado, separa fato, inferência e
+ação executada, não bajula, não finge capacidades e confirma ações destrutivas.
+Essa é uma personalidade original inspirada em qualidades gerais de assistentes
+futuristas; Brow não imita personagens, não recita bordões e nunca se apresenta
+como JARVIS. O prefixo é determinístico para preservar o cache de prompt.
+
 ### Notícias e pesquisa atual
 
 - Pedidos de notícias passam por um atalho determinístico antes do modelo.
@@ -43,7 +57,7 @@ Telegram e armazenamento R2.
   as demais. Resultados são deduplicados, classificados por relevância e
   recência e limitados por domínio para preservar diversidade.
 - Respostas só são emitidas quando existe ao menos uma URL HTTP(S) verificável.
-  Se nenhuma fonte real responder, o Hermes informa a falha; não completa com
+  Se nenhuma fonte real responder, o Brow informa a falha; não completa com
   fatos inventados. O dashboard recebe também `researchAudit` com consulta,
   latência, contagem por provedor e número de fontes selecionadas.
 - Em modo notícia, recência é requisito, não apenas preferência: resultados
