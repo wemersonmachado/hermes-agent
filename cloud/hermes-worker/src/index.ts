@@ -48,6 +48,7 @@ import {
   webSearch,
 } from "./shared";
 import { detectSportsSubject, formatSpecialistAnswer, trySportsSearchSpecialist } from "./search_specialist";
+import { isNewsSearchRequest, refineSearchQuery } from "./search_query";
 
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
 
@@ -442,6 +443,17 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
       await saveMessage(env, message, "assistant", newsShortcut);
       await sendText(env, message.chat.id, newsShortcut);
       await maybeSendVoice(env, message.chat.id, userText, newsShortcut, update.update_id);
+      await markUpdate(env, update.update_id, "done");
+      return;
+    }
+    if (isNewsSearchRequest(userText)) {
+      const topic = refineSearchQuery(userText, { news: true });
+      const reply = topic
+        ? `Não consegui confirmar notícias atuais sobre ${topic} em fontes reais agora. Tente novamente em instantes.`
+        : "Não consegui confirmar as notícias atuais em fontes reais agora. Tente novamente em instantes.";
+      await saveMessage(env, message, "user", userText);
+      await saveMessage(env, message, "assistant", reply);
+      await sendText(env, message.chat.id, reply);
       await markUpdate(env, update.update_id, "done");
       return;
     }

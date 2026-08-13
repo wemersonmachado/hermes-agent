@@ -28,6 +28,7 @@ import {
   webSearch,
 } from "./shared";
 import { detectSportsSubject, formatSpecialistAnswer, trySportsSearchSpecialist } from "./search_specialist";
+import { isNewsSearchRequest, refineSearchQuery } from "./search_query";
 
 function ownerChatId(env: Env): string {
   return env.TELEGRAM_ALLOWED_USERS.split(",")[0]?.trim() ?? "";
@@ -721,7 +722,16 @@ export async function handleDashboardRequest(request: Request, env: Env, path: s
     if (newsShortcut) {
       await saveDashboardMessage(env, chatId, "user", text);
       await saveDashboardMessage(env, chatId, "assistant", newsShortcut);
-      return json({ ok: true, reply: newsShortcut });
+      return json({ ok: true, reply: newsShortcut, kind: "grounded_news", searchQuery: refineSearchQuery(text, { news: true }) });
+    }
+    if (isNewsSearchRequest(text)) {
+      const searchQuery = refineSearchQuery(text, { news: true });
+      const reply = searchQuery
+        ? `Não consegui confirmar notícias atuais sobre ${searchQuery} em fontes reais agora. Tente novamente em instantes.`
+        : "Não consegui confirmar as notícias atuais em fontes reais agora. Tente novamente em instantes.";
+      await saveDashboardMessage(env, chatId, "user", text);
+      await saveDashboardMessage(env, chatId, "assistant", reply);
+      return json({ ok: true, reply, kind: "grounded_news_unavailable", searchQuery });
     }
 
     const currencyResult = await tryCurrencyConversionShortcut(text).catch(() => null);
