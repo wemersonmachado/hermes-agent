@@ -79,8 +79,10 @@ function normalizeCompetition(name: string): string {
 async function structuredSportsAnswer(subject: string): Promise<SpecialistAnswer | null> {
   const team = STRUCTURED_TEAMS[subject];
   if (!team) return null;
-  const lastUrl = `https://www.sofascore.com/api/v1/team/${team.id}/events/last/0`;
-  const nextUrl = `https://www.sofascore.com/api/v1/team/${team.id}/events/next/0`;
+  // O host api.* aceita chamadas server-to-server; www.* aplica proteção de
+  // navegador e bloqueia IPs do Workers mesmo quando funciona localmente.
+  const lastUrl = `https://api.sofascore.com/api/v1/team/${team.id}/events/last/0`;
+  const nextUrl = `https://api.sofascore.com/api/v1/team/${team.id}/events/next/0`;
   const [lastData, nextData] = await Promise.all([fetchJson(lastUrl), fetchJson(nextUrl)]);
   const finished = Array.isArray(lastData?.events)
     ? lastData.events
@@ -108,7 +110,7 @@ async function structuredSportsAnswer(subject: string): Promise<SpecialistAnswer
   );
   let standingsUrl = "";
   if (leagueEvent) {
-    standingsUrl = `https://www.sofascore.com/api/v1/unique-tournament/325/season/${leagueEvent.season.id}/standings/total`;
+    standingsUrl = `https://api.sofascore.com/api/v1/unique-tournament/325/season/${leagueEvent.season.id}/standings/total`;
     const standings = await fetchJson(standingsUrl);
     const rows = Array.isArray(standings?.standings)
       ? standings.standings.flatMap((group: any) => Array.isArray(group.rows) ? group.rows : [])
@@ -137,6 +139,63 @@ async function structuredSportsAnswer(subject: string): Promise<SpecialistAnswer
     { title: "Sofascore — próximos jogos do Flamengo", url: nextUrl },
   ];
   if (standingsUrl) sources.push({ title: "Sofascore — classificação do Brasileirão", url: standingsUrl });
+  return { answer, sources };
+}
+
+async function sportsDbAnswer(subject: string): Promise<SpecialistAnswer | null> {
+  const team = STRUCTURED_TEAMS[subject];
+  if (!team) return null;
+  const teamId = "134287";
+  const base = "https://www.thesportsdb.com/api/v1/json/123";
+  const lastUrl = `${base}/eventslast.php?id=${teamId}`;
+  const nextUrl = `${base}/eventsnext.php?id=${teamId}`;
+  const teamUrl = `${base}/lookupteam.php?id=${teamId}`;
+  const [lastData, nextData, teamData] = await Promise.all([fetchJson(lastUrl), fetchJson(nextUrl), fetchJson(teamUrl)]);
+  const nowSeconds = Date.now() / 1000;
+  const rawEvents = [...(lastData?.results || []), ...(nextData?.events || [])];
+  const parsedEvents = rawEvents.map((event: any) => ({
+    raw: event,
+    timestamp: Date.parse(String(event.strTimestamp || event.dateEvent || "")) / 1000,
+    homeScore: Number(event.intHomeScore),
+    awayScore: Number(event.intAwayScore),
+  }));
+  const finished = parsedEvents
+    .filter((event) => Number.isFinite(event.timestamp) && event.timestamp <= nowSeconds && Number.isFinite(event.homeScore) && Number.isFinite(event.awayScore))
+    .sort((a, b) => b.timestamp - a.timestamp);
+  const last = finished[0];
+  if (!last) return null;
+  const event = last.raw;
+  let answer = `O último jogo do ${team.display} foi ${event.strHomeTeam} ${last.homeScore} x ${last.awayScore} ${event.strAwayTeam}, em ${eventDate(last.timestamp)}, pela ${event.strLeague || "competição não informada"}.`;
+
+  const profile = teamData?.teams?.[0];
+  const leagueId = profile?.idLeague;
+  let tableUrl = "";
+  if (leagueId) {
+    tableUrl = `${base}/lookuptable.php?l=${leagueId}&s=${new Date().getUTCFullYear()}`;
+    const table = await fetchJson(tableUrl);
+    const row = Array.isArray(table?.table) ? table.table.find((item: any) => String(item.idTeam) === teamId) : null;
+    if (row?.intRank) {
+      answer += ` No ${profile.strLeague || "campeonato nacional"}, aparece na ${row.intRank}ª posição, com ${row.intPoints} pontos em ${row.intPlayed} jogos (${row.intWin} vitórias, ${row.intDraw} empates e ${row.intLoss} derrotas).`;
+    }
+  }
+
+  const competitions = [1, 2, 3, 4]
+    .map((index) => profile?.[`strLeague${index === 1 ? "" : index}`])
+    .filter((name: unknown): name is string => typeof name === "string" && Boolean(name.trim()));
+  if (competitions.length) {
+    answer += ` As competições vinculadas ao clube nesta temporada são: ${competitions.join(", ")}.`;
+  }
+  const future = parsedEvents
+    .filter((item) => Number.isFinite(item.timestamp) && item.timestamp > nowSeconds && !Number.isFinite(item.homeScore))
+    .sort((a, b) => a.timestamp - b.timestamp)[0];
+  if (future) {
+    answer += ` O próximo jogo programado é ${future.raw.strHomeTeam} x ${future.raw.strAwayTeam}, em ${eventDate(future.timestamp)}, pela ${future.raw.strLeague}.`;
+  }
+  const sources: SearchSource[] = [
+    { title: "TheSportsDB — últimos eventos do Flamengo", url: lastUrl },
+    { title: "TheSportsDB — agenda do Flamengo", url: nextUrl },
+  ];
+  if (tableUrl) sources.push({ title: "TheSportsDB — tabela do Brasileirão", url: tableUrl });
   return { answer, sources };
 }
 
@@ -193,6 +252,11 @@ export async function trySportsSearchSpecialist(
 
   const structured = await structuredSportsAnswer(subject).catch(() => null);
   if (structured) return structured;
+  const secondaryStructured = await sportsDbAnswer(subject).catch(() => null);
+  if (secondaryStructured) return secondaryStructured;
+  // Para times com fonte estruturada conhecida, um bloqueio/erro dessa fonte
+  // nunca pode cair em snippets e gerar placar/posição plausíveis porém falsos.
+  if (STRUCTURED_TEAMS[subject]) return null;
 
   if (!env.GEMINI_API_KEY) return search ? synthesizeSearchResults(env, text, subject, search) : null;
 
