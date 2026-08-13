@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { parseRssItems, tryActionRouter, tryMemoryCommand, tryNewsShortcut } from "./shared";
+import { parseRssItems, toSearchQuery, tryActionRouter, tryMemoryCommand, tryNewsShortcut } from "./shared";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -37,7 +37,12 @@ describe("news responses", () => {
     const reply = await tryNewsShortcut({} as Env, "Quais são as principais notícias de hoje?");
     expect(reply).toContain("Detalhes verificáveis da notícia");
     expect(reply).toContain("Fonte: g1.globo.com");
-    expect(reply).toContain("https://g1.globo.com/fato-atual");
+    expect(reply).toContain("[Clique aqui para ler](https://g1.globo.com/fato-atual)");
+  });
+
+  it("uses the refined subject rather than the whole spoken instruction", () => {
+    expect(toSearchQuery("Ô bro, busque pra mim aí sobre desenvolvimento de carros autônomos, por favor"))
+      .toBe("desenvolvimento de carros autônomos");
   });
 });
 

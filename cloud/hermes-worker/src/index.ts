@@ -77,7 +77,15 @@ async function telegramMultipartResult(env: Env, method: string, form: FormData)
 async function sendText(env: Env, chatId: number, text: string): Promise<void> {
   const chunks = text.match(/[\s\S]{1,4000}/g) ?? ["Não consegui gerar uma resposta."];
   for (const chunk of chunks) {
-    await telegram(env, "sendMessage", { chat_id: chatId, text: chunk });
+    // Escapa todo o texto e converte somente links Markdown gerados pelo
+    // próprio sistema em âncoras HTML. Assim títulos/snippets nunca quebram o
+    // parse_mode e URLs longas viram um único "Clique aqui para ler".
+    const html = chunk
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\[Clique aqui para ler\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$1">Clique aqui para ler</a>');
+    await telegram(env, "sendMessage", { chat_id: chatId, text: html, parse_mode: "HTML", link_preview_options: { is_disabled: true } });
   }
 }
 

@@ -1,5 +1,6 @@
 // Motor factual isolado para perguntas esportivas atuais. Ele não grava dados,
 // não toca memória/agenda e não devolve páginas agregadoras como resposta.
+import { compactSourceLink } from "./search_query";
 
 export interface SearchSource {
   title: string;
@@ -307,6 +308,6 @@ export async function trySportsSearchSpecialist(
 }
 
 export function formatSpecialistAnswer(result: SpecialistAnswer): string {
-  const sourceLines = result.sources.map((source) => `• ${source.title} — ${source.url}`).join("\n");
+  const sourceLines = result.sources.map((source) => `• ${source.title} — ${compactSourceLink(source.url)}`).join("\n");
   return `${result.answer}\n\nFontes consultadas:\n${sourceLines}`;
 }

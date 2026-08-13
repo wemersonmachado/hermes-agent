@@ -6,6 +6,7 @@ type StoredMessage = {
   role: "user" | "assistant";
   content: string;
 };
+import { compactSourceLink, refineSearchQuery } from "./search_query";
 
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
 
@@ -651,13 +652,6 @@ export async function webSearch(query: string, limit = 5): Promise<WebSearchResu
   return results;
 }
 
-// Pesquisa factual respeita pedido explícito por links. Notícias são uma
-// exceção: sempre incluem fonte e URL, pois sem isso viram apenas uma capa de
-// manchetes impossível de verificar.
-function wantsLinks(text: string): boolean {
-  return /\b(link|links|url|urls|fonte|fontes|site|sites|refer[êe]ncia)\b/i.test(text);
-}
-
 function sourceFromUrl(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, "");
@@ -679,12 +673,7 @@ export async function tryNewsShortcut(env: Env, text: string): Promise<string | 
     /(not[íi]cias?|manchetes?)\b(?:\s+(?:sobre|de|do|da))?\s*(.{0,40})/,
   );
   if (!match) return null;
-  const stopwords = /^(agora|hoje|aqui|brasil|por favor|pra mim|de hoje|)$/;
-  const rawTopic = (match[2] || "")
-    .replace(/[?.!]+$/, "")
-    .replace(/\b(agora|hoje|por favor|pra mim|aqui)\b/g, "")
-    .trim();
-  const topic = rawTopic && !stopwords.test(rawTopic) ? rawTopic : "";
+  const topic = refineSearchQuery(text, { news: true });
   // 1ª tentativa: Google de verdade via grounding do Gemini — resumo
   // coerente, não lista de manchete solta (pedido do usuário 13/08/2026).
   if (topic) {
@@ -692,7 +681,7 @@ export async function tryNewsShortcut(env: Env, text: string): Promise<string | 
     if (grounded?.summary && grounded.sources.length) {
       const intros = NEWS_TOPIC_INTROS(topic);
       const intro = intros[Math.floor(Math.random() * intros.length)];
-      const sourcesTxt = `\n\nFontes:\n${grounded.sources.slice(0, 4).map((s) => `• ${s.title || s.url}\n  ${s.url}`).join("\n\n")}`;
+      const sourcesTxt = `\n\nFontes:\n${grounded.sources.slice(0, 4).map((s) => `• ${s.title || sourceFromUrl(s.url)} — ${compactSourceLink(s.url)}`).join("\n")}`;
       return `${intro}\n\n${grounded.summary}${sourcesTxt}`;
     }
   }
@@ -703,7 +692,7 @@ export async function tryNewsShortcut(env: Env, text: string): Promise<string | 
     const intro = intros[Math.floor(Math.random() * intros.length)];
     const lines = headlines.slice(0, 5).map((item) => {
       const detail = item.snippet && item.snippet !== item.title ? `\n  ${item.snippet}` : "";
-      return `• ${item.title}${detail}\n  Fonte: ${item.source} — ${item.url}`;
+      return `• ${item.title}${detail}\n  Fonte: ${item.source} — ${compactSourceLink(item.url)}`;
     });
     return `${intro}\n\n${lines.join("\n\n")}`;
   }
@@ -716,7 +705,7 @@ export async function tryNewsShortcut(env: Env, text: string): Promise<string | 
       const intro = intros[Math.floor(Math.random() * intros.length)];
       const lines = found.map((r) => {
         const summary = r.snippet ? r.snippet.slice(0, 160) : r.title;
-        return `• ${r.title}\n  ${summary}\n  Fonte: ${sourceFromUrl(r.url)} — ${r.url}`;
+        return `• ${r.title}\n  ${summary}\n  Fonte: ${sourceFromUrl(r.url)} — ${compactSourceLink(r.url)}`;
       });
       return `${intro}\n\n${lines.join("\n\n")}`;
     }
@@ -733,22 +722,19 @@ const SEARCH_INTROS = ["🔎 Encontrei isso:", "🔎 Aqui está o que achei:", "
 // (câmbio/clima/CEP/CNPJ/wiki já tratados em detectApiLookups). Tenta
 // primeiro Google de verdade via grounding do Gemini (resumo coerente,
 // real); se falhar/sem chave, cai pro DuckDuckGo (snippets concatenados).
-// Link só aparece quando o usuário pede (achado 13/08/2026: resposta em
-// lista de URL soava robótica pra quem só queria saber "como tá o Vasco").
+// Toda fonte aparece como link curto verificável; URLs cruas não poluem a fala.
 export async function tryWebSearchShortcut(env: Env, text: string): Promise<string | null> {
   if (!looksLikeFactualQuestion(text)) return null;
   if (detectApiLookups(text).length) return null; // API específica cobre — deixa o fluxo normal tratar
   const query = toSearchQuery(text);
   if (!query) return null;
-  const includeLinks = wantsLinks(text);
 
   const grounded = await googleGroundedSearch(env, query);
   if (grounded?.summary) {
     const intro = SEARCH_INTROS[Math.floor(Math.random() * SEARCH_INTROS.length)];
-    const sourcesTxt =
-      includeLinks && grounded.sources.length
-        ? `\n\n${grounded.sources.slice(0, 4).map((s) => `• ${s.title || s.url}\n  ${s.url}`).join("\n\n")}`
-        : "";
+    const sourcesTxt = grounded.sources.length
+      ? `\n\nFontes:\n${grounded.sources.slice(0, 4).map((s) => `• ${s.title || sourceFromUrl(s.url)} — ${compactSourceLink(s.url)}`).join("\n")}`
+      : "";
     return `${intro}\n\n${grounded.summary}${sourcesTxt}`;
   }
 
@@ -757,9 +743,9 @@ export async function tryWebSearchShortcut(env: Env, text: string): Promise<stri
   const intro = SEARCH_INTROS[Math.floor(Math.random() * SEARCH_INTROS.length)];
   const lines = results.map((r) => {
     const summary = r.snippet ? r.snippet.slice(0, 160) : r.title;
-    return includeLinks ? `• ${summary}\n  ${r.url}` : `• ${summary}`;
+    return `• ${summary}\n  ${sourceFromUrl(r.url)} — ${compactSourceLink(r.url)}`;
   });
-  return `${intro}\n\n${lines.join(includeLinks ? "\n\n" : "\n")}`;
+  return `${intro}\n\n${lines.join("\n\n")}`;
 }
 
 // Determinístico igual notícias/busca — matemática de conversão de moeda
@@ -1357,12 +1343,7 @@ export function looksLikeFactualQuestion(text: string): boolean {
 // busca — um buscador trata a frase inteira como termos literais, então
 // "Como tá o Flamengo? Busque na internet" vira ruído sem isso.
 export function toSearchQuery(text: string): string {
-  return text
-    .replace(/\b(busque|busca|pesquise|pesquisa|procure|procura|descubra|veja|confira|checa)\s+(na\s+)?(internet|net|google|web|online)\b/gi, "")
-    .replace(/\b(por favor|pra mim|agora mesmo|urgente)\b/gi, "")
-    .replace(/[?!]+/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  return refineSearchQuery(text);
 }
 
 // ---------------------------------------------------------------------------
