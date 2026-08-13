@@ -28,7 +28,7 @@ import {
   webSearch,
 } from "./shared";
 import { detectSportsSubject, formatSpecialistAnswer, trySportsSearchSpecialist } from "./search_specialist";
-import { isNewsSearchRequest, refineSearchQuery } from "./search_query";
+import { isExplicitSearchRequest, isNewsSearchRequest, refineSearchQuery } from "./search_query";
 
 function ownerChatId(env: Env): string {
   return env.TELEGRAM_ALLOWED_USERS.split(",")[0]?.trim() ?? "";
@@ -763,7 +763,14 @@ export async function handleDashboardRequest(request: Request, env: Env, path: s
       await saveDashboardMessage(env, chatId, "user", text);
       await extractAndSaveFacts(env, Number(chatId), text);
       await saveDashboardMessage(env, chatId, "assistant", searchResult);
-      return json({ ok: true, reply: searchResult });
+      return json({ ok: true, reply: searchResult, kind: "web_search", searchQuery: refineSearchQuery(text) });
+    }
+    if (isExplicitSearchRequest(text)) {
+      const searchQuery = refineSearchQuery(text);
+      const reply = `Não consegui confirmar resultados reais sobre ${searchQuery || "esse assunto"} agora. Tente novamente em instantes.`;
+      await saveDashboardMessage(env, chatId, "user", text);
+      await saveDashboardMessage(env, chatId, "assistant", reply);
+      return json({ ok: true, reply, kind: "web_search_unavailable", searchQuery });
     }
 
     await saveDashboardMessage(env, chatId, "user", text);

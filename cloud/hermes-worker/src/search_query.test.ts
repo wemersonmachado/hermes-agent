@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { compactSourceLink, isNewsSearchRequest, refineSearchQuery } from "./search_query";
+import { compactSourceLink, isExplicitSearchRequest, isNewsSearchRequest, refineSearchQuery } from "./search_query";
 
 describe("global search query refinement", () => {
   it.each([
@@ -20,6 +20,10 @@ describe("global search query refinement", () => {
 
   it.each(["notícia sobre carros", "notícias sobre carros", "MANCHETES de hoje"])("recognizes Unicode news request: %s", (input) => {
     expect(isNewsSearchRequest(input)).toBe(true);
+  });
+
+  it.each(["Busque carros autônomos", "pesquise computação quântica", "PROCURE baterias"])("recognizes explicit research: %s", (input) => {
+    expect(isExplicitSearchRequest(input)).toBe(true);
   });
 
   it("limits long transcripts without dropping the leading subject", () => {

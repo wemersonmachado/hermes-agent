@@ -48,7 +48,7 @@ import {
   webSearch,
 } from "./shared";
 import { detectSportsSubject, formatSpecialistAnswer, trySportsSearchSpecialist } from "./search_specialist";
-import { isNewsSearchRequest, refineSearchQuery } from "./search_query";
+import { isExplicitSearchRequest, isNewsSearchRequest, refineSearchQuery } from "./search_query";
 
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
 
@@ -498,6 +498,15 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
       await saveMessage(env, message, "assistant", searchResult);
       await sendText(env, message.chat.id, searchResult);
       await maybeSendVoice(env, message.chat.id, userText, searchResult, update.update_id);
+      await markUpdate(env, update.update_id, "done");
+      return;
+    }
+    if (isExplicitSearchRequest(userText)) {
+      const query = refineSearchQuery(userText);
+      const reply = `Não consegui confirmar resultados reais sobre ${query || "esse assunto"} agora. Tente novamente em instantes.`;
+      await saveMessage(env, message, "user", userText);
+      await saveMessage(env, message, "assistant", reply);
+      await sendText(env, message.chat.id, reply);
       await markUpdate(env, update.update_id, "done");
       return;
     }

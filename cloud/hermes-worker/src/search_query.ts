@@ -57,6 +57,11 @@ export function isNewsSearchRequest(text: string): boolean {
   return /(?:^|\s)(?:noticias?|manchetes?)(?=$|\s|[?!,.;:])/.test(folded);
 }
 
+export function isExplicitSearchRequest(text: string): boolean {
+  const folded = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
+  return /(?:^|\s)(?:busque|buscar|busca|pesquise|pesquisar|pesquisa|procure|procurar|procura|descubra|descobrir|confira|conferir|checa)(?=$|\s|[?!,.;:])/.test(folded);
+}
+
 export function compactSourceLink(url: string): string {
   const safeUrl = encodeURI(url).replace(/\)/g, "%29");
   return `[Clique aqui para ler](${safeUrl})`;
