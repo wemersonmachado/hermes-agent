@@ -52,6 +52,11 @@ export function refineSearchQuery(text: string, options: { news?: boolean } = {}
   return meaningful.length ? refined : "";
 }
 
+export function isNewsSearchRequest(text: string): boolean {
+  const folded = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
+  return /(?:^|\s)(?:noticias?|manchetes?)(?=$|\s|[?!,.;:])/.test(folded);
+}
+
 export function compactSourceLink(url: string): string {
   const safeUrl = encodeURI(url).replace(/\)/g, "%29");
   return `[Clique aqui para ler](${safeUrl})`;

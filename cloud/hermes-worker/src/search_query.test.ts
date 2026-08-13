@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { compactSourceLink, refineSearchQuery } from "./search_query";
+import { compactSourceLink, isNewsSearchRequest, refineSearchQuery } from "./search_query";
 
 describe("global search query refinement", () => {
   it.each([
@@ -16,6 +16,10 @@ describe("global search query refinement", () => {
 
   it("recognizes a general news request instead of inventing a topic", () => {
     expect(refineSearchQuery("Quais são as principais notícias de hoje?", { news: true })).toBe("");
+  });
+
+  it.each(["notícia sobre carros", "notícias sobre carros", "MANCHETES de hoje"])("recognizes Unicode news request: %s", (input) => {
+    expect(isNewsSearchRequest(input)).toBe(true);
   });
 
   it("limits long transcripts without dropping the leading subject", () => {

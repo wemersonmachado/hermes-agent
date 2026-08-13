@@ -6,7 +6,7 @@ type StoredMessage = {
   role: "user" | "assistant";
   content: string;
 };
-import { compactSourceLink, refineSearchQuery } from "./search_query";
+import { compactSourceLink, isNewsSearchRequest, refineSearchQuery } from "./search_query";
 
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
 
@@ -261,16 +261,8 @@ export function detectApiLookups(text: string): ApiLookup[] {
     });
   }
 
-  const newsMatch = lower.match(
-    /(not[íi]cias?|acontecendo|eventos?|programa[çc][ãa]o|manchetes?|jornal|jogo de hoje|resultado de|placar)\b(?:\s+(?:sobre|de|do|da))?\s*(.{0,40})/,
-  );
-  if (newsMatch) {
-    const stopwords = /^(agora|hoje|aqui|no brasil|do brasil|da brasil|brasil|por favor|pra mim|please|de hoje)$/;
-    const rawTopic = (newsMatch[2] || "")
-      .replace(/[?.!]+$/, "")
-      .replace(/\b(agora|hoje|por favor|pra mim|aqui)\b/g, "")
-      .trim();
-    const topic = rawTopic && !stopwords.test(rawTopic) ? rawTopic : "";
+  if (isNewsSearchRequest(text) || /(?:^|\s)(?:acontecendo|eventos?|jornal|jogo de hoje|resultado de|placar)(?=$|\s|[?!,.;:])/i.test(lower)) {
+    const topic = refineSearchQuery(text, { news: true });
     lookups.push({
       label: topic ? `Notícias sobre ${topic}` : "Manchetes de hoje (Brasil)",
       fetch: () => fetchGoogleNewsHeadlines(topic),
@@ -668,11 +660,7 @@ const NEWS_TOPIC_INTROS = (topic: string) => [
 ];
 
 export async function tryNewsShortcut(env: Env, text: string): Promise<string | null> {
-  const lower = text.toLowerCase();
-  const match = lower.match(
-    /(not[íi]cias?|manchetes?)\b(?:\s+(?:sobre|de|do|da))?\s*(.{0,40})/,
-  );
-  if (!match) return null;
+  if (!isNewsSearchRequest(text)) return null;
   const topic = refineSearchQuery(text, { news: true });
   // 1ª tentativa: Google de verdade via grounding do Gemini — resumo
   // coerente, não lista de manchete solta (pedido do usuário 13/08/2026).
@@ -710,7 +698,9 @@ export async function tryNewsShortcut(env: Env, text: string): Promise<string | 
       return `${intro}\n\n${lines.join("\n\n")}`;
     }
   }
-  return null;
+  return topic
+    ? `Não consegui confirmar notícias atuais sobre ${topic} em fontes reais agora. Tente novamente em instantes.`
+    : "Não consegui confirmar as notícias atuais em fontes reais agora. Tente novamente em instantes.";
 }
 
 const SEARCH_INTROS = ["🔎 Encontrei isso:", "🔎 Aqui está o que achei:", "🔎 Resumindo o que encontrei:"];
