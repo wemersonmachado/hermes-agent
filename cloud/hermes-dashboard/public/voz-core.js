@@ -215,23 +215,33 @@
     });
   }
 
-  // ── REAÇÃO A DIGITAÇÃO E MOUSE (pedido do usuário 13/08/2026) ───
-  // Sem dado real por trás disso (é reação de UI, não telemetria) — só
-  // faz o núcleo "vivo" ao passar o mouse ou digitar, como no jarvis.html.
+  // ── REAÇÃO A DIGITAÇÃO, FALA, ESCUTA E MOUSE ─────────────────────
   let typingBoost = 0;
   let hoverBoost = 0;
+  let smoothHoverBoost = 0.0;
 
-  const chatInputEl = document.getElementById("voice-chat-input");
-  if (chatInputEl) {
-    chatInputEl.addEventListener("input", () => {
-      typingBoost = Math.min(1.2, typingBoost + 0.3);
+  const bindInputEvents = () => {
+    ['voice-chat-input', 'chat-input-field'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && !el.dataset.hudBound) {
+        el.dataset.hudBound = "true";
+        el.addEventListener("input", () => {
+          typingBoost = 1.0;
+        });
+      }
     });
-  }
+  };
+  bindInputEvents();
+  setInterval(bindInputEvents, 2000);
 
   if (coreCanvas) {
-    coreCanvas.addEventListener("mouseenter", () => { hoverBoost = 1; });
-    coreCanvas.addEventListener("mouseleave", () => { hoverBoost = 0; });
-    coreCanvas.addEventListener("mousemove", () => { hoverBoost = 1; });
+    coreCanvas.addEventListener("mouseenter", () => { hoverBoost = 1.0; });
+    coreCanvas.addEventListener("mouseleave", () => { hoverBoost = 0.0; });
+    coreCanvas.addEventListener("mousemove", () => {
+      hoverBoost = 1.0;
+      clearTimeout(coreCanvas.hoverTimer);
+      coreCanvas.hoverTimer = setTimeout(() => { hoverBoost = 0.2; }, 1500);
+    });
   }
 
   let smoothLevel = 0.06;
@@ -242,10 +252,10 @@
   const sin = Math.sin;
   const cos = Math.cos;
 
-  const PARTICLE_COUNT = 3200;
+  const PARTICLE_COUNT = 3600;
   const particles = [];
-  let baseRadius = 70;
-  let ringWidth = 35;
+  let baseRadius = 90;
+  let ringWidth = 40;
 
   function hexToRgb(hex) {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -277,8 +287,8 @@
       this.baseAlpha = rand(0.18, 0.85);
     }
 
-    update(t, smoothTyping, smoothSpeak) {
-      const activeSpeed = this.speed * (1.0 + smoothTyping * 1.5 + smoothSpeak * 0.5);
+    update(t, smoothTyping, smoothSpeak, smoothHover) {
+      const activeSpeed = this.speed * (1.0 + smoothTyping * 1.8 + smoothSpeak * 0.8 + smoothHover * 0.6);
       this.theta += activeSpeed;
       if (this.theta > PI * 2) this.theta -= PI * 2;
     }
@@ -340,18 +350,19 @@
     smoothSpeakVolume = lerp(smoothSpeakVolume, isSpeaking ? speakVolume : 0.0, 0.12);
     smoothListenVolume = lerp(smoothListenVolume, isListening ? listenVolume : 0.0, 0.12);
     smoothTypingBoost = lerp(smoothTypingBoost, typingBoost, 0.1);
+    smoothHoverBoost = lerp(smoothHoverBoost, hoverBoost, 0.12);
     typingBoost = Math.max(0, typingBoost - 0.015);
 
     const minDim = Math.min(w, h);
-    baseRadius = Math.max(minDim * 0.24, 45);
-    ringWidth = Math.max(baseRadius * 0.45, 20);
+    baseRadius = Math.max(minDim * 0.32, 60);
+    ringWidth = Math.max(baseRadius * 0.45, 25);
 
     const themeRGB = hexToRgb(activeTheme.primary);
     const themeRGBSec = hexToRgb(activeTheme.secondary);
 
     const glowGrad = coreCtx.createRadialGradient(cx, cy, baseRadius * 0.65, cx, cy, baseRadius + ringWidth * 1.2);
     glowGrad.addColorStop(0, `rgba(${themeRGB.r}, ${themeRGB.g}, ${themeRGB.b}, 0.0)`);
-    glowGrad.addColorStop(0.5, `rgba(${themeRGB.r}, ${themeRGB.g}, ${themeRGB.b}, ${0.06 + smoothSpeakVolume * 0.08})`);
+    glowGrad.addColorStop(0.5, `rgba(${themeRGB.r}, ${themeRGB.g}, ${themeRGB.b}, ${0.06 + smoothSpeakVolume * 0.1 + smoothHoverBoost * 0.08})`);
     glowGrad.addColorStop(1, `rgba(${themeRGB.r}, ${themeRGB.g}, ${themeRGB.b}, 0.0)`);
     coreCtx.fillStyle = glowGrad;
     coreCtx.beginPath();
@@ -366,10 +377,10 @@
 
     for (let i = 0; i < PARTICLE_COUNT; i++) {
       const p = particles[i];
-      p.update(t, smoothTypingBoost, smoothSpeakVolume);
+      p.update(t, smoothTypingBoost, smoothSpeakVolume, smoothHoverBoost);
 
       const pBaseRad = baseRadius + (p.tFactor * ringWidth * p.radMultiplier) - (ringWidth * 0.3);
-      const speakWaveScale = 1.0 + smoothSpeakVolume * 2.2;
+      const speakWaveScale = 1.0 + smoothSpeakVolume * 2.2 + smoothHoverBoost * 0.4;
       const wave1 = sin(p.theta * p.waveFreq1 - t * 0.0028 + p.wavePhase) * p.waveAmp1 * speakWaveScale;
       const wave2 = cos(p.theta * p.waveFreq2 + t * 0.0045) * p.waveAmp2 * speakWaveScale;
 
@@ -380,14 +391,14 @@
         r += listenWave;
       }
       if (smoothTypingBoost > 0.02) {
-        r += rand(-5.5, 5.5) * smoothTypingBoost;
+        r += rand(-6, 6) * smoothTypingBoost;
       }
 
       const x = cx + cos(p.theta) * r;
       const y = cy + sin(p.theta) * r;
 
       const radialFade = clamp((baseRadius + ringWidth * 1.2 - r) / (ringWidth * 0.8), 0.1, 1.0);
-      let alpha = p.baseAlpha * radialFade * (1.0 + smoothTypingBoost * 0.3);
+      let alpha = p.baseAlpha * radialFade * (1.0 + smoothTypingBoost * 0.4 + smoothHoverBoost * 0.2);
       alpha = clamp(alpha, 0.05, 0.98);
 
       let bucketIdx = 0;
@@ -423,6 +434,37 @@
         }
         coreCtx.fill();
       }
+    });
+
+    // ── ARGOLAS NEURAIS EXTERNAS COM NEON GLOW VIBRANTE ──
+    const neonRings = [
+      { r: baseRadius - 14, color: activeTheme.primary, dash: [6, 6], speed: 0.002, amp: 4, glow: 18 },
+      { r: baseRadius + ringWidth + 12, color: activeTheme.secondary, dash: [], speed: -0.0016, amp: 7, glow: 22 },
+      { r: baseRadius + ringWidth + 34, color: activeTheme.primary, dash: [14, 8], speed: 0.0012, amp: 10, glow: 26 },
+      { r: baseRadius + ringWidth + 56, color: activeTheme.secondary, dash: [4, 10], speed: -0.0008, amp: 12, glow: 30 }
+    ];
+
+    neonRings.forEach((ring, idx) => {
+      coreCtx.save();
+      coreCtx.beginPath();
+      if (ring.dash.length) coreCtx.setLineDash(ring.dash);
+      const points = 100;
+      for (let i = 0; i <= points; i++) {
+        const a = (i / points) * Math.PI * 2;
+        const wave = sin(a * (5 + idx) + t * ring.speed) * (ring.amp * (smoothSpeakVolume * 1.5 + smoothHoverBoost * 0.5 + 0.35));
+        const r = ring.r + wave;
+        const px = cx + cos(a) * r;
+        const py = cy + sin(a) * r;
+        i === 0 ? coreCtx.moveTo(px, py) : coreCtx.lineTo(px, py);
+      }
+      coreCtx.closePath();
+      coreCtx.strokeStyle = ring.color;
+      coreCtx.lineWidth = 1.6 + (smoothSpeakVolume * 0.8);
+      coreCtx.shadowColor = ring.color;
+      coreCtx.shadowBlur = ring.glow + (smoothSpeakVolume * 12);
+      coreCtx.globalAlpha = 0.65 + (smoothSpeakVolume * 0.35);
+      coreCtx.stroke();
+      coreCtx.restore();
     });
   }
 
