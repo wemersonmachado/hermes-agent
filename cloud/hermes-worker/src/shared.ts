@@ -720,7 +720,7 @@ export async function tryWebSearchShortcut(env: Env, text: string): Promise<stri
   if (!query) return null;
 
   const grounded = await googleGroundedSearch(env, query);
-  if (grounded?.summary) {
+  if (grounded?.summary && grounded.sources.length) {
     const intro = SEARCH_INTROS[Math.floor(Math.random() * SEARCH_INTROS.length)];
     const sourcesTxt = grounded.sources.length
       ? `\n\nFontes:\n${grounded.sources.slice(0, 4).map((s) => `• ${s.title || sourceFromUrl(s.url)} — ${compactSourceLink(s.url)}`).join("\n")}`

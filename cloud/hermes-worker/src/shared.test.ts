@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { parseRssItems, toSearchQuery, tryActionRouter, tryMemoryCommand, tryNewsShortcut } from "./shared";
+import { parseRssItems, toSearchQuery, tryActionRouter, tryMemoryCommand, tryNewsShortcut, tryWebSearchShortcut } from "./shared";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -43,6 +43,22 @@ describe("news responses", () => {
   it("uses the refined subject rather than the whole spoken instruction", () => {
     expect(toSearchQuery("Ô bro, busque pra mim aí sobre desenvolvimento de carros autônomos, por favor"))
       .toBe("desenvolvimento de carros autônomos");
+  });
+});
+
+describe("general web research", () => {
+  it("rejects an ungrounded Google summary and falls back to linked results", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "Resumo sem fontes" }] } }] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(`
+        <a rel="nofollow" class="result__a" href="https://example.com/autonomos">Desenvolvimento de carros autônomos</a>
+        <a class="result__snippet">Sensores, segurança e evolução dos veículos autônomos.</a>`, { status: 200 }))
+      .mockResolvedValue(new Response(JSON.stringify({ hits: [] }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const env = { GEMINI_API_KEY: "secret" } as unknown as Env;
+    const reply = await tryWebSearchShortcut(env, "Busque por desenvolvimento de carros autônomos");
+    expect(reply).not.toContain("Resumo sem fontes");
+    expect(reply).toContain("[Clique aqui para ler](https://example.com/autonomos)");
   });
 });
 
