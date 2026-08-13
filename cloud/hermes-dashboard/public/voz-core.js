@@ -354,19 +354,19 @@
     typingBoost = Math.max(0, typingBoost - 0.015);
 
     const minDim = Math.min(w, h);
-    baseRadius = Math.max(minDim * 0.32, 60);
-    ringWidth = Math.max(baseRadius * 0.45, 25);
+    baseRadius = Math.max(minDim * 0.22, 50);
+    ringWidth = Math.max(baseRadius * 0.35, 18);
 
     const themeRGB = hexToRgb(activeTheme.primary);
     const themeRGBSec = hexToRgb(activeTheme.secondary);
 
-    const glowGrad = coreCtx.createRadialGradient(cx, cy, baseRadius * 0.65, cx, cy, baseRadius + ringWidth * 1.2);
+    const glowGrad = coreCtx.createRadialGradient(cx, cy, baseRadius * 0.5, cx, cy, baseRadius + ringWidth * 1.2);
     glowGrad.addColorStop(0, `rgba(${themeRGB.r}, ${themeRGB.g}, ${themeRGB.b}, 0.0)`);
-    glowGrad.addColorStop(0.5, `rgba(${themeRGB.r}, ${themeRGB.g}, ${themeRGB.b}, ${0.06 + smoothSpeakVolume * 0.1 + smoothHoverBoost * 0.08})`);
+    glowGrad.addColorStop(0.5, `rgba(${themeRGB.r}, ${themeRGB.g}, ${themeRGB.b}, ${0.08 + smoothSpeakVolume * 0.12 + smoothHoverBoost * 0.08})`);
     glowGrad.addColorStop(1, `rgba(${themeRGB.r}, ${themeRGB.g}, ${themeRGB.b}, 0.0)`);
     coreCtx.fillStyle = glowGrad;
     coreCtx.beginPath();
-    coreCtx.arc(cx, cy, baseRadius + ringWidth * 1.5, 0, PI * 2);
+    coreCtx.arc(cx, cy, baseRadius + ringWidth * 1.3, 0, PI * 2);
     coreCtx.fill();
 
     const opacityBuckets = [0.15, 0.35, 0.55, 0.75, 0.95];
@@ -379,19 +379,19 @@
       const p = particles[i];
       p.update(t, smoothTypingBoost, smoothSpeakVolume, smoothHoverBoost);
 
-      const pBaseRad = baseRadius + (p.tFactor * ringWidth * p.radMultiplier) - (ringWidth * 0.3);
-      const speakWaveScale = 1.0 + smoothSpeakVolume * 2.2 + smoothHoverBoost * 0.4;
-      const wave1 = sin(p.theta * p.waveFreq1 - t * 0.0028 + p.wavePhase) * p.waveAmp1 * speakWaveScale;
-      const wave2 = cos(p.theta * p.waveFreq2 + t * 0.0045) * p.waveAmp2 * speakWaveScale;
+      const pBaseRad = baseRadius + (p.tFactor * ringWidth * p.radMultiplier) - (ringWidth * 0.25);
+      const speakWaveScale = 1.0 + smoothSpeakVolume * 1.8 + smoothHoverBoost * 0.3;
+      const wave1 = sin(p.theta * p.waveFreq1 - t * 0.0028 + p.wavePhase) * p.waveAmp1 * speakWaveScale * 0.65;
+      const wave2 = cos(p.theta * p.waveFreq2 + t * 0.0045) * p.waveAmp2 * speakWaveScale * 0.65;
 
       let r = pBaseRad + wave1 + wave2;
 
       if (smoothListenVolume > 0.02) {
-        const listenWave = sin(p.theta * 22.0 - t * 0.015) * (smoothListenVolume * 38.0);
+        const listenWave = sin(p.theta * 22.0 - t * 0.015) * (smoothListenVolume * 24.0);
         r += listenWave;
       }
       if (smoothTypingBoost > 0.02) {
-        r += rand(-6, 6) * smoothTypingBoost;
+        r += rand(-4, 4) * smoothTypingBoost;
       }
 
       const x = cx + cos(p.theta) * r;
@@ -436,22 +436,20 @@
       }
     });
 
-    // ── ARGOLAS NEURAIS EXTERNAS COM NEON GLOW VIBRANTE ──
+    // ── ARGOLAS NEURAIS ORGÂNICAS E HARMONIOSAS (MEMBRANAS FLUIDAS) ──
     const neonRings = [
-      { r: baseRadius - 14, color: activeTheme.primary, dash: [6, 6], speed: 0.002, amp: 4, glow: 18 },
-      { r: baseRadius + ringWidth + 12, color: activeTheme.secondary, dash: [], speed: -0.0016, amp: 7, glow: 22 },
-      { r: baseRadius + ringWidth + 34, color: activeTheme.primary, dash: [14, 8], speed: 0.0012, amp: 10, glow: 26 },
-      { r: baseRadius + ringWidth + 56, color: activeTheme.secondary, dash: [4, 10], speed: -0.0008, amp: 12, glow: 30 }
+      { r: baseRadius - 8, color: activeTheme.primary, speed: 0.0018, amp: 3, glow: 12 },
+      { r: baseRadius + ringWidth + 8, color: activeTheme.primary, speed: -0.0014, amp: 5, glow: 16 },
+      { r: baseRadius + ringWidth + 22, color: activeTheme.secondary, speed: 0.001, amp: 7, glow: 20 }
     ];
 
     neonRings.forEach((ring, idx) => {
       coreCtx.save();
       coreCtx.beginPath();
-      if (ring.dash.length) coreCtx.setLineDash(ring.dash);
-      const points = 100;
+      const points = 90;
       for (let i = 0; i <= points; i++) {
         const a = (i / points) * Math.PI * 2;
-        const wave = sin(a * (5 + idx) + t * ring.speed) * (ring.amp * (smoothSpeakVolume * 1.5 + smoothHoverBoost * 0.5 + 0.35));
+        const wave = sin(a * (4 + idx) + t * ring.speed) * (ring.amp * (smoothSpeakVolume * 1.2 + smoothHoverBoost * 0.4 + 0.35));
         const r = ring.r + wave;
         const px = cx + cos(a) * r;
         const py = cy + sin(a) * r;
@@ -459,11 +457,25 @@
       }
       coreCtx.closePath();
       coreCtx.strokeStyle = ring.color;
-      coreCtx.lineWidth = 1.6 + (smoothSpeakVolume * 0.8);
+      coreCtx.lineWidth = 1.4 + (smoothSpeakVolume * 0.6);
       coreCtx.shadowColor = ring.color;
-      coreCtx.shadowBlur = ring.glow + (smoothSpeakVolume * 12);
-      coreCtx.globalAlpha = 0.65 + (smoothSpeakVolume * 0.35);
+      coreCtx.shadowBlur = ring.glow + (smoothSpeakVolume * 10);
+      coreCtx.globalAlpha = 0.55 + (smoothSpeakVolume * 0.35);
       coreCtx.stroke();
+
+      // Nódulos / Sinapses Luminosas ao longo das argolas para dar vida de organismo
+      const nodeAngle = t * ring.speed * 2.5 + (idx * Math.PI / 3);
+      const nodeR = ring.r + sin(nodeAngle * (4 + idx) + t * ring.speed) * (ring.amp * 0.5);
+      const nx = cx + cos(nodeAngle) * nodeR;
+      const ny = cy + sin(nodeAngle) * nodeR;
+
+      coreCtx.beginPath();
+      coreCtx.arc(nx, ny, 3.2, 0, PI * 2);
+      coreCtx.fillStyle = '#ffffff';
+      coreCtx.shadowColor = ring.color;
+      coreCtx.shadowBlur = 15;
+      coreCtx.fill();
+
       coreCtx.restore();
     });
   }
