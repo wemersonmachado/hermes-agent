@@ -15,13 +15,14 @@
 
     <!-- Ícones e Logo Oficial do BROW -->
     <link rel="manifest" href="/pwa/manifest.json">
-    <link rel="icon" type="image/png" sizes="192x192" href="/pwa/icons/icon-192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="/pwa/icons/icon-512.png">
-    <link rel="apple-touch-icon" sizes="192x192" href="/pwa/icons/icon-192.png">
-    <link rel="apple-touch-icon" sizes="512x512" href="/pwa/icons/icon-512.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/pwa/icons/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/pwa/icons/icons/icon-512.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/pwa/icons/icons/icon-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/pwa/icons/icons/icon-512.png">
 
     <!-- CSS System -->
     <link rel="stylesheet" href="/pwa/pwa.css?v=6.6.2">
+    <link rel="stylesheet" href="/pwa/pwa-mobile.css?v=7.0.0">
 </head>
 <body>
 
@@ -29,7 +30,7 @@
         <!-- BANNER DE INSTALAÇÃO DO PWA COM A LOGO REAL DO CÉREBRO -->
         <div id="pwa-install-banner">
             <div style="display:flex; align-items:center; gap:10px;">
-                <img src="/pwa/icons/icon-192.png" class="brand-logo-img" alt="BROW Logo">
+                <img src="/pwa/icons/icons/icon-192.png" class="brand-logo-img" alt="BROW Logo">
                 <div>
                     <strong style="font-size:13px; color:#fff;">Instalar BROW</strong>
                     <div style="font-size:11px; color:var(--text-muted);">Adicione à tela inicial do celular</div>
@@ -45,7 +46,7 @@
                     ☰
                 </button>
                 <div class="brand-title">
-                    <img src="/pwa/icons/icon-192.png" class="brand-logo-img" alt="BROW Logo"> BROW
+                    <img src="/pwa/icons/icons/icon-192.png" class="brand-logo-img" alt="BROW Logo"> BROW
                 </div>
             </div>
             <div class="status-indicator">
@@ -59,7 +60,7 @@
         <aside id="pwa-drawer">
             <div class="drawer-header">
                 <div class="brand-title">
-                    <img src="/pwa/icons/icon-192.png" class="brand-logo-img" alt="BROW Logo"> BROW
+                    <img src="/pwa/icons/icons/icon-192.png" class="brand-logo-img" alt="BROW Logo"> BROW
                 </div>
                 <button class="menu-toggle-btn" onclick="closeDrawer()">✕</button>
             </div>
@@ -1101,5 +1102,6 @@
     <!-- Build timestamp: 2026-08-13T18:02:00Z -->
     <script src="/voz-core.js?v=6.7.0"></script>
     <script src="/pwa/pwa.js?v=6.6.2"></script>
+    <script src="/pwa/pwa-sync.js?v=7.0.0"></script>
 </body>
 </html>

@@ -1,13 +1,15 @@
 /* BROW PWA — Service Worker v6.6.2 */
-const CACHE_NAME = 'hermes-pwa-v6-6-2';
+const CACHE_NAME = 'brow-pwa-v7-0-0';
 const ASSETS_TO_CACHE = [
   '/pwa/',
   '/pwa/index.html',
   '/pwa/manifest.json',
-  '/pwa/pwa.css?v=6.6.2',
-  '/pwa/pwa.js?v=6.6.2',
-  '/pwa/icons/icon-192.png',
-  '/pwa/icons/icon-512.png'
+  '/pwa/pwa.css?v=7.0.0',
+  '/pwa/pwa-mobile.css?v=7.0.0',
+  '/pwa/pwa.js?v=7.0.0',
+  '/pwa/pwa-sync.js?v=7.0.0',
+  '/pwa/icons/icons/icon-192.png',
+  '/pwa/icons/icons/icon-512.png'
 ];
 
 // Instalação: Cache dos ativos fundamentais da PWA
@@ -40,7 +42,7 @@ self.addEventListener('activate', (event) => {
 // Interceptação de requisições: Estratégia Network-First com Fallback de Cache
 self.addEventListener('fetch', (event) => {
   // Para chamadas de API (/api/hermes/*), sempre tenta rede diretamente
-  if (event.request.url.includes('/api/hermes/')) {
+  if (new URL(event.request.url).pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(event.request).catch(() => {
         return new Response(JSON.stringify({ error: 'Você está offline no momento.', offline: true }), {
@@ -84,8 +86,8 @@ self.addEventListener('push', (event) => {
   const data = event.data ? event.data.json() : { title: 'BROW PWA', body: 'Nova atualização do seu Segundo Cérebro AI!' };
   const options = {
     body: data.body,
-    icon: '/pwa/icons/icon-192.png',
-    badge: '/pwa/icons/icon-192.png',
+    icon: '/pwa/icons/icons/icon-192.png',
+    badge: '/pwa/icons/icons/icon-192.png',
     vibrate: [100, 50, 100],
     data: { url: data.url || '/pwa/' }
   };

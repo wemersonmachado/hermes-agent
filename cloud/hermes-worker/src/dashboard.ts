@@ -110,6 +110,19 @@ async function updateRow(env: Env, table: string, id: string, chatId: string, pa
   return json({ ok: true, row: rows[0] ?? null });
 }
 
+async function updateRowByIdOrPrefix(env: Env, table: string, idOrPrefix: string, chatId: string, patch: Record<string, unknown>): Promise<Response> {
+  const filter = idOrPrefix.length >= 32 ? `id=eq.${encodeURIComponent(idOrPrefix)}` : `id=ilike.${encodeURIComponent(idOrPrefix)}*`;
+  const resp = await supabase(env, `${table}?${filter}&chat_id=eq.${encodeURIComponent(chatId)}`, {
+    method: "PATCH",
+    headers: { prefer: "return=representation" },
+    body: JSON.stringify(patch),
+  });
+  if (!resp.ok) return json({ ok: false, error: await resp.text() }, 500);
+  const rows = (await resp.json()) as any[];
+  if (rows.length !== 1) return json({ ok: false, error: rows.length ? "AMBIGUOUS_ID" : "NOT_FOUND" }, rows.length ? 409 : 404);
+  return json({ ok: true, row: rows[0] });
+}
+
 async function deleteRow(env: Env, table: string, id: string, chatId: string): Promise<Response> {
   const resp = await supabase(env, `${table}?id=eq.${encodeURIComponent(id)}&chat_id=eq.${encodeURIComponent(chatId)}`, {
     method: "DELETE",
@@ -293,6 +306,16 @@ export async function handleDashboardRequest(request: Request, env: Env, path: s
       priority: body.priority || null,
       tags: body.tags || [],
     });
+  }
+  if (resource === "memories" && method === "PATCH" && id) {
+    const body = await readJson(request);
+    const patch: Record<string, unknown> = {};
+    if (body.title !== undefined) patch.title = String(body.title).slice(0, 200);
+    if (body.summary !== undefined) patch.summary = String(body.summary).slice(0, 20000);
+    if (body.mainCategory !== undefined) patch.main_category = body.mainCategory;
+    if (body.category !== undefined) patch.category = body.category;
+    if (!Object.keys(patch).length) return badRequest("nenhum campo editável informado");
+    return updateRowByIdOrPrefix(env, "hermes_cloud_memories", id, chatId, patch);
   }
   if (resource === "memories" && method === "DELETE" && id) {
     return deleteRowByIdOrPrefix(env, "hermes_cloud_memories", id, chatId);
@@ -551,6 +574,21 @@ export async function handleDashboardRequest(request: Request, env: Env, path: s
     const items = rows.map((r: any) => ({ ...r, embedding: undefined }));
     return json({ ok: true, documents: items, items });
   }
+  if (resource === "documents" && segments[2] === "file" && method === "GET" && id) {
+    const resp = await supabase(env, `hermes_cloud_documents?id=eq.${encodeURIComponent(id)}&chat_id=eq.${encodeURIComponent(chatId)}&select=r2_key,filename,mime_type&limit=1`);
+    const rows = resp.ok ? ((await resp.json()) as { r2_key: string; filename: string; mime_type: string }[]) : [];
+    const document = rows[0];
+    if (!document) return json({ ok: false, error: "documento não encontrado" }, 404);
+    const object = await env.HERMES_STORAGE.get(document.r2_key);
+    if (!object) return json({ ok: false, error: "arquivo não encontrado no armazenamento" }, 404);
+    return new Response(object.body, {
+      headers: {
+        "Content-Type": document.mime_type || "application/octet-stream",
+        "Content-Disposition": `inline; filename*=UTF-8''${encodeURIComponent(document.filename)}`,
+        "Cache-Control": "private, max-age=60",
+      },
+    });
+  }
   if (resource === "documents" && segments[1] === "upload" && method === "POST") {
     const form = await request.formData();
     const file = form.get("file");
@@ -573,6 +611,9 @@ export async function handleDashboardRequest(request: Request, env: Env, path: s
     });
   }
   if (resource === "documents" && method === "DELETE" && id) {
+    const found = await supabase(env, `hermes_cloud_documents?id=eq.${encodeURIComponent(id)}&chat_id=eq.${encodeURIComponent(chatId)}&select=r2_key&limit=1`);
+    const rows = found.ok ? ((await found.json()) as { r2_key: string }[]) : [];
+    if (rows[0]?.r2_key) await env.HERMES_STORAGE.delete(rows[0].r2_key);
     return deleteRow(env, "hermes_cloud_documents", id, chatId);
   }
 
@@ -613,7 +654,23 @@ export async function handleDashboardRequest(request: Request, env: Env, path: s
     const rows = await listRows(env, "hermes_cloud_skills", chatId, "key.asc", 100);
     const byKey = new Map(rows.map((r: any) => [r.key, r]));
     const merged = DEFAULT_SKILLS.map((s) => byKey.get(s.key) ?? { ...s, chat_id: chatId, enabled: true });
+    const defaultKeys = new Set(DEFAULT_SKILLS.map((s) => s.key));
+    merged.push(...rows.filter((row: any) => !defaultKeys.has(row.key)));
     return json({ ok: true, skills: merged });
+  }
+  if (resource === "skills" && method === "POST") {
+    const body = await readJson(request);
+    const label = String(body.name || body.label || "").trim();
+    if (!label) return badRequest("name é obrigatório");
+    const key = label.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 80);
+    if (!key) return badRequest("nome de skill inválido");
+    const resp = await supabase(env, `hermes_cloud_skills?on_conflict=chat_id,key`, {
+      method: "POST",
+      headers: { prefer: "resolution=merge-duplicates,return=representation" },
+      body: JSON.stringify({ chat_id: chatId, key, label, description: String(body.description || "").slice(0, 1000), enabled: true }),
+    });
+    if (!resp.ok) return json({ ok: false, error: await resp.text() }, 500);
+    return json({ ok: true, row: ((await resp.json()) as any[])[0] ?? null });
   }
   if (resource === "skills" && method === "PATCH" && id) {
     const body = await readJson(request);

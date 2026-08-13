@@ -1,0 +1,55 @@
+/* BROW PWA v7 — mobile shell isolated from the desktop dashboard layout. */
+:root { --pwa-header-h: 58px; --pwa-nav-h: 64px; }
+html, body, #pwa-app { width: 100%; min-width: 0; height: 100%; min-height: 100dvh; overflow: hidden; }
+body { margin: 0; background: #050711; overscroll-behavior: none; }
+#pwa-app { display: grid; grid-template-rows: var(--pwa-header-h) minmax(0, 1fr) var(--pwa-nav-h); }
+#pwa-header { position: relative !important; inset: auto !important; height: var(--pwa-header-h); min-height: 0; padding: 0 14px; z-index: 50; }
+#pwa-header .brand-title { max-width: 52vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#pwa-header .status-indicator { font-size: 11px; white-space: nowrap; }
+#pwa-content { position: relative; inset: auto !important; min-height: 0; height: auto !important; overflow: hidden; padding: 0 !important; }
+.pwa-view { display: none; width: 100%; height: 100%; min-height: 0; overflow-y: auto; padding: 12px; box-sizing: border-box; overscroll-behavior: contain; }
+.pwa-view.active { display: block; }
+#view-voz.pwa-view.active { display: grid !important; grid-template-rows: auto minmax(0, 1fr) auto !important; flex-direction: unset !important; gap: 8px; overflow: hidden; padding: 8px 10px 10px; }
+.chat-actions-topbar { display: flex !important; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; padding: 6px !important; border-radius: 14px !important; }
+.topbar-row-modes, .topbar-row-actions { display: flex !important; min-width: 0; gap: 4px !important; }
+.mode-pills-group { display: flex; gap: 3px; }
+.mode-btn, .btn-top-action { min-height: 36px; padding: 7px 10px !important; font-size: 11px !important; white-space: nowrap; }
+.btn-top-action.btn-limpar { display: none; }
+#neural-wave-wrapper { display: none !important; }
+#chat-messages-container { min-height: 0 !important; height: auto !important; max-height: none !important; overflow-y: auto; padding: 6px 2px 12px !important; scroll-behavior: smooth; }
+.msg-bubble { max-width: 86% !important; font-size: 14px !important; line-height: 1.45 !important; padding: 10px 12px !important; border-radius: 16px !important; overflow-wrap: anywhere; }
+.msg-bubble a { overflow-wrap: anywhere; }
+#chat-input-bar { position: relative !important; inset: auto !important; display: grid !important; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 7px !important; width: 100% !important; min-width: 0; padding: 7px !important; box-sizing: border-box; border-radius: 18px !important; }
+#chat-input-bar .chat-attach-btn:nth-of-type(2) { display: none; }
+#chat-input-bar .chat-attach-btn { display: none; }
+#chat-input-bar .mic-btn { width: 40px !important; height: 40px !important; margin: 0 !important; }
+#chat-input-field { width: 100% !important; min-width: 0 !important; height: 40px !important; padding: 0 12px !important; }
+#chat-input-bar .send-btn { height: 40px !important; min-width: 64px; padding: 0 13px !important; }
+#pwa-bottom-nav { position: relative !important; inset: auto !important; height: var(--pwa-nav-h); min-height: 0; padding-bottom: env(safe-area-inset-bottom); z-index: 40; }
+#pwa-drawer { left: 0 !important; width: min(86vw, 330px) !important; max-width: 330px; transform: translateX(-101%) !important; transition: transform .2s ease !important; }
+#pwa-drawer.active { transform: translateX(0) !important; }
+#pwa-drawer-backdrop { visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
+#pwa-drawer-backdrop.active { visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; }
+.drawer-nav { padding-bottom: max(20px, env(safe-area-inset-bottom)); }
+.pwa-section { padding: 0 !important; }
+.pwa-card { margin: 0 0 10px !important; padding: 13px !important; border-radius: 15px !important; }
+.item-card { display: flex; align-items: flex-start; gap: 10px; min-width: 0; padding: 11px !important; }
+.item-info { min-width: 0; flex: 1; }
+.item-title, .item-sub { overflow-wrap: anywhere; }
+.form-input, .form-select, .pwa-input { font-size: 16px !important; max-width: 100%; box-sizing: border-box; }
+.telemetry-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+.kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+button, a, input, select { touch-action: manipulation; }
+@media (max-width: 390px) {
+  .mode-btn, .btn-top-action { padding-inline: 8px !important; }
+  .btn-top-action.btn-parar { display: none; }
+  .status-indicator span:last-child { display: none; }
+  .msg-bubble { max-width: 91% !important; }
+}
+@media (min-width: 720px) {
+  #pwa-content { width: min(100%, 760px); margin: 0 auto; }
+  #view-voz.active { padding-inline: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+}
