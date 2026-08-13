@@ -16,6 +16,28 @@
   const lerp = (a, b, t) => a + (b - a) * t;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
+  function lerpHex(c1, c2, factor) {
+    const p1 = parseInt(c1.slice(1), 16);
+    const p2 = parseInt(c2.slice(1), 16);
+    const r = Math.round(((p1 >> 16) & 255) + (((p2 >> 16) & 255) - ((p1 >> 16) & 255)) * factor);
+    const g = Math.round(((p1 >> 8) & 255) + (((p2 >> 8) & 255) - ((p1 >> 8) & 255)) * factor);
+    const b = Math.round((p1 & 255) + ((p2 & 255) - (p1 & 255)) * factor);
+    return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+  }
+
+  // "Sente a temperatura" real da telemetria — quanto mais perto do
+  // limiar de sobrecarga (mesmo PC_OVERLOAD_THRESHOLDS de app.js: CPU 88%,
+  // RAM 92%), mais o núcleo pulsa e esquenta de cor. Só com dado REAL
+  // fresco (isRealTelemetryFresh) — sem agente local, fica neutro.
+  function currentHeatFactor() {
+    if (typeof pcTelemetry === "undefined" || typeof isRealTelemetryFresh !== "function" || !isRealTelemetryFresh()) return 0;
+    const cpu = isNaN(pcTelemetry.cpuLoadEst) ? 0 : pcTelemetry.cpuLoadEst;
+    const ram = isNaN(pcTelemetry.ramPercent) ? 0 : pcTelemetry.ramPercent;
+    const cpuHeat = clamp((cpu - 60) / (95 - 60), 0, 1);
+    const ramHeat = clamp((ram - 70) / (95 - 70), 0, 1);
+    return Math.max(cpuHeat, ramHeat);
+  }
+
   // ── RELÓGIO REAL ────────────────────────────────────────────
   const clockEl = document.getElementById("hud-clock");
   setInterval(() => {
@@ -88,22 +110,28 @@
   // pollRealTelemetryAgent em app.js a cada 3s) — só desenha. ──────
   function renderHudTelemetry() {
     if (typeof pcTelemetry === "undefined") return;
-    const cpu = isNaN(pcTelemetry.cpuLoadEst) ? 0 : clamp(pcTelemetry.cpuLoadEst, 0, 100);
-    const ram = isNaN(pcTelemetry.ramPercent) ? 0 : clamp(pcTelemetry.ramPercent, 0, 100);
-    const gpu = isNaN(pcTelemetry.gpuLoadEst) ? 0 : clamp(pcTelemetry.gpuLoadEst, 0, 100);
-    const hasDisk = typeof pcTelemetry.diskPercent === "number" && !isNaN(pcTelemetry.diskPercent);
+    // Sem o agente local do PC, CPU/RAM/GPU só têm a estimativa do
+    // NAVEGADOR de quem está olhando (heap/WebGL) -- em celular isso é
+    // 100% sem relação com o PC real. Achado ao vivo 13/08/2026: barra
+    // mostrando "99% CPU" estimado do celular, enganoso. Mesmo padrão
+    // honesto que o Disco C já usava: sem dado real, mostra "--%".
+    const realFresh = typeof isRealTelemetryFresh === "function" && isRealTelemetryFresh();
+    const cpu = realFresh && !isNaN(pcTelemetry.cpuLoadEst) ? clamp(pcTelemetry.cpuLoadEst, 0, 100) : null;
+    const ram = realFresh && !isNaN(pcTelemetry.ramPercent) ? clamp(pcTelemetry.ramPercent, 0, 100) : null;
+    const gpu = realFresh && !isNaN(pcTelemetry.gpuLoadEst) ? clamp(pcTelemetry.gpuLoadEst, 0, 100) : null;
+    const hasDisk = realFresh && typeof pcTelemetry.diskPercent === "number" && !isNaN(pcTelemetry.diskPercent);
     const disk = hasDisk ? clamp(pcTelemetry.diskPercent, 0, 100) : 0;
 
-    const set = (barId, txtId, val, label) => {
+    const set = (barId, txtId, val) => {
       const bar = document.getElementById(barId);
       const txt = document.getElementById(txtId);
-      if (bar) bar.style.width = val + "%";
-      if (txt) txt.textContent = label;
+      if (bar) bar.style.width = (val ?? 0) + "%";
+      if (txt) txt.textContent = val == null ? "--%" : Math.round(val) + "%";
     };
-    set("hud-cpu-bar", "hud-cpu-txt", cpu, Math.round(cpu) + "%");
-    set("hud-ram-bar", "hud-ram-txt", ram, Math.round(ram) + "%");
-    set("hud-gpu-bar", "hud-gpu-txt", gpu, Math.round(gpu) + "%");
-    set("hud-disk-bar", "hud-disk-txt", disk, hasDisk ? Math.round(disk) + "%" : "--%");
+    set("hud-cpu-bar", "hud-cpu-txt", cpu);
+    set("hud-ram-bar", "hud-ram-txt", ram);
+    set("hud-gpu-bar", "hud-gpu-txt", gpu);
+    set("hud-disk-bar", "hud-disk-txt", hasDisk ? disk : null);
 
     const procList = document.getElementById("hud-process-list");
     if (procList) {
@@ -207,11 +235,23 @@
   }
 
   let smoothLevel = 0.06;
+  let smoothHeat = 0;
+
+  // ── PARTÍCULAS ORBITANTES DO NÚCLEO (pedido 13/08/2026: mais vida ao núcleo) ──
+  const orbitParticles = Array.from({ length: 60 }, () => ({
+    angle: rand(0, Math.PI * 2),
+    radiusOffset: rand(-28, 38),
+    speed: rand(0.006, 0.022) * (Math.random() < 0.5 ? 1 : -1),
+    size: rand(0.9, 2.5),
+    alpha: rand(0.25, 0.9),
+    pulsePhase: rand(0, Math.PI * 2),
+  }));
+
   const spherePoints = [];
-  for (let lat = 0; lat < 8; lat++) {
-    const phi = (lat / 7) * Math.PI;
-    for (let lon = 0; lon < 14; lon++) {
-      const theta = (lon / 14) * Math.PI * 2;
+  for (let lat = 0; lat < 9; lat++) {
+    const phi = (lat / 8) * Math.PI;
+    for (let lon = 0; lon < 15; lon++) {
+      const theta = (lon / 15) * Math.PI * 2;
       spherePoints.push({ x: Math.sin(phi) * Math.cos(theta), y: Math.sin(phi) * Math.sin(theta), z: Math.cos(phi) });
     }
   }
@@ -228,13 +268,13 @@
       micAnalyser.getByteFrequencyData(micDataArray);
       let sum = 0;
       for (let i = 0; i < 12; i++) sum += micDataArray[i] || 0;
-      return { level: (sum / 12 / 255) * 2.2, listening: true, speaking: false };
+      return { level: (sum / 12 / 255) * 2.4, listening: true, speaking: false };
     }
     if (trulySpeaking && ttsAnalyser) {
       ttsAnalyser.getByteFrequencyData(ttsDataArray);
       let sum = 0;
       for (let i = 0; i < 12; i++) sum += ttsDataArray[i] || 0;
-      return { level: (sum / 12 / 255) * 2.2, listening: false, speaking: true };
+      return { level: (sum / 12 / 255) * 2.4, listening: false, speaking: true };
     }
     if (listening) return { level: 0.35 + Math.abs(Math.sin(Date.now() * 0.006)) * 0.4, listening: true, speaking: false };
     if (trulySpeaking) return { level: 0.25 + Math.abs(Math.sin(Date.now() * 0.01)) * 0.35, listening: false, speaking: true };
@@ -252,21 +292,33 @@
     typingBoost = Math.max(0, typingBoost - 0.02);
 
     const { level, listening, speaking } = currentAudioLevel();
-    const reactiveLevel = Math.max(level, typingBoost * 0.5, hoverBoost * 0.18);
-    smoothLevel = lerp(smoothLevel, reactiveLevel, 0.18);
+    const heat = currentHeatFactor();
+
+    // Transição ultra suave para o fator de aquecimento da telemetria real do PC
+    smoothHeat = lerp(smoothHeat, heat, 0.04);
+
+    // Resposta mais rápida/expressiva ao áudio real (ataque rápido 0.35, queda suave 0.14)
+    const reactiveLevel = Math.max(level, typingBoost * 0.5, hoverBoost * 0.18, smoothHeat * 0.4);
+    const lerpSpeed = reactiveLevel > smoothLevel ? 0.35 : 0.14;
+    smoothLevel = lerp(smoothLevel, reactiveLevel, lerpSpeed);
+
+    const heatColor = lerpHex(activeTheme.primary, "#ff4d2e", smoothHeat);
+    const heatSecondary = lerpHex(activeTheme.secondary, "#ff8a00", smoothHeat);
 
     const titleEl = document.getElementById("voice-transcript-title");
-    const stateColors = listening ? "#ef4444" : speaking ? activeTheme.primary : activeTheme.primary;
+    const stateColors = listening ? "#ef4444" : smoothHeat > 0.5 ? heatColor : activeTheme.primary;
     if (titleEl && !titleEl.dataset.userSet) titleEl.style.color = stateColors;
 
-    const baseRadius = 82 + smoothLevel * 22;
+    // Pequena respiração contínua em repouso
+    const idleBreath = Math.sin(t * 0.0022) * 4.5;
+    const baseRadius = 82 + smoothLevel * 26 + idleBreath;
     const wavePoints = 90;
 
     coreCtx.beginPath();
     for (let i = 0; i <= wavePoints; i++) {
       const a = (i / wavePoints) * Math.PI * 2;
-      const amp = (listening || speaking ? 26 : 6) * smoothLevel;
-      const noise = Math.sin(a * 2 - t * 0.002) * amp + Math.cos(a * 3 + t * 0.001) * amp * 0.6;
+      const amp = (listening || speaking ? 28 : 7) * (smoothLevel + 0.14);
+      const noise = Math.sin(a * 2 - t * 0.0025) * amp + Math.cos(a * 3 + t * 0.0012) * amp * 0.6;
       const r = baseRadius + noise;
       const px = cx + Math.cos(a) * r;
       const py = cy + Math.sin(a) * r;
@@ -274,30 +326,49 @@
     }
     coreCtx.closePath();
 
-    const grd = coreCtx.createRadialGradient(cx, cy, 15, cx, cy, baseRadius + 10);
+    const grd = coreCtx.createRadialGradient(cx, cy, 12, cx, cy, baseRadius + 14);
     grd.addColorStop(0, "#01070e");
-    grd.addColorStop(0.55, activeTheme.secondary + "55");
-    grd.addColorStop(0.85, activeTheme.primary);
+    grd.addColorStop(0.5, heatSecondary + "66");
+    grd.addColorStop(0.82, heatColor);
     grd.addColorStop(1, "transparent");
     coreCtx.fillStyle = grd;
-    coreCtx.shadowColor = activeTheme.primary;
-    coreCtx.shadowBlur = 24;
+    coreCtx.shadowColor = heatColor;
+    coreCtx.shadowBlur = 24 + smoothHeat * 16 + smoothLevel * 18;
     coreCtx.fill();
     coreCtx.shadowBlur = 0;
 
     // Anel wireframe
     coreCtx.beginPath();
-    coreCtx.arc(cx, cy, baseRadius * 0.7, 0, Math.PI * 2);
-    coreCtx.strokeStyle = "rgba(255,255,255,0.15)";
-    coreCtx.lineWidth = 0.8;
+    coreCtx.arc(cx, cy, baseRadius * 0.72, 0, Math.PI * 2);
+    coreCtx.strokeStyle = `rgba(255,255,255,${0.12 + smoothLevel * 0.25})`;
+    coreCtx.lineWidth = 0.9;
     coreCtx.stroke();
+
+    // Partículas orbitantes em torno do núcleo
+    orbitParticles.forEach((p) => {
+      p.angle += p.speed * (1 + smoothLevel * 2.5);
+      const pR = baseRadius + p.radiusOffset + Math.sin(t * 0.003 + p.pulsePhase) * 4;
+      const px = cx + Math.cos(p.angle) * pR;
+      const py = cy + Math.sin(p.angle) * pR;
+      const alpha = clamp(p.alpha + Math.sin(t * 0.002 + p.pulsePhase) * 0.2 + smoothLevel * 0.3, 0.1, 1);
+
+      coreCtx.beginPath();
+      coreCtx.arc(px, py, p.size * (1 + smoothLevel * 0.5), 0, Math.PI * 2);
+      coreCtx.fillStyle = Math.random() < 0.25 ? "#ffffff" : (p.radiusOffset > 0 ? heatColor : heatSecondary);
+      coreCtx.globalAlpha = alpha;
+      coreCtx.shadowColor = heatColor;
+      coreCtx.shadowBlur = 6;
+      coreCtx.fill();
+      coreCtx.shadowBlur = 0;
+      coreCtx.globalAlpha = 1.0;
+    });
 
     // Retículo interno 3D
     sphereAngleX += 0.005;
-    sphereAngleY += 0.008 + (listening || speaking ? smoothLevel * 0.02 : 0);
+    sphereAngleY += 0.008 + (listening || speaking ? smoothLevel * 0.03 : 0);
     const cosX = Math.cos(sphereAngleX), sinX = Math.sin(sphereAngleX);
     const cosY = Math.cos(sphereAngleY), sinY = Math.sin(sphereAngleY);
-    const dynRadius = 34 + (listening || speaking ? smoothLevel * 10 : 0);
+    const dynRadius = 34 + (listening || speaking ? smoothLevel * 14 : idleBreath * 0.5);
     spherePoints.forEach((p) => {
       const x1 = p.x * cosY - p.z * sinY;
       const z1 = p.x * sinY + p.z * cosY;
@@ -306,20 +377,22 @@
       const scale = 160 / (160 + z2 * dynRadius);
       const sx = cx + x1 * dynRadius * scale;
       const sy = cy + y2 * dynRadius * scale;
+      const ptAlpha = clamp(0.3 + (z2 + 1) * 0.3 + smoothLevel * 0.4, 0.15, 0.95);
+
       coreCtx.beginPath();
-      coreCtx.arc(sx, sy, 1, 0, Math.PI * 2);
-      coreCtx.fillStyle = "rgba(255,255,255,0.4)";
+      coreCtx.arc(sx, sy, 1.2 * scale, 0, Math.PI * 2);
+      coreCtx.fillStyle = `rgba(255,255,255,${ptAlpha})`;
       coreCtx.fill();
     });
 
     // Osciloscópio circular ao redor do núcleo
     coreCtx.beginPath();
-    coreCtx.lineWidth = 1;
-    coreCtx.strokeStyle = activeTheme.primary + "99";
-    const oscR = baseRadius + 30;
+    coreCtx.lineWidth = 1.2;
+    coreCtx.strokeStyle = heatColor + "bb";
+    const oscR = baseRadius + 32;
     for (let i = 0; i <= 120; i++) {
       const a = (i / 120) * Math.PI * 2;
-      const wobble = Math.sin(a * 20 - t * 0.007) * 6 * smoothLevel;
+      const wobble = Math.sin(a * 20 - t * 0.007) * (6 * smoothLevel + 1.5);
       const r = oscR + wobble;
       const px = cx + Math.cos(a) * r;
       const py = cy + Math.sin(a) * r;

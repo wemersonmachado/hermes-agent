@@ -258,63 +258,73 @@ function renderPwaTelemetryGauges() {
   const gpuCircleEl = document.getElementById('gauge-gpu-circle');
   const diskCircleEl = document.getElementById('gauge-disk-circle');
 
-  const safeCpu = isNaN(pcTelemetry.cpuLoadEst) ? 12 : Math.min(100, Math.max(0, pcTelemetry.cpuLoadEst));
-  const safeRam = isNaN(pcTelemetry.ramPercent) ? 78 : Math.min(100, Math.max(0, pcTelemetry.ramPercent));
-  const safeGpu = isNaN(pcTelemetry.gpuLoadEst) ? 10 : Math.min(100, Math.max(0, pcTelemetry.gpuLoadEst));
-  const hasDisk = typeof pcTelemetry.diskPercent === 'number' && !isNaN(pcTelemetry.diskPercent);
-  const safeDisk = hasDisk ? Math.min(100, Math.max(0, pcTelemetry.diskPercent)) : 90;
+  // Achado 13/08/2026 (relatado ao vivo no PWA): sem o agente local do PC,
+  // isso mostrava números FIXOS inventados (ex.: "NVIDIA GeForce 940MX",
+  // "6290MB", "90%" de disco) como se fossem dado real do PC do usuário --
+  // nunca eram. Mesmo padrão honesto já aplicado no dashboard principal:
+  // sem dado real fresco, mostra placeholder, nunca inventa número.
+  const realFresh = isRealTelemetryFreshPwa();
+  const safeCpu = realFresh && !isNaN(pcTelemetry.cpuLoadEst) ? Math.min(100, Math.max(0, pcTelemetry.cpuLoadEst)) : null;
+  const safeRam = realFresh && !isNaN(pcTelemetry.ramPercent) ? Math.min(100, Math.max(0, pcTelemetry.ramPercent)) : null;
+  const safeGpu = realFresh && !isNaN(pcTelemetry.gpuLoadEst) ? Math.min(100, Math.max(0, pcTelemetry.gpuLoadEst)) : null;
+  const hasDisk = realFresh && typeof pcTelemetry.diskPercent === 'number' && !isNaN(pcTelemetry.diskPercent);
+  const safeDisk = hasDisk ? Math.min(100, Math.max(0, pcTelemetry.diskPercent)) : null;
 
-  if (cpuTextEl) cpuTextEl.textContent = `${safeCpu}%`;
-  if (ramTextEl) ramTextEl.textContent = `${safeRam}%`;
-  if (gpuTextEl) gpuTextEl.textContent = `${safeGpu}%`;
-  if (diskTextEl) diskTextEl.textContent = `${safeDisk}%`;
+  if (cpuTextEl) cpuTextEl.textContent = safeCpu == null ? '--%' : `${safeCpu}%`;
+  if (ramTextEl) ramTextEl.textContent = safeRam == null ? '--%' : `${safeRam}%`;
+  if (gpuTextEl) gpuTextEl.textContent = safeGpu == null ? '--%' : `${safeGpu}%`;
+  if (diskTextEl) diskTextEl.textContent = safeDisk == null ? '--%' : `${safeDisk}%`;
 
   const maxDash = 119.38;
+  const dashCpu = safeCpu ?? 0;
+  const dashRam = safeRam ?? 0;
+  const dashGpu = safeGpu ?? 0;
+  const dashDisk = safeDisk ?? 0;
 
   if (cpuCircleEl) {
-    const cpuOffset = maxDash - (safeCpu / 100) * maxDash;
+    const cpuOffset = maxDash - (dashCpu / 100) * maxDash;
     cpuCircleEl.style.strokeDashoffset = Math.max(0, cpuOffset);
   }
   const cpuNeedleEl = document.getElementById('gauge-cpu-needle');
   if (cpuNeedleEl) {
-    const cpuAngle = -90 + (safeCpu / 100) * 180;
+    const cpuAngle = -90 + (dashCpu / 100) * 180;
     cpuNeedleEl.style.transform = `rotate(${cpuAngle}deg)`;
   }
 
   if (ramCircleEl) {
-    const ramOffset = maxDash - (safeRam / 100) * maxDash;
+    const ramOffset = maxDash - (dashRam / 100) * maxDash;
     ramCircleEl.style.strokeDashoffset = Math.max(0, ramOffset);
   }
   const ramNeedleEl = document.getElementById('gauge-ram-needle');
   if (ramNeedleEl) {
-    const ramAngle = -90 + (safeRam / 100) * 180;
+    const ramAngle = -90 + (dashRam / 100) * 180;
     ramNeedleEl.style.transform = `rotate(${ramAngle}deg)`;
   }
 
   if (gpuCircleEl) {
-    const gpuOffset = maxDash - (safeGpu / 100) * maxDash;
+    const gpuOffset = maxDash - (dashGpu / 100) * maxDash;
     gpuCircleEl.style.strokeDashoffset = Math.max(0, gpuOffset);
   }
   const gpuNeedleEl = document.getElementById('gauge-gpu-needle');
   if (gpuNeedleEl) {
-    const gpuAngle = -90 + (safeGpu / 100) * 180;
+    const gpuAngle = -90 + (dashGpu / 100) * 180;
     gpuNeedleEl.style.transform = `rotate(${gpuAngle}deg)`;
   }
 
   if (diskCircleEl) {
-    const diskOffset = maxDash - (safeDisk / 100) * maxDash;
+    const diskOffset = maxDash - (dashDisk / 100) * maxDash;
     diskCircleEl.style.strokeDashoffset = Math.max(0, diskOffset);
   }
   const diskNeedleEl = document.getElementById('gauge-disk-needle');
   if (diskNeedleEl) {
-    const diskAngle = -90 + (safeDisk / 100) * 180;
+    const diskAngle = -90 + (dashDisk / 100) * 180;
     diskNeedleEl.style.transform = `rotate(${diskAngle}deg)`;
   }
 
-  if (cpuEl) cpuEl.textContent = `${safeCpu}% (${pcTelemetry.cores || 4} Núcleos)`;
-  if (ramEl) ramEl.textContent = `${pcTelemetry.ramUsedMB || 6290}MB / ${pcTelemetry.ramTotalMB || 8090}MB (${safeRam}%)`;
-  if (gpuEl) gpuEl.textContent = (pcTelemetry.gpuName || 'NVIDIA GeForce 940MX').slice(0, 32);
-  if (diskEl) diskEl.textContent = `${pcTelemetry.diskFreeGB || 10.9}GB / ${pcTelemetry.diskTotalGB || 111.1}GB`;
+  if (cpuEl) cpuEl.textContent = realFresh ? `${safeCpu}% (${pcTelemetry.cores || 4} Núcleos)` : 'Sem agente local';
+  if (ramEl) ramEl.textContent = realFresh ? `${pcTelemetry.ramUsedMB}MB / ${pcTelemetry.ramTotalMB}MB (${safeRam}%)` : 'Sem agente local';
+  if (gpuEl) gpuEl.textContent = realFresh && pcTelemetry.gpuName ? pcTelemetry.gpuName.slice(0, 32) : 'Sem agente local';
+  if (diskEl) diskEl.textContent = hasDisk ? `${pcTelemetry.diskFreeGB}GB / ${pcTelemetry.diskTotalGB}GB` : 'Sem agente local';
 
   if (badgeEl) {
     if (safeCpu > 85 || safeRam > 90) {

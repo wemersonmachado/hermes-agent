@@ -1315,6 +1315,35 @@
                     @keyframes hudRotateCcw { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
                     #view-voz .hud-scrollbar::-webkit-scrollbar { width: 3px; }
                     #view-voz .hud-scrollbar::-webkit-scrollbar-thumb { background: var(--cyan); border-radius: 2px; }
+
+                    /* Celular/tela estreita (achado 13/08/2026, print real do
+                       PWA): a grade de 3 colunas fixas (265px|1fr|320px) não
+                       cabe e só a telemetria aparecia, núcleo e chat ficavam
+                       fora da tela. Empilha em coluna única, ordem
+                       núcleo→chat→telemetria (conversa primeiro, sensor
+                       depois), e deixa a seção inteira rolar em vez de
+                       cortar conteúdo. !important necessário pra vencer o
+                       style="" inline dos mesmos elementos no desktop. */
+                    @media (max-width: 900px) {
+                        #hermes-hud { height: auto !important; max-height: none !important; overflow: visible !important; width: 100% !important; box-sizing: border-box !important; }
+                        #hud-grid { display: flex !important; flex-direction: column !important; overflow: visible !important; height: auto !important; width: 100% !important; box-sizing: border-box !important; }
+                        #hud-grid > * { width: 100% !important; max-width: 100% !important; box-sizing: border-box !important; }
+                        /* Altura FIXA (não só min-height) em cada coluna --
+                           achado ao vivo: com altura só "sugerida" o chat
+                           (que tem centenas de mensagens reais) esticava a
+                           página inteira pra ~67000px porque flex:1 sem
+                           altura de referência não tem limite pra crescer. */
+                        /* Telemetria: altura AUTOMÁTICA até um teto generoso
+                           -- achado ao vivo 2 (print real): 320px cortava
+                           "Avisos" e "Esquema de Cor" no meio, escondidos
+                           atrás de scroll pouco óbvio no celular. */
+                        #hud-col-telemetry { order: 3; height: auto !important; max-height: 640px; flex: none !important; }
+                        #hud-col-core { order: 1; height: 240px !important; flex: none !important; padding: 8px 0; }
+                        #hud-col-core canvas#hud-core-canvas { max-width: 200px !important; max-height: 200px !important; }
+                        #hud-col-chat { order: 2; height: 58vh !important; flex: none !important; overflow: hidden; }
+                        #hud-col-chat #voice-chat-messages { max-width: 100%; }
+                        #hud-col-chat #voice-chat-messages > div { max-width: 88% !important; }
+                    }
                 </style>
                 <section id="hermes-hud" class="card border-purple" style="display:flex; flex-direction:column; height:calc(100vh - 120px); max-height:900px; overflow:hidden; padding:0; position:relative;">
                     <canvas id="hud-bg-canvas" style="position:absolute; inset:0; z-index:0; pointer-events:none;"></canvas>
@@ -1340,10 +1369,10 @@
                     </div>
 
                     <!-- GRID: telemetria real | núcleo central | chat real -->
-                    <div style="position:relative; z-index:2; flex:1; display:grid; grid-template-columns:265px 1fr 320px; gap:10px; padding:10px 12px; min-height:0; overflow:hidden;">
+                    <div id="hud-grid" style="position:relative; z-index:2; flex:1; display:grid; grid-template-columns:265px 1fr 320px; gap:10px; padding:10px 12px; min-height:0; overflow:hidden;">
 
                         <!-- ESQUERDA: telemetria real + hardware + processos reais + avisos -->
-                        <aside class="hud-scrollbar" style="display:flex; flex-direction:column; gap:8px; min-height:0; overflow-y:auto; background:rgba(10,14,24,0.7); border:1px solid var(--border); border-radius:10px; padding:10px;">
+                        <aside id="hud-col-telemetry" class="hud-scrollbar" style="display:flex; flex-direction:column; gap:8px; min-height:0; overflow-y:auto; background:rgba(10,14,24,0.7); border:1px solid var(--border); border-radius:10px; padding:10px;">
                             <div style="font-family:'Orbitron',sans-serif; font-size:10px; font-weight:700; letter-spacing:0.1em; color:var(--cyan); border-bottom:1px solid var(--border); padding-bottom:4px;">◈ TELEMETRIA DO PC</div>
                             <div id="telemetry-source-badge" style="font-size:9px; color:var(--text-muted);">⏳ verificando fonte dos dados…</div>
 
@@ -1389,7 +1418,7 @@
                         </aside>
 
                         <!-- CENTRO: núcleo animado real (reage a fala/escuta reais) + onda -->
-                        <main style="display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; min-height:0;">
+                        <main id="hud-col-core" style="display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; min-height:0;">
                             <div style="position:absolute; width:320px; height:320px; border:1px solid rgba(45,212,255,0.06); border-radius:50%; pointer-events:none; animation:hudRotate 50s linear infinite;"></div>
                             <div style="position:absolute; width:340px; height:340px; border:1px dashed rgba(45,212,255,0.08); border-radius:50%; pointer-events:none; animation:hudRotateCcw 65s linear infinite;"></div>
                             <div id="voice-transcript-title" style="position:absolute; top:6px; font-family:'Orbitron',sans-serif; font-size:11px; letter-spacing:0.12em; color:rgba(45,212,255,0.75); text-shadow:0 0 8px rgba(45,212,255,0.4); text-align:center; max-width:92%; z-index:3;">Converse com o BROW — digite ou fale</div>
@@ -1397,7 +1426,7 @@
                         </main>
 
                         <!-- DIREITA: chat real (mesmo pipeline do Telegram/PWA) -->
-                        <aside style="display:flex; flex-direction:column; min-height:0; background:rgba(10,14,24,0.7); border:1px solid var(--border); border-radius:10px; padding:10px; gap:8px;">
+                        <aside id="hud-col-chat" style="display:flex; flex-direction:column; min-height:0; background:rgba(10,14,24,0.7); border:1px solid var(--border); border-radius:10px; padding:10px; gap:8px;">
                             <div id="voice-chat-messages" class="hud-scrollbar" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:12px; min-height:0;"></div>
                             <audio id="edge-tts-player" style="display:none;"></audio>
                             <div style="flex-shrink:0; display:flex; gap:8px; align-items:center; border-top:1px solid var(--border); padding-top:8px;">

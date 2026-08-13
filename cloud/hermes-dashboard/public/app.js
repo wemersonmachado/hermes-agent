@@ -2966,9 +2966,16 @@ function renderTelemetryWidget() {
         diskNeedleEl.style.transform = `rotate(${diskAngle}deg)`;
     }
 
-    if (cpuEl) cpuEl.textContent = `${safeCpu}% (${pcTelemetry.cores} Núcleos)`;
-    if (ramEl) ramEl.textContent = performance.memory ? `${pcTelemetry.ramUsedMB}MB / ${pcTelemetry.ramTotalMB}MB (${safeRam}%)` : `${pcTelemetry.deviceRamGB}GB RAM`;
-    if (gpuEl) gpuEl.textContent = pcTelemetry.gpuName.slice(0, 32);
+    // Achado 13/08/2026 (relatado ao vivo pelo PWA no celular): sem o
+    // agente local do PC, os campos caíam pra estimativa via WebGL/heap do
+    // PRÓPRIO NAVEGADOR de quem está olhando o dashboard -- em celular
+    // isso mostrava "Placa de vídeo: OpenGL ES 3.2" e RAM do telefone como
+    // se fosse hardware do PC, confuso e sem sentido. Mesmo padrão honesto
+    // que o Disco C já usava: sem dado real, mostra placeholder, não finge.
+    const realFresh = isRealTelemetryFresh();
+    if (cpuEl) cpuEl.textContent = realFresh ? `${safeCpu}% (${pcTelemetry.cores} Núcleos)` : 'Sem agente local';
+    if (ramEl) ramEl.textContent = realFresh ? `${pcTelemetry.ramUsedMB}MB / ${pcTelemetry.ramTotalMB}MB (${safeRam}%)` : 'Sem agente local';
+    if (gpuEl) gpuEl.textContent = realFresh ? pcTelemetry.gpuName.slice(0, 32) : 'Sem agente local';
 
     const diskValEl = document.getElementById('telemetry-disk-val');
     if (diskValEl) {
