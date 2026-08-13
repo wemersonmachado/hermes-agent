@@ -23,6 +23,9 @@ export type SearchProvider = (query: string, limit?: number) => Promise<SearchRe
 const TEAM_ALIASES: Record<string, string> = {
   flamengo: "Clube de Regatas do Flamengo",
   mengao: "Clube de Regatas do Flamengo",
+  psg: "Paris Saint-Germain",
+  "paris saint-germain": "Paris Saint-Germain",
+  "paris saint germain": "Paris Saint-Germain",
 };
 
 const STRUCTURED_TEAMS: Record<string, { id: number; display: string }> = {

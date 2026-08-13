@@ -5,4 +5,5 @@ interface Env {
   TELEGRAM_WEBHOOK_SECRET: string;
   HERMES_DASHBOARD_API_SECRET: string;
   GEMINI_API_KEY: string;
+  GROQ_API_KEY: string;
 }

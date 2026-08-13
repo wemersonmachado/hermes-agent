@@ -31,6 +31,7 @@ interface Evidence extends WebSearchResult {
 }
 
 const PROVIDER_BUDGET_MS = 4_500;
+const NEWS_MAX_AGE_MS = 14 * 86_400_000;
 
 function within<T>(promise: Promise<T>, fallback: T): Promise<T> {
   return Promise.race([
@@ -63,14 +64,14 @@ function parseGoogleNews(xml: string): Evidence[] {
 }
 
 async function googleNewsRss(query: string): Promise<Evidence[]> {
-  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
+  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(`${query} when:7d`)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
   const response = await fetch(url, { headers: { "user-agent": "HermesResearch/1.0" } });
   if (!response.ok) return [];
   return parseGoogleNews(await response.text());
 }
 
 async function gdeltSearch(query: string): Promise<Evidence[]> {
-  const url = `https://api.gdeltproject.org/api/v2/doc/doc?query=${encodeURIComponent(query)}&mode=ArtList&maxrecords=10&format=json&sort=HybridRel`;
+  const url = `https://api.gdeltproject.org/api/v2/doc/doc?query=${encodeURIComponent(query)}&mode=ArtList&maxrecords=10&format=json&sort=HybridRel&timespan=1week`;
   const response = await fetch(url, { headers: { "user-agent": "HermesResearch/1.0" } });
   if (!response.ok) return [];
   const data = await response.json() as { articles?: Array<{ title?: string; url?: string; domain?: string; seendate?: string }> };
@@ -78,6 +79,20 @@ async function gdeltSearch(query: string): Promise<Evidence[]> {
     title: clean(item.title), url: item.url, snippet: clean(item.title), source: item.domain || sourceFromUrl(item.url),
     provider: "gdelt" as const, publishedAt: item.seendate || null,
   }] : []);
+}
+
+function timestamp(value?: string | null): number | null {
+  if (!value) return null;
+  const gdelt = value.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z?$/);
+  const parsed = gdelt
+    ? Date.UTC(Number(gdelt[1]), Number(gdelt[2]) - 1, Number(gdelt[3]), Number(gdelt[4]), Number(gdelt[5]), Number(gdelt[6]))
+    : new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+export function isCurrentNewsDate(value: string | null | undefined, now = Date.now()): boolean {
+  const time = timestamp(value);
+  return time !== null && time <= now + 3_600_000 && now - time <= NEWS_MAX_AGE_MS;
 }
 
 async function wikipediaSearch(query: string): Promise<Evidence[]> {
@@ -96,18 +111,19 @@ function asEvidence(items: WebSearchResult[], provider: "duckduckgo" | "hacker-n
   return items.map((item) => ({ ...item, source: sourceFromUrl(item.url), provider }));
 }
 
-function rankAndDiversify(items: Evidence[], query: string, limit = 5): Evidence[] {
+function rankAndDiversify(items: Evidence[], query: string, mode: ResearchMode, limit = 5): Evidence[] {
   const terms = query.toLocaleLowerCase("pt-BR").split(/\s+/).filter((term) => term.length > 2);
   const unique = new Map<string, Evidence>();
   for (const item of items) {
     if (!safeHttpUrl(item.url)) continue;
+    if (mode === "news" && !isCurrentNewsDate(item.publishedAt)) continue;
     const key = clean(item.title).toLocaleLowerCase("pt-BR").replace(/\W/g, "").slice(0, 100);
     if (key && !unique.has(key)) unique.set(key, item);
   }
   const scored = [...unique.values()].map((item) => {
     const haystack = `${item.title} ${item.snippet}`.toLocaleLowerCase("pt-BR");
     const relevance = terms.reduce((score, term) => score + (haystack.includes(term) ? 2 : 0), 0);
-    const recency = item.publishedAt && Date.now() - new Date(item.publishedAt).getTime() < 7 * 86_400_000 ? 2 : 0;
+    const recency = item.publishedAt && isCurrentNewsDate(item.publishedAt) ? 6 : 0;
     return { item, score: relevance + recency };
   }).sort((a, b) => b.score - a.score);
   const selected: Evidence[] = [];
@@ -145,12 +161,14 @@ export async function research(env: Env, text: string, mode: ResearchMode): Prom
     mode === "web" ? within(redditSearch(effectiveQuery, 4).then((items) => asEvidence(items, "reddit")), []) : Promise.resolve([]),
     mode === "web" ? within(wikipediaSearch(effectiveQuery), []) : Promise.resolve([]),
   ]);
-  const groundedEvidence: Evidence[] = (grounded?.sources || []).map((item) => ({ ...item, snippet: grounded?.summary || item.title, source: sourceFromUrl(item.url), provider: "google-grounding" }));
-  const evidence = rankAndDiversify([...groundedEvidence, ...googleNews, ...gdelt, ...editorial, ...ddg, ...hn, ...reddit, ...wikipedia], effectiveQuery);
+  // Grounding não fornece data por fonte. Em notícias, fonte sem data é
+  // rejeitada em vez de permitir que conteúdo antigo pareça atual.
+  const groundedEvidence: Evidence[] = mode === "web" ? (grounded?.sources || []).map((item) => ({ ...item, snippet: grounded?.summary || item.title, source: sourceFromUrl(item.url), provider: "google-grounding" })) : [];
+  const evidence = rankAndDiversify([...groundedEvidence, ...googleNews, ...gdelt, ...editorial, ...ddg, ...hn, ...reddit, ...wikipedia], effectiveQuery, mode);
   if (!evidence.length) return null;
   const all = [...groundedEvidence, ...googleNews, ...gdelt, ...editorial, ...ddg, ...hn, ...reddit, ...wikipedia];
   const providers = all.reduce<ResearchAudit["providers"]>((counts, item) => ({ ...counts, [item.provider]: (counts[item.provider] || 0) + 1 }), {});
   const audit = { query: effectiveQuery, elapsedMs: Date.now() - started, providers, sourceCount: evidence.length };
   console.log(JSON.stringify({ event: "research_complete", ...audit }));
-  return { reply: formatAnswer(effectiveQuery, grounded, evidence), audit };
+  return { reply: formatAnswer(effectiveQuery, mode === "web" ? grounded : null, evidence), audit };
 }

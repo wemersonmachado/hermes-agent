@@ -372,7 +372,7 @@ export async function handleDashboardRequest(request: Request, env: Env, path: s
     const bytes = await file.arrayBuffer();
     if (!bytes.byteLength) return badRequest("áudio vazio");
     try {
-      const text = await transcribeAudioBytes(env, bytes);
+      const text = await transcribeAudioBytes(env, bytes, file.type || "audio/webm");
       return json({ ok: true, text });
     } catch (e) {
       return json({ ok: false, error: "falha na transcrição", detail: String(e) }, 500);

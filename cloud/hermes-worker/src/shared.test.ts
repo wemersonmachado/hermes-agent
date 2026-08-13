@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { parseRssItems, toSearchQuery, tryActionRouter, tryMemoryCommand, tryNewsShortcut, tryWebSearchShortcut } from "./shared";
+import { chooseTranscript, parseRssItems, toSearchQuery, tryActionRouter, tryMemoryCommand, tryNewsShortcut, tryWebSearchShortcut } from "./shared";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -43,6 +43,13 @@ describe("news responses", () => {
   it("uses the refined subject rather than the whole spoken instruction", () => {
     expect(toSearchQuery("Ô bro, busque pra mim aí sobre desenvolvimento de carros autônomos, por favor"))
       .toBe("desenvolvimento de carros autônomos");
+  });
+});
+
+describe("voice transcription quality", () => {
+  it("prefers a complete undamaged transcript", () => {
+    expect(chooseTranscript(["Pro me manda as do PSG", "Por favor, me mande as notícias do PSG"])).toBe("Por favor, me mande as notícias do PSG");
+    expect(chooseTranscript(["áudio �", "Responda em áudio, por favor"])).toBe("Responda em áudio, por favor");
   });
 });
 

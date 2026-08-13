@@ -8,7 +8,7 @@ const LEADING_SPEECH = [
 ];
 
 const SEARCH_COMMANDS = /\b(?:busque|buscar|busca|pesquise|pesquisar|pesquisa|procure|procurar|procura|descubra|descobrir|veja|ver|confira|conferir|checa|traga|pesquisa na internet|busca na internet)\b/gi;
-const NEWS_WRAPPERS = /\b(?:not[ií]cias?|manchetes?|informa[çc][oõ]es?|novidades|atualiza[çc][oõ]es?)\b/gi;
+const NEWS_WRAPPERS = /\b(?:not[ií]?c[ií]?as?|manchetes?|informa[çc][oõ]es?|novidades|atualiza[çc][oõ]es?)\b/gi;
 const REQUEST_FILLERS = /\b(?:me traga|um resumo|resumo|pra mim|para mim|por favor|a[ií]|da[ií]|agora|agora mesmo|hoje|mais recentes?|recentes?|atuais?|atualizadas?|na internet|no google|na web|online|o que saiu|me diga|me fale|fala pra mim|traz(?:er)?|traga|mostra(?:r)?)\b/gi;
 const SPEECH_FILLERS = /(?:^|[\s,])(p[oô]|tipo|assim|ent[aã]o|né|n[eé]|t[aá]|viu|sabe|cara|mano|bro|ahn+|hum+)(?=$|[\s,.!?])/gi;
 const QUESTION_FRAME = /^(?:qual(?: é| foi)?|quais(?: s[aã]o)?|como (?:est[aá]|t[aá])|o que (?:tem|h[aá]) de|me conte sobre|fale sobre)\s+/i;
@@ -56,7 +56,7 @@ export function refineSearchQuery(text: string, options: { news?: boolean } = {}
 
 export function isNewsSearchRequest(text: string): boolean {
   const folded = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
-  return /(?:^|\s)(?:noticias?|manchetes?)(?=$|\s|[?!,.;:])/.test(folded);
+  return /(?:^|\s)(?:noti?ci?as?|manchetes?)(?=$|\s|[?!,.;:])/.test(folded);
 }
 
 export function isExplicitSearchRequest(text: string): boolean {

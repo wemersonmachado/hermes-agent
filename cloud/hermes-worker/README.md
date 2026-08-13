@@ -46,6 +46,10 @@ Telegram e armazenamento R2.
   Se nenhuma fonte real responder, o Hermes informa a falha; não completa com
   fatos inventados. O dashboard recebe também `researchAudit` com consulta,
   latência, contagem por provedor e número de fontes selecionadas.
+- Em modo notícia, recência é requisito, não apenas preferência: resultados
+  sem data ou com mais de 14 dias são descartados. Google News recebe janela
+  explícita de 7 dias e GDELT usa `timespan=1week`. Isso impede que matérias
+  de 2020/2021 sejam apresentadas como atuais.
 - O endpoint do painel é `GET /api/dashboard/news?category=...&query=...`.
 
 Todas as pesquisas textuais passam por `src/search_query.ts` antes de chamar
@@ -86,6 +90,17 @@ portais nunca podem inventar placar ou posição.
 Áudios do Telegram são transcritos apenas internamente. A transcrição completa
 não é mais enviada como uma mensagem `Entendi: "..."`; o usuário recebe somente
 a resposta ao pedido, evitando eco de saudações, repetições e hesitações.
+O STT usa Whisper Large V3 Turbo no Workers AI e, quando configurado, uma
+segunda transcrição independente no Groq. Versões divergentes passam por uma
+reconciliação restrita que pode corrigir palavras, mas não acrescentar pedidos
+ou intenções. Telegram, dashboard e PWA compartilham exatamente esse pipeline.
+
+### Agenda e lembretes
+
+Um Cron Trigger executa a cada cinco minutos e entrega no Telegram eventos que
+chegaram ao horário e tarefas com prazo no dia. A idempotência fica isolada no
+R2 (`reminders/sent/...`): o registro só é criado depois que o Telegram aceita
+a mensagem, sem alterar tabelas, memória ou o cérebro central.
 
 ### Telemetria
 

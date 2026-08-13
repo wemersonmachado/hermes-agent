@@ -20,7 +20,7 @@ describe("global search query refinement", () => {
     expect(refineSearchQuery("Quais são as principais notícias de hoje?", { news: true })).toBe("");
   });
 
-  it.each(["notícia sobre carros", "notícias sobre carros", "MANCHETES de hoje"])("recognizes Unicode news request: %s", (input) => {
+  it.each(["notícia sobre carros", "notícias sobre carros", "noticas sobre o PSG", "MANCHETES de hoje"])("recognizes Unicode and spoken news request: %s", (input) => {
     expect(isNewsSearchRequest(input)).toBe(true);
   });
 

@@ -51,6 +51,7 @@ import {
 import { detectSportsSubject, formatSpecialistAnswer, trySportsSearchSpecialist } from "./search_specialist";
 import { isExplicitSearchRequest, isNewsSearchRequest, refineSearchQuery } from "./search_query";
 import { research } from "./research_engine";
+import { dispatchDueReminders } from "./reminder_dispatch";
 
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
 
@@ -167,7 +168,7 @@ async function clearHistory(env: Env, chatId: number): Promise<void> {
 // pedido). Ambos rodam 100% dentro do Workers AI, sem chave externa.
 // ---------------------------------------------------------------------------
 
-async function transcribeVoice(env: Env, fileId: string): Promise<string> {
+async function transcribeVoice(env: Env, fileId: string, mimeType = "audio/ogg"): Promise<string> {
   const fileInfo = await telegram(env, "getFile", { file_id: fileId });
   const filePath = fileInfo?.result?.file_path;
   if (!filePath) throw new Error("Telegram getFile sem file_path");
@@ -175,7 +176,7 @@ async function transcribeVoice(env: Env, fileId: string): Promise<string> {
   const audioResp = await fetch(fileUrl);
   if (!audioResp.ok) throw new Error(`Download do áudio falhou: ${audioResp.status}`);
   const bytes = await audioResp.arrayBuffer();
-  return transcribeAudioBytes(env, bytes);
+  return transcribeAudioBytes(env, bytes, mimeType);
 }
 
 const AUDIO_REQUEST_PATTERN = /\b(audio|áudio)\b|\b(manda|gera|gere|cria|crie|envia|fala|toca)\w*\s+(a\s+)?voz\b/i;
@@ -334,7 +335,7 @@ async function processUpdate(env: Env, update: TelegramUpdate): Promise<void> {
     if (!userText && message.voice) {
       isVoiceInput = true;
       await telegram(env, "sendChatAction", { chat_id: message.chat.id, action: "typing" });
-      userText = await transcribeVoice(env, message.voice.file_id);
+      userText = await transcribeVoice(env, message.voice.file_id, message.voice.mime_type || "audio/ogg");
       if (!userText) {
         await sendText(env, message.chat.id, "Não consegui entender o áudio. Pode tentar de novo ou escrever?");
         await markUpdate(env, update.update_id, "error");
@@ -568,5 +569,8 @@ export default {
     const update = (await request.json()) as TelegramUpdate;
     ctx.waitUntil(processUpdate(env, update));
     return json({ ok: true });
+  },
+  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(dispatchDueReminders(env));
   },
 } satisfies ExportedHandler<Env>;

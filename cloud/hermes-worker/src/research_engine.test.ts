@@ -13,7 +13,7 @@ vi.mock("./shared", () => ({
   redditSearch: vi.fn(async () => []),
 }));
 
-import { research } from "./research_engine";
+import { isCurrentNewsDate, research } from "./research_engine";
 
 describe("isolated multi-source research engine", () => {
   beforeEach(() => {
@@ -33,5 +33,18 @@ describe("isolated multi-source research engine", () => {
   it("rejects unsafe source protocols", async () => {
     const answer = await research({ GEMINI_API_KEY: "test" } as Env, "Pesquise segurança de software", "web");
     expect(answer?.reply).not.toContain("javascript:");
+  });
+
+  it("strictly rejects stale or undated news", () => {
+    const now = Date.UTC(2026, 7, 13, 12);
+    expect(isCurrentNewsDate("2026-08-12T12:00:00Z", now)).toBe(true);
+    expect(isCurrentNewsDate("2021-08-10T12:00:00Z", now)).toBe(false);
+    expect(isCurrentNewsDate(null, now)).toBe(false);
+  });
+
+  it("accepts the compact GDELT timestamp only inside the freshness window", () => {
+    const now = Date.UTC(2026, 7, 13, 12);
+    expect(isCurrentNewsDate("20260812T120000Z", now)).toBe(true);
+    expect(isCurrentNewsDate("20200101T120000Z", now)).toBe(false);
   });
 });

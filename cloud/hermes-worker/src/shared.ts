@@ -156,15 +156,62 @@ export function base64FromBuffer(buffer: ArrayBuffer): string {
 // em index.ts) quanto pro microfone do dashboard/PWA (endpoint /stt em
 // dashboard.ts), pra ter a MESMA precisão de transcrição nos 3 canais em
 // vez do reconhecimento nativo (mais fraco) do navegador.
-export async function transcribeAudioBytes(env: Env, bytes: ArrayBuffer): Promise<string> {
-  const result = (await env.AI.run("@cf/openai/whisper-large-v3-turbo", {
-    audio: base64FromBuffer(bytes),
-    task: "transcribe",
-    language: "pt",
-    vad_filter: true,
-    condition_on_previous_text: false,
-  } as any)) as { text?: string };
+function transcriptScore(text: string): number {
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  const damage = (text.match(/�|\[inaudível\]|\.{3}/gi) || []).length * 8;
+  return words.length * 2 + new Set(words.map((word) => word.toLocaleLowerCase("pt-BR"))).size - damage;
+}
+
+export function chooseTranscript(candidates: string[]): string {
+  return candidates.map((text) => text.trim()).filter(Boolean).sort((a, b) => transcriptScore(b) - transcriptScore(a))[0] || "";
+}
+
+async function transcribeWithGroq(env: Env, bytes: ArrayBuffer, mimeType: string): Promise<string> {
+  if (!env.GROQ_API_KEY) return "";
+  const form = new FormData();
+  form.set("file", new Blob([bytes], { type: mimeType || "audio/ogg" }), mimeType.includes("webm") ? "audio.webm" : "audio.ogg");
+  form.set("model", "whisper-large-v3-turbo");
+  form.set("language", "pt");
+  form.set("response_format", "json");
+  const response = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
+    method: "POST",
+    headers: { authorization: `Bearer ${env.GROQ_API_KEY}` },
+    body: form,
+  });
+  if (!response.ok) return "";
+  const result = await response.json() as { text?: string };
   return (result.text || "").trim();
+}
+
+async function reconcileTranscripts(env: Env, candidates: string[]): Promise<string> {
+  const unique = [...new Set(candidates.map((value) => value.trim()).filter(Boolean))];
+  if (unique.length < 2) return unique[0] || "";
+  try {
+    const result = await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fast", {
+      messages: [{ role: "user", content:
+        "Você revisa transcrições de áudio em português do Brasil. Escolha e corrija minimamente a versão mais provável, " +
+        "sem acrescentar pedidos, fatos ou intenções que não estejam nas opções. Responda somente a frase final.\n\n" +
+        unique.map((value, index) => `${index + 1}. ${value}`).join("\n") }],
+      max_tokens: 120,
+      temperature: 0,
+    }) as { response?: unknown };
+    const corrected = typeof result.response === "string" ? result.response.trim().replace(/^['"]|['"]$/g, "") : "";
+    if (corrected && corrected.length <= Math.max(...unique.map((value) => value.length)) * 1.5) return corrected;
+  } catch (error) {
+    console.error(JSON.stringify({ event: "stt_reconcile_failed", error: String(error) }));
+  }
+  return chooseTranscript(unique);
+}
+
+export async function transcribeAudioBytes(env: Env, bytes: ArrayBuffer, mimeType = "audio/ogg"): Promise<string> {
+  const workers = env.AI.run("@cf/openai/whisper-large-v3-turbo", {
+    audio: base64FromBuffer(bytes), task: "transcribe", language: "pt",
+    vad_filter: true, condition_on_previous_text: false,
+    initial_prompt: "Conversa natural em português do Brasil com nomes próprios, notícias, agenda, lembretes e comandos para o assistente Hermes.",
+  } as any).then((result: any) => String(result?.text || "").trim()).catch(() => "");
+  const groq = transcribeWithGroq(env, bytes, mimeType).catch(() => "");
+  const candidates = await Promise.all([workers, groq]);
+  return reconcileTranscripts(env, candidates);
 }
 
 export async function fetchJsonWithTimeout(url: string, ms = 6000): Promise<any | null> {
