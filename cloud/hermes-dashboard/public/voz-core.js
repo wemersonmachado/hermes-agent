@@ -69,15 +69,16 @@
     }
   }
 
-  function setupColorPickers() {
+  function setupColorPickers(forceRebuild = false) {
     const savedTheme = localStorage.getItem("browCoreTheme");
-    if (savedTheme && THEMES[savedTheme]) {
+    if (savedTheme && THEMES[savedTheme] && !forceRebuild) {
       applyTheme(savedTheme);
     }
 
     const panels = document.querySelectorAll("#hud-theme-panel, #pwa-core-color-menu, .core-color-menu-container");
     panels.forEach(panel => {
-      if (!panel || panel.dataset.colorBound) return;
+      if (!panel) return;
+      if (panel.dataset.colorBound && !forceRebuild) return;
       panel.dataset.colorBound = "true";
       panel.innerHTML = "";
       Object.keys(THEMES).forEach(key => {
@@ -85,18 +86,42 @@
         const btn = document.createElement("button");
         btn.type = "button";
         btn.title = t.name;
-        btn.style.cssText = `width:26px; height:26px; border-radius:50%; border:2px solid ${activeTheme === t ? '#ffffff' : 'rgba(255,255,255,0.25)'}; cursor:pointer; background:linear-gradient(135deg, ${t.primary}, ${t.secondary}); box-shadow:0 0 8px ${t.primary}; transition:transform 0.15s; flex-shrink:0; padding:0;`;
+        btn.style.cssText = `width:26px; height:26px; border-radius:50%; border:2px solid ${activeTheme === t ? '#ffffff' : 'rgba(255,255,255,0.25)'}; cursor:pointer; background:linear-gradient(135deg, ${t.primary}, ${t.secondary}); box-shadow:0 0 8px ${t.primary}; transition:transform 0.15s, border 0.15s; flex-shrink:0; padding:0;`;
         btn.addEventListener("click", (e) => {
           e.stopPropagation();
           applyTheme(key);
-          setupColorPickers();
+          setupColorPickers(true);
         });
         panel.appendChild(btn);
       });
     });
   }
+
+  window.toggleCoreColorMenu = function(e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    const panels = document.querySelectorAll("#hud-theme-panel, #pwa-core-color-menu, .core-color-menu-container");
+    panels.forEach(p => {
+      if (!p) return;
+      const isHidden = p.style.display === "none" || !p.style.display;
+      p.style.display = isHidden ? "grid" : "none";
+      if (isHidden) {
+        p.style.gridTemplateColumns = "repeat(5, 1fr)";
+        p.style.gap = "6px";
+        p.style.zIndex = "999";
+      }
+    });
+    setupColorPickers(true);
+  };
+
+  document.addEventListener("click", () => {
+    const panels = document.querySelectorAll("#hud-theme-panel, #pwa-core-color-menu, .core-color-menu-container");
+    panels.forEach(p => {
+      if (p && p.style.display !== "none") p.style.display = "none";
+    });
+  });
+
   setupColorPickers();
-  setInterval(setupColorPickers, 2000);
+  setInterval(() => setupColorPickers(false), 2000);
 
   // ── FUNDO ESTRELADO (decorativo, não representa dado nenhum) ────
   const bgCanvas = document.getElementById("hud-bg-canvas");
@@ -129,11 +154,6 @@
   // pollRealTelemetryAgent em app.js a cada 3s) — só desenha. ──────
   function renderHudTelemetry() {
     if (typeof pcTelemetry === "undefined") return;
-    // Sem o agente local do PC, CPU/RAM/GPU só têm a estimativa do
-    // NAVEGADOR de quem está olhando (heap/WebGL) -- em celular isso é
-    // 100% sem relação com o PC real. Achado ao vivo 13/08/2026: barra
-    // mostrando "99% CPU" estimado do celular, enganoso. Mesmo padrão
-    // honesto que o Disco C já usava: sem dado real, mostra "--%".
     const realFresh = typeof isRealTelemetryFresh === "function" && isRealTelemetryFresh();
     const cpu = realFresh && !isNaN(pcTelemetry.cpuLoadEst) ? clamp(pcTelemetry.cpuLoadEst, 0, 100) : null;
     const ram = realFresh && !isNaN(pcTelemetry.ramPercent) ? clamp(pcTelemetry.ramPercent, 0, 100) : null;
@@ -294,7 +314,7 @@
 
     reset() {
       this.theta = 0.0;
-      this.speed = rand(0.0018, 0.0045);
+      this.speed = rand(0.0009, 0.0022); // Rotação reduzida ~50% mais suave
       this.tFactor = Math.pow(Math.random(), 1.6);
       this.radMultiplier = rand(0.8, 1.4);
       this.waveFreq1 = rand(4, 8);
@@ -308,7 +328,7 @@
     }
 
     update(t, smoothTyping, smoothSpeak, smoothHover) {
-      const activeSpeed = this.speed * (1.0 + smoothTyping * 1.8 + smoothSpeak * 0.8 + smoothHover * 0.6);
+      const activeSpeed = this.speed * (1.0 + smoothTyping * 1.2 + smoothSpeak * 0.5 + smoothHover * 0.4);
       this.theta += activeSpeed;
       if (this.theta > PI * 2) this.theta -= PI * 2;
     }
@@ -404,13 +424,13 @@
 
       const pBaseRad = baseRadius + (p.tFactor * ringWidth * p.radMultiplier) - (ringWidth * 0.25);
       const speakWaveScale = 1.0 + smoothSpeakVolume * 1.8 + smoothHoverBoost * 0.3;
-      const wave1 = sin(p.theta * p.waveFreq1 - t * 0.0028 + p.wavePhase) * p.waveAmp1 * speakWaveScale * 0.65;
-      const wave2 = cos(p.theta * p.waveFreq2 + t * 0.0045) * p.waveAmp2 * speakWaveScale * 0.65;
+      const wave1 = sin(p.theta * p.waveFreq1 - t * 0.0014 + p.wavePhase) * p.waveAmp1 * speakWaveScale * 0.65;
+      const wave2 = cos(p.theta * p.waveFreq2 + t * 0.0022) * p.waveAmp2 * speakWaveScale * 0.65;
 
       let r = pBaseRad + wave1 + wave2;
 
       if (smoothListenVolume > 0.02) {
-        const listenWave = sin(p.theta * 22.0 - t * 0.015) * (smoothListenVolume * 24.0);
+        const listenWave = sin(p.theta * 22.0 - t * 0.01) * (smoothListenVolume * 24.0);
         r += listenWave;
       }
       if (smoothTypingBoost > 0.02) {
@@ -459,11 +479,11 @@
       }
     });
 
-    // ── PARTÍCULAS EM ÓRBITA AO REDOR DO NÚCLEO (SUBSTITUI LINHAS POR POEIRA NEON) ──
+    // ── PARTÍCULAS EM ÓRBITA AO REDOR DO NÚCLEO (ROTAÇÃO MAIS SUAVE) ──
     const outerHaloRings = [
-      { r: baseRadius - 10, count: 60, speed: 0.0018, color: activeTheme.primary, glow: 12 },
-      { r: baseRadius + ringWidth + 6, count: 80, speed: -0.0014, color: activeTheme.secondary, glow: 16 },
-      { r: baseRadius + ringWidth + 20, count: 100, speed: 0.001, color: activeTheme.primary, glow: 20 }
+      { r: baseRadius - 10, count: 60, speed: 0.0008, color: activeTheme.primary, glow: 12 },
+      { r: baseRadius + ringWidth + 6, count: 80, speed: -0.0006, color: activeTheme.secondary, glow: 16 },
+      { r: baseRadius + ringWidth + 20, count: 100, speed: 0.0004, color: activeTheme.primary, glow: 20 }
     ];
 
     outerHaloRings.forEach((ring, idx) => {
@@ -471,7 +491,7 @@
       const count = ring.count;
       for (let i = 0; i < count; i++) {
         const angle = (i / count) * Math.PI * 2 + (t * ring.speed);
-        const wave = sin(angle * (4 + idx) + t * ring.speed * 2) * (5 * (smoothSpeakVolume * 1.4 + smoothHoverBoost * 0.5 + 0.3));
+        const wave = sin(angle * (4 + idx) + t * ring.speed * 1.5) * (5 * (smoothSpeakVolume * 1.4 + smoothHoverBoost * 0.5 + 0.3));
         const r = ring.r + wave;
         const px = cx + cos(angle) * r;
         const py = cy + sin(angle) * r;
