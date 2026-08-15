@@ -44,40 +44,59 @@
     if (clockEl) clockEl.textContent = new Date().toLocaleTimeString("pt-BR");
   }, 1000);
 
-  // ── ESQUEMA DE COR (cosmético, escopado só a #view-voz — não mexe
-  // no tema do resto do dashboard) ────────────────────────────────
+  // ── ESQUEMA DE COR (10 OPÇÕES DE CORES NEON VIBRANTES PWA + DASHBOARD) ────
   const THEMES = {
-    cyan: { primary: "#2dd4ff", secondary: "#a855f7" },
-    red: { primary: "#ff3860", secondary: "#ffd700" },
-    green: { primary: "#00ff9f", secondary: "#2dd4ff" },
-    gold: { primary: "#ffd700", secondary: "#a855f7" },
-    pink: { primary: "#ff00aa", secondary: "#2dd4ff" },
+    cyan: { name: "Ciano Cyber", primary: "#00f5ff", secondary: "#a855f7" },
+    purple: { name: "Púrpura Imperial", primary: "#a855f7", secondary: "#ec4899" },
+    red: { name: "Rubi Plasma", primary: "#ff2a5f", secondary: "#ff9900" },
+    green: { name: "Verde Matrix", primary: "#00ff9d", secondary: "#00f5ff" },
+    gold: { name: "Ouro Solar", primary: "#ffb700", secondary: "#ff3860" },
+    pink: { name: "Rosa Synthwave", primary: "#ff007f", secondary: "#7000ff" },
+    blue: { name: "Azul Elétrico", primary: "#0066ff", secondary: "#00f5ff" },
+    orange: { name: "Fogo Plasma", primary: "#ff5500", secondary: "#ffe600" },
+    teal: { name: "Turquesa Quantum", primary: "#00ffd5", secondary: "#7b2cbf" },
+    silver: { name: "Supernova Prata", primary: "#e2e8f0", secondary: "#00f5ff" }
   };
   let activeTheme = THEMES.cyan;
 
   function applyTheme(name) {
-    const t = THEMES[name];
-    if (!t) return;
+    const t = THEMES[name] || THEMES.cyan;
     activeTheme = t;
-    view.style.setProperty("--cyan", t.primary);
-    view.style.setProperty("--purple", t.secondary);
+    try { localStorage.setItem("browCoreTheme", name); } catch(e){}
+    if (view) {
+      view.style.setProperty("--cyan", t.primary);
+      view.style.setProperty("--purple", t.secondary);
+    }
   }
 
-  const themeToggle = document.getElementById("hud-theme-toggle");
-  const themePanel = document.getElementById("hud-theme-panel");
-  if (themeToggle && themePanel) {
-    Object.keys(THEMES).forEach((name) => {
-      const btn = document.createElement("button");
-      btn.title = name;
-      btn.style.cssText = `aspect-ratio:1; border-radius:4px; border:1px solid rgba(255,255,255,0.2); cursor:pointer; background:${THEMES[name].primary};`;
-      btn.addEventListener("click", () => applyTheme(name));
-      themePanel.appendChild(btn);
-    });
-    themeToggle.addEventListener("click", () => {
-      const isHidden = themePanel.style.display === "none";
-      themePanel.style.display = isHidden ? "grid" : "none";
+  function setupColorPickers() {
+    const savedTheme = localStorage.getItem("browCoreTheme");
+    if (savedTheme && THEMES[savedTheme]) {
+      applyTheme(savedTheme);
+    }
+
+    const panels = document.querySelectorAll("#hud-theme-panel, #pwa-core-color-menu, .core-color-menu-container");
+    panels.forEach(panel => {
+      if (!panel || panel.dataset.colorBound) return;
+      panel.dataset.colorBound = "true";
+      panel.innerHTML = "";
+      Object.keys(THEMES).forEach(key => {
+        const t = THEMES[key];
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.title = t.name;
+        btn.style.cssText = `width:26px; height:26px; border-radius:50%; border:2px solid ${activeTheme === t ? '#ffffff' : 'rgba(255,255,255,0.25)'}; cursor:pointer; background:linear-gradient(135deg, ${t.primary}, ${t.secondary}); box-shadow:0 0 8px ${t.primary}; transition:transform 0.15s; flex-shrink:0; padding:0;`;
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          applyTheme(key);
+          setupColorPickers();
+        });
+        panel.appendChild(btn);
+      });
     });
   }
+  setupColorPickers();
+  setInterval(setupColorPickers, 2000);
 
   // ── FUNDO ESTRELADO (decorativo, não representa dado nenhum) ────
   const bgCanvas = document.getElementById("hud-bg-canvas");
@@ -440,46 +459,32 @@
       }
     });
 
-    // ── ARGOLAS NEURAIS ORGÂNICAS E HARMONIOSAS (MEMBRANAS FLUIDAS) ──
-    const neonRings = [
-      { r: baseRadius - 8, color: activeTheme.primary, speed: 0.0018, amp: 3, glow: 12 },
-      { r: baseRadius + ringWidth + 8, color: activeTheme.primary, speed: -0.0014, amp: 5, glow: 16 },
-      { r: baseRadius + ringWidth + 22, color: activeTheme.secondary, speed: 0.001, amp: 7, glow: 20 }
+    // ── PARTÍCULAS EM ÓRBITA AO REDOR DO NÚCLEO (SUBSTITUI LINHAS POR POEIRA NEON) ──
+    const outerHaloRings = [
+      { r: baseRadius - 10, count: 60, speed: 0.0018, color: activeTheme.primary, glow: 12 },
+      { r: baseRadius + ringWidth + 6, count: 80, speed: -0.0014, color: activeTheme.secondary, glow: 16 },
+      { r: baseRadius + ringWidth + 20, count: 100, speed: 0.001, color: activeTheme.primary, glow: 20 }
     ];
 
-    neonRings.forEach((ring, idx) => {
+    outerHaloRings.forEach((ring, idx) => {
       coreCtx.save();
-      coreCtx.beginPath();
-      const points = 90;
-      for (let i = 0; i <= points; i++) {
-        const a = (i / points) * Math.PI * 2;
-        const wave = sin(a * (4 + idx) + t * ring.speed) * (ring.amp * (smoothSpeakVolume * 1.2 + smoothHoverBoost * 0.4 + 0.35));
+      const count = ring.count;
+      for (let i = 0; i < count; i++) {
+        const angle = (i / count) * Math.PI * 2 + (t * ring.speed);
+        const wave = sin(angle * (4 + idx) + t * ring.speed * 2) * (5 * (smoothSpeakVolume * 1.4 + smoothHoverBoost * 0.5 + 0.3));
         const r = ring.r + wave;
-        const px = cx + cos(a) * r;
-        const py = cy + sin(a) * r;
-        i === 0 ? coreCtx.moveTo(px, py) : coreCtx.lineTo(px, py);
+        const px = cx + cos(angle) * r;
+        const py = cy + sin(angle) * r;
+
+        coreCtx.beginPath();
+        const pSize = (i % 3 === 0 ? 2.4 : (i % 5 === 0 ? 3.0 : 1.5)) + (smoothSpeakVolume * 0.8);
+        coreCtx.arc(px, py, pSize, 0, PI * 2);
+        coreCtx.fillStyle = i % 2 === 0 ? ring.color : '#ffffff';
+        coreCtx.shadowColor = ring.color;
+        coreCtx.shadowBlur = ring.glow + (smoothSpeakVolume * 8);
+        coreCtx.globalAlpha = (i % 2 === 0 ? 0.75 : 0.95) * (0.6 + smoothSpeakVolume * 0.4);
+        coreCtx.fill();
       }
-      coreCtx.closePath();
-      coreCtx.strokeStyle = ring.color;
-      coreCtx.lineWidth = 1.4 + (smoothSpeakVolume * 0.6);
-      coreCtx.shadowColor = ring.color;
-      coreCtx.shadowBlur = ring.glow + (smoothSpeakVolume * 10);
-      coreCtx.globalAlpha = 0.55 + (smoothSpeakVolume * 0.35);
-      coreCtx.stroke();
-
-      // Nódulos / Sinapses Luminosas ao longo das argolas para dar vida de organismo
-      const nodeAngle = t * ring.speed * 2.5 + (idx * Math.PI / 3);
-      const nodeR = ring.r + sin(nodeAngle * (4 + idx) + t * ring.speed) * (ring.amp * 0.5);
-      const nx = cx + cos(nodeAngle) * nodeR;
-      const ny = cy + sin(nodeAngle) * nodeR;
-
-      coreCtx.beginPath();
-      coreCtx.arc(nx, ny, 3.2, 0, PI * 2);
-      coreCtx.fillStyle = '#ffffff';
-      coreCtx.shadowColor = ring.color;
-      coreCtx.shadowBlur = 15;
-      coreCtx.fill();
-
       coreCtx.restore();
     });
   }

@@ -495,7 +495,10 @@
                         <form onsubmit="submitAgendaForm(event)">
                             <div class="form-col">
                                 <input type="text" name="title" placeholder="Nome do compromisso..." required class="input">
-                                <input type="date" id="tab-agenda-input-date" name="due_date" required class="input">
+                                <div style="display:flex; gap:8px;">
+                                    <input type="date" id="tab-agenda-input-date" name="due_date" required class="input" style="flex:2;">
+                                    <input type="time" id="tab-agenda-input-time" name="due_time" value="09:00" required class="input" style="flex:1;">
+                                </div>
                                 <div class="relative-days-row mb-1">
                                     <span class="p-label">Notificar em:</span>
                                     <button type="button" class="btn btn-ghost btn-xs" onclick="setDaysAhead(1, 'tab-agenda-input-date')">+1 dia</button>
@@ -818,7 +821,7 @@
                         <section class="card">
                             <div class="card-hd"><h2 class="card-title">📎 Importar Extrato / Recibo / PDF / Excel</h2></div>
                             <p class="text-muted" style="margin:0 0 10px;">Envie uma foto de recibo, extrato bancário (PDF/CSV/Excel) ou nota fiscal. A BROW lê, separa cada transação por categoria e lança tudo automaticamente.</p>
-                            <input type="file" id="fin-upload-input" accept="image/*,.pdf,.csv,.xls,.xlsx,.doc,.docx" onchange="uploadFinanceReceipt(event)" class="input">
+                            <input type="file" id="fin-upload-input" accept="image/*,.pdf,.csv,.xls,.xlsx,.doc,.docx" multiple onchange="uploadFinanceReceipt(event)" class="input">
                             <div id="fin-upload-status" class="text-muted" style="margin-top:8px;"></div>
                         </section>
                     </div>
@@ -911,6 +914,15 @@
                     </section>
 
                     <section class="card">
+                        <div class="card-hd"><h2 class="card-title">Importar e extrair contatos</h2></div>
+                        <p class="text-muted">Envie CSV, vCard, TXT, PDF, planilha ou imagem. Revise os contatos encontrados antes de salvar.</p>
+                        <input type="file" id="contacts-extract-file" accept=".csv,.vcf,.txt,.pdf,.doc,.docx,.xls,.xlsx,image/*" class="input" onchange="extractContactsDesk(event)">
+                        <div id="contacts-extract-status" class="form-status"></div>
+                        <div id="contacts-extract-preview" class="data-list" style="margin:10px 0;"></div>
+                        <button id="contacts-save-extracted" type="button" class="btn btn-primary" style="display:none;" onclick="saveExtractedContactsDesk()">Salvar contatos selecionados</button>
+                    </section>
+
+                    <section class="card">
                         <div class="card-hd">
                             <h2 class="card-title">➕ Novo Contato</h2>
                         </div>
@@ -977,7 +989,7 @@
                         <div class="card-hd">
                             <h2 class="card-title">➕ Criar Nova Tarefa</h2>
                         </div>
-                        <form onsubmit="submitAgendaForm(event)">
+                        <form onsubmit="submitTaskFormDesk(event)">
                             <div class="form-col">
                                 <input type="text" name="title" placeholder="Título da tarefa..." required class="input">
                                 <select name="priority" class="input">
@@ -985,7 +997,10 @@
                                     <option value="alta">Prioridade Alta</option>
                                     <option value="baixa">Prioridade Baixa</option>
                                 </select>
-                                <input type="date" id="tab-task-input-date" name="due_date" class="input">
+                                <div style="display:flex; gap:8px;">
+                                    <input type="date" id="tab-task-input-date" name="due_date" class="input" style="flex:2;">
+                                    <input type="time" id="tab-task-input-time" name="due_time" value="09:00" class="input" style="flex:1;">
+                                </div>
                                 <div class="relative-days-row mb-1">
                                     <span class="p-label">Notificar em:</span>
                                     <button type="button" class="btn btn-ghost btn-xs" onclick="setDaysAhead(1, 'tab-task-input-date')">+1 dia</button>
@@ -1325,7 +1340,9 @@
                        cortar conteúdo. !important necessário pra vencer o
                        style="" inline dos mesmos elementos no desktop. */
                     @media (max-width: 900px) {
-                        #hermes-hud { height: calc(100vh - 65px) !important; max-height: 100vh !important; overflow: hidden !important; width: 100% !important; max-width: 100vw !important; box-sizing: border-box !important; }
+                        /* Em telas pequenas, a página rola. Fixar a altura do HUD fazia o
+                           grid competir por espaço e recortar o canvas/chat. */
+                        #hermes-hud { height: auto !important; max-height: none !important; min-height: 0 !important; overflow: visible !important; width: 100% !important; max-width: 100vw !important; box-sizing: border-box !important; }
                         #hermes-hud .card-hd { height: auto !important; min-height: 0 !important; max-height: none !important; flex-wrap: wrap !important; padding: 4px 6px !important; gap: 4px !important; justify-content: center !important; }
                         #hermes-hud .card-hd > div { flex-wrap: wrap !important; width: 100% !important; justify-content: center !important; align-items: center !important; text-align: center !important; gap: 4px !important; }
                         #hermes-hud .card-hd button { padding: 3px 8px !important; font-size: 9.5px !important; border-radius: 12px !important; height: 24px !important; }
@@ -1333,21 +1350,21 @@
                         #hermes-hud .card-eyebrow { display: none !important; }
                         #hermes-hud #hud-clock { font-size: 9.5px !important; min-width: 0 !important; }
                         
-                        #hud-grid { display: flex !important; flex-direction: column !important; overflow: hidden !important; flex: 1 !important; min-height: 0 !important; height: calc(100% - 45px) !important; width: 100% !important; max-width: 100vw !important; box-sizing: border-box !important; padding: 2px 6px !important; gap: 4px !important; }
+                        #hud-grid { display: flex !important; flex-direction: column !important; overflow: visible !important; flex: none !important; min-height: 0 !important; height: auto !important; width: 100% !important; max-width: 100vw !important; box-sizing: border-box !important; padding: 6px !important; gap: 8px !important; }
                         #hud-grid > * { width: 100% !important; max-width: 100vw !important; box-sizing: border-box !important; }
 
                         /* ORDER 1: Núcleo Neural Inteiro sem Cortes */
-                        #hud-col-core { order: 1; flex: 0 0 auto !important; height: 205px !important; min-height: 205px !important; padding: 4px 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; overflow: visible !important; }
-                        #hud-col-core canvas#hud-core-canvas { max-width: 195px !important; max-height: 195px !important; width: 195px !important; height: 195px !important; overflow: visible !important; }
-                        #hud-col-core #voice-transcript-title { font-size: 9.5px !important; top: -2px !important; }
+                        #hud-col-core { order: 1; flex: 0 0 auto !important; height: min(58vw, 230px) !important; min-height: min(58vw, 230px) !important; padding: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; overflow: hidden !important; position: relative !important; }
+                        #hud-col-core canvas#hud-core-canvas { display: block !important; max-width: min(58vw, 230px) !important; max-height: min(58vw, 230px) !important; width: min(58vw, 230px) !important; height: min(58vw, 230px) !important; overflow: hidden !important; }
+                        #hud-col-core #voice-transcript-title { font-size: 9.5px !important; top: 4px !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
                         #hud-col-core > div { display: none !important; }
 
                         /* ORDER 2: Telemetria viva e organizada abaixo do núcleo */
-                        #hud-col-telemetry { order: 2; flex: 0 0 auto !important; height: auto !important; max-height: 140px !important; overflow-y: auto !important; padding: 6px 10px !important; gap: 4px !important; font-size: 10px !important; background: rgba(10,14,24,0.6) !important; border: 1px solid var(--border) !important; border-radius: 10px !important; }
+                        #hud-col-telemetry { order: 3; flex: 0 0 auto !important; height: auto !important; max-height: 140px !important; overflow-y: auto !important; padding: 6px 10px !important; gap: 4px !important; font-size: 10px !important; background: rgba(10,14,24,0.6) !important; border: 1px solid var(--border) !important; border-radius: 10px !important; }
                         #hud-col-telemetry #telemetry-source-badge { display: none !important; }
 
                         /* ORDER 3: Chat no fim ocupando o restante da tela */
-                        #hud-col-chat { order: 3; flex: 1 !important; min-height: 0 !important; overflow: hidden !important; padding: 4px 6px !important; gap: 4px !important; display: flex !important; flex-direction: column !important; }
+                        #hud-col-chat { order: 2; flex: 0 0 auto !important; height: min(58vh, 430px) !important; min-height: 220px !important; overflow: hidden !important; padding: 6px !important; gap: 4px !important; display: flex !important; flex-direction: column !important; }
                         #hud-col-chat #voice-chat-messages { flex: 1 !important; min-height: 0 !important; overflow-y: auto !important; max-width: 100%; gap: 4px !important; padding: 2px !important; }
                         #hud-col-chat #voice-chat-messages > div { max-width: 90% !important; font-size: 11px !important; padding: 5px 8px !important; }
                         #hud-col-chat input#voice-chat-input { flex: 1 !important; min-width: 0 !important; font-size: 11px !important; padding: 0 8px !important; height: 32px !important; }
@@ -1429,6 +1446,11 @@
 
                         <!-- CENTRO: núcleo animado real (reage a fala/escuta reais) + onda -->
                         <main id="hud-col-core" style="display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; min-height:0;">
+                            <div style="position:absolute; top:6px; right:8px; z-index:10;">
+                                <button type="button" onclick="const p=document.getElementById('hud-theme-panel'); if(p) p.style.display=p.style.display==='none'?'grid':'none';" title="Escolher cor do núcleo (10 opções)" style="background:rgba(15,23,42,0.85); border:1px solid rgba(0,245,255,0.4); color:var(--cyan); border-radius:14px; padding:3px 10px; font-size:10.5px; cursor:pointer; display:flex; align-items:center; gap:4px; backdrop-filter:blur(8px);">
+                                    🎨 <span style="font-size:10px; font-weight:700;">Cor</span>
+                                </button>
+                            </div>
                             <div style="position:absolute; width:320px; height:320px; border:1px solid rgba(45,212,255,0.06); border-radius:50%; pointer-events:none; animation:hudRotate 50s linear infinite;"></div>
                             <div style="position:absolute; width:340px; height:340px; border:1px dashed rgba(45,212,255,0.08); border-radius:50%; pointer-events:none; animation:hudRotateCcw 65s linear infinite;"></div>
                             <div id="voice-transcript-title" style="position:absolute; top:6px; font-family:'Orbitron',sans-serif; font-size:11px; letter-spacing:0.12em; color:rgba(45,212,255,0.75); text-shadow:0 0 8px rgba(45,212,255,0.4); text-align:center; max-width:92%; z-index:3;">Converse com o BROW — digite ou fale</div>
@@ -1438,7 +1460,7 @@
                         <!-- DIREITA: chat real (mesmo pipeline do Telegram/PWA) -->
                         <aside id="hud-col-chat" style="display:flex; flex-direction:column; min-height:0; background:rgba(10,14,24,0.7); border:1px solid var(--border); border-radius:10px; padding:10px; gap:8px;">
                             <div id="voice-chat-messages" class="hud-scrollbar" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:12px; min-height:0;"></div>
-                            <audio id="edge-tts-player" style="display:none;"></audio>
+                            <audio id="edge-tts-player" style="display:none;" playsinline preload="auto"></audio>
                             <div style="flex-shrink:0; display:flex; gap:6px; align-items:center; border-top:1px solid var(--border); padding-top:6px; width:100%; box-sizing:border-box;">
                                 <button type="button" id="btn-mic-toggle" class="btn btn-ghost" onclick="toggleVoiceInput()" title="Falar por voz" style="padding:0; width:34px; height:34px; min-width:34px; font-size:16px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><span id="mic-icon">🎙️</span></button>
                                 <input type="text" id="voice-chat-input" placeholder="Mensagem para o BROW..." class="input f1" style="border-radius:18px; flex:1; min-width:0; height:34px; padding:0 10px; font-size:12px; box-sizing:border-box;" autocomplete="off">
@@ -1522,7 +1544,8 @@
     </div>
 </div>
 
-<script src="/app.js"></script>
-<script src="/voz-core.js" defer></script>
+<script src="/neural-core.js?v=4"></script>
+<script src="/app.js?v=mobile-core-3"></script>
+<script src="/voz-core.js?v=7.0.0" defer></script>
 </body>
 </html>

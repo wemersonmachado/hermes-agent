@@ -21,8 +21,8 @@
     <link rel="apple-touch-icon" sizes="512x512" href="/pwa/icons/icons/icon-512.png">
 
     <!-- CSS System -->
-    <link rel="stylesheet" href="/pwa/pwa.css?v=7.0.1">
-    <link rel="stylesheet" href="/pwa/pwa-mobile.css?v=7.0.1">
+    <link rel="stylesheet" href="/pwa/pwa.css?v=7.0.2">
+    <link rel="stylesheet" href="/pwa/pwa-mobile.css?v=7.0.2">
 </head>
 <body>
 
@@ -125,7 +125,11 @@
                 </div>
 
                 <!-- CANVAS DO NÚCLEO NEURAL DA BROW -->
-                <div id="neural-wave-wrapper">
+                <div id="neural-wave-wrapper" style="position:relative;">
+                    <button type="button" onclick="const m=document.getElementById('pwa-core-color-menu'); if(m) m.style.display=m.style.display==='none'?'grid':'none';" title="Escolher cor do núcleo (10 opções)" style="position:absolute; top:4px; right:8px; z-index:10; background:rgba(15,23,42,0.85); border:1px solid rgba(0,245,255,0.4); color:var(--cyan); border-radius:14px; padding:2px 8px; font-size:10px; cursor:pointer; display:flex; align-items:center; gap:3px; backdrop-filter:blur(8px);">
+                        🎨 <span style="font-size:9.5px; font-weight:700;">Cor</span>
+                    </button>
+                    <div id="pwa-core-color-menu" style="display:none; position:absolute; top:28px; right:8px; z-index:20; background:rgba(6,10,20,0.95); border:1px solid rgba(0,245,255,0.4); border-radius:12px; padding:6px; grid-template-columns:repeat(5,1fr); gap:6px; box-shadow:0 8px 24px rgba(0,0,0,0.85); backdrop-filter:blur(12px);"></div>
                     <canvas id="hud-core-canvas" width="360" height="360" style="max-width:145px; max-height:145px; width:145px; height:145px; cursor:pointer;" title="Clique pra falar com o BROW"></canvas>
                     <div class="wave-title" id="voice-transcript-title">Converse com o BROW — digite ou fale</div>
                 </div>
@@ -155,7 +159,7 @@
                 </div>
 
                 <!-- PLAYER OCULTO EDGE-TTS -->
-                <audio id="edge-tts-player" style="display:none;"></audio>
+                <audio id="edge-tts-player" style="display:none;" playsinline preload="auto"></audio>
             </section>
 
             <!-- 2. DASHBOARD OVERVIEW + PAINEL DE TELEMETRIA EXATAMENTE 1:1 AO DASHBOARD -->
@@ -713,6 +717,14 @@
             <section id="view-contatos" class="pwa-view">
                 <div class="pwa-section">
                     <div class="pwa-card">
+                        <div class="card-title">Importar contatos</div>
+                        <p style="font-size:12px;color:var(--text-muted);">Envie CSV, vCard, TXT, PDF, planilha ou imagem; revise antes de salvar.</p>
+                        <input type="file" id="pwa-contacts-extract-file" class="form-input" accept=".csv,.vcf,.txt,.pdf,.doc,.docx,.xls,.xlsx,image/*" onchange="extractContactsPwa(event)">
+                        <div id="pwa-contacts-extract-status" style="font-size:12px;color:var(--text-muted);margin-top:8px;"></div>
+                        <div id="pwa-contacts-extract-preview" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"></div>
+                        <button id="pwa-contacts-save-extracted" class="btn-action" style="display:none;margin-top:8px;" onclick="saveExtractedContactsPwa()">Salvar selecionados</button>
+                    </div>
+                    <div class="pwa-card">
                         <div class="card-title">👥 Adicionar Novo Contato</div>
                         <div class="form-row">
                             <input type="text" id="contact-name-input" class="form-input" placeholder="Nome do contato...">
@@ -1100,8 +1112,9 @@
 
     <!-- JS Core -->
     <!-- Build timestamp: 2026-08-13T18:02:00Z -->
-    <script src="/voz-core.js?v=6.7.0"></script>
-    <script src="/pwa/pwa.js?v=7.0.1"></script>
+    <script src="/neural-core.js?v=4"></script>
+    <script src="/voz-core.js?v=7.0.0"></script>
+    <script src="/pwa/pwa.js?v=7.0.2"></script>
     <script src="/pwa/pwa-sync.js?v=7.0.1"></script>
 </body>
 </html>
