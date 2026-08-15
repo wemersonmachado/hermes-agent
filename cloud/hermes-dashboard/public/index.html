@@ -1447,7 +1447,7 @@
                         <!-- CENTRO: núcleo animado real (reage a fala/escuta reais) + onda -->
                         <main id="hud-col-core" style="display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; min-height:0;">
                             <div style="position:absolute; top:6px; right:8px; z-index:10;">
-                                <button type="button" onclick="const p=document.getElementById('hud-theme-panel'); if(p) p.style.display=p.style.display==='none'?'grid':'none';" title="Escolher cor do núcleo (10 opções)" style="background:rgba(15,23,42,0.85); border:1px solid rgba(0,245,255,0.4); color:var(--cyan); border-radius:14px; padding:3px 10px; font-size:10.5px; cursor:pointer; display:flex; align-items:center; gap:4px; backdrop-filter:blur(8px);">
+                                <button type="button" class="btn-core-color-picker" onclick="window.toggleCoreColorMenu(event)" title="Escolher cor do núcleo (10 opções)" style="background:rgba(15,23,42,0.85); border:1px solid rgba(0,245,255,0.4); color:var(--cyan); border-radius:14px; padding:3px 10px; font-size:10.5px; cursor:pointer; display:flex; align-items:center; gap:4px; backdrop-filter:blur(8px);">
                                     🎨 <span style="font-size:10px; font-weight:700;">Cor</span>
                                 </button>
                             </div>
