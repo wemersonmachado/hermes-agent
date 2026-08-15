@@ -301,8 +301,8 @@
   const sin = Math.sin;
   const cos = Math.cos;
 
-  // ── OTIMIZADO PARA MÁXIMA LEVEZA (800 PARTICULAS - ALTA VELOCIDADE EM INTERAÇÃO & ULTRA LEVE) ──
-  const PARTICLE_COUNT = 800;
+  // ── COGNITIVE NEURAL CORE VIBRANTE (3.600 PARTICULAS - ORGANISMO VIVO CHEIO DE VIDA) ──
+  const PARTICLE_COUNT = 3600;
   const particles = [];
   let baseRadius = 90;
   let ringWidth = 40;
@@ -324,23 +324,21 @@
 
     reset() {
       this.theta = 0.0;
-      // Rotação em repouso serenamente lenta (~70% mais calma)
-      this.speed = rand(0.0003, 0.0008);
-      this.tFactor = Math.pow(Math.random(), 1.4);
+      this.speed = rand(0.0018, 0.0045);
+      this.tFactor = Math.pow(Math.random(), 1.6);
       this.radMultiplier = rand(0.8, 1.4);
-      this.waveFreq1 = rand(3, 7);
-      this.waveFreq2 = rand(8, 14);
-      this.waveAmp1 = rand(6, 16);
-      this.waveAmp2 = rand(3, 6);
+      this.waveFreq1 = rand(4, 8);
+      this.waveFreq2 = rand(10, 16);
+      this.waveAmp1 = rand(8, 18);
+      this.waveAmp2 = rand(3, 7);
       this.wavePhase = rand(0, PI * 2);
       this.type = Math.random() < 0.76 ? 'primary' : 'secondary';
-      this.size = rand(1.0, 2.8);
-      this.baseAlpha = rand(0.28, 0.95);
+      this.size = rand(0.6, 2.2);
+      this.baseAlpha = rand(0.18, 0.85);
     }
 
     update(t, smoothTyping, smoothSpeak, smoothHover) {
-      // Acelera fortemente APENAS quando há interação real (fala, digitação ou toque)
-      const activeSpeed = this.speed * (1.0 + smoothTyping * 2.2 + smoothSpeak * 3.8 + smoothHover * 1.8);
+      const activeSpeed = this.speed * (1.0 + smoothTyping * 1.8 + smoothSpeak * 0.8 + smoothHover * 0.6);
       this.theta += activeSpeed;
       if (this.theta > PI * 2) this.theta -= PI * 2;
     }
@@ -415,11 +413,11 @@
     isListening = listening;
     listenVolume = level;
 
-    smoothSpeakVolume = lerp(smoothSpeakVolume, isSpeaking ? speakVolume : 0.0, 0.16);
-    smoothListenVolume = lerp(smoothListenVolume, isListening ? listenVolume : 0.0, 0.16);
-    smoothTypingBoost = lerp(smoothTypingBoost, typingBoost, 0.14);
+    smoothSpeakVolume = lerp(smoothSpeakVolume, isSpeaking ? speakVolume : 0.0, 0.14);
+    smoothListenVolume = lerp(smoothListenVolume, isListening ? listenVolume : 0.0, 0.14);
+    smoothTypingBoost = lerp(smoothTypingBoost, typingBoost, 0.12);
     smoothHoverBoost = lerp(smoothHoverBoost, hoverBoost, 0.14);
-    typingBoost = Math.max(0, typingBoost - 0.025);
+    typingBoost = Math.max(0, typingBoost - 0.02);
 
     const minDim = Math.min(w, h);
     baseRadius = Math.max(minDim * 0.22, 50);
@@ -430,46 +428,44 @@
 
     const glowGrad = coreCtx.createRadialGradient(cx, cy, baseRadius * 0.5, cx, cy, baseRadius + ringWidth * 1.2);
     glowGrad.addColorStop(0, `rgba(${themeRGB.r}, ${themeRGB.g}, ${themeRGB.b}, 0.0)`);
-    glowGrad.addColorStop(0.5, `rgba(${themeRGB.r}, ${themeRGB.g}, ${themeRGB.b}, ${0.05 + smoothSpeakVolume * 0.18 + smoothHoverBoost * 0.08})`);
+    glowGrad.addColorStop(0.5, `rgba(${themeRGB.r}, ${themeRGB.g}, ${themeRGB.b}, ${0.08 + smoothSpeakVolume * 0.15 + smoothHoverBoost * 0.08})`);
     glowGrad.addColorStop(1, `rgba(${themeRGB.r}, ${themeRGB.g}, ${themeRGB.b}, 0.0)`);
     coreCtx.fillStyle = glowGrad;
     coreCtx.beginPath();
     coreCtx.arc(cx, cy, baseRadius + ringWidth * 1.3, 0, PI * 2);
     coreCtx.fill();
 
-    const opacityBuckets = [0.22, 0.48, 0.72, 0.95];
+    const opacityBuckets = [0.15, 0.35, 0.55, 0.75, 0.95];
     const buckets = {
       primary: opacityBuckets.map(() => []),
       secondary: opacityBuckets.map(() => [])
     };
-
-    // Amplitude de ondas suave em repouso (0.3), expandindo dinamicamente com interações
-    const waveScale = 0.30 + smoothSpeakVolume * 1.8 + smoothHoverBoost * 0.4 + smoothTypingBoost * 0.6;
 
     for (let i = 0; i < PARTICLE_COUNT; i++) {
       const p = particles[i];
       p.update(t, smoothTypingBoost, smoothSpeakVolume, smoothHoverBoost);
 
       const pBaseRad = baseRadius + (p.tFactor * ringWidth * p.radMultiplier) - (ringWidth * 0.25);
-      const wave1 = sin(p.theta * p.waveFreq1 - t * 0.0008 + p.wavePhase) * p.waveAmp1 * waveScale;
-      const wave2 = cos(p.theta * p.waveFreq2 + t * 0.0012) * p.waveAmp2 * waveScale;
+      const speakWaveScale = 1.0 + smoothSpeakVolume * 1.8 + smoothHoverBoost * 0.3;
+      const wave1 = sin(p.theta * p.waveFreq1 - t * 0.0014 + p.wavePhase) * p.waveAmp1 * speakWaveScale * 0.65;
+      const wave2 = cos(p.theta * p.waveFreq2 + t * 0.0022) * p.waveAmp2 * speakWaveScale * 0.65;
 
       let r = pBaseRad + wave1 + wave2;
 
       if (smoothListenVolume > 0.02) {
-        const listenWave = sin(p.theta * 24.0 - t * 0.015) * (smoothListenVolume * 28.0);
+        const listenWave = sin(p.theta * 22.0 - t * 0.01) * (smoothListenVolume * 24.0);
         r += listenWave;
       }
       if (smoothTypingBoost > 0.02) {
-        r += rand(-6, 6) * smoothTypingBoost;
+        r += rand(-4, 4) * smoothTypingBoost;
       }
 
       const x = cx + cos(p.theta) * r;
       const y = cy + sin(p.theta) * r;
 
-      const radialFade = clamp((baseRadius + ringWidth * 1.2 - r) / (ringWidth * 0.8), 0.18, 1.0);
+      const radialFade = clamp((baseRadius + ringWidth * 1.2 - r) / (ringWidth * 0.8), 0.1, 1.0);
       let alpha = p.baseAlpha * radialFade * (1.0 + smoothTypingBoost * 0.4 + smoothHoverBoost * 0.2);
-      alpha = clamp(alpha, 0.08, 0.98);
+      alpha = clamp(alpha, 0.05, 0.98);
 
       let bucketIdx = 0;
       let minDiff = 999;
@@ -506,31 +502,30 @@
       }
     });
 
-    // ── LEVE POEIRA DE PARTÍCULAS EM ÓRBITA (36 PARTICULAS TOTAL - ULTRA LEVE) ──
+    // ── LEVE POEIRA DE PARTÍCULAS EM ÓRBITA (240 PARTICULAS VIBRANTES TOTAL) ──
     const outerHaloRings = [
-      { r: baseRadius - 10, count: 10, speed: 0.0004, color: activeTheme.primary, glow: 10 },
-      { r: baseRadius + ringWidth + 6, count: 12, speed: -0.0003, color: activeTheme.secondary, glow: 14 },
-      { r: baseRadius + ringWidth + 20, count: 14, speed: 0.0002, color: activeTheme.primary, glow: 18 }
+      { r: baseRadius - 10, count: 60, speed: 0.0018, color: activeTheme.primary, glow: 12 },
+      { r: baseRadius + ringWidth + 6, count: 80, speed: -0.0014, color: activeTheme.secondary, glow: 16 },
+      { r: baseRadius + ringWidth + 20, count: 100, speed: 0.001, color: activeTheme.primary, glow: 20 }
     ];
 
     outerHaloRings.forEach((ring, idx) => {
       coreCtx.save();
       const count = ring.count;
       for (let i = 0; i < count; i++) {
-        const activeHaloSpeed = ring.speed * (1.0 + smoothSpeakVolume * 3.0 + smoothHoverBoost * 1.5);
-        const angle = (i / count) * Math.PI * 2 + (t * activeHaloSpeed);
-        const wave = sin(angle * (4 + idx) + t * activeHaloSpeed * 2) * (4 * (smoothSpeakVolume * 1.4 + smoothHoverBoost * 0.5 + 0.25));
+        const angle = (i / count) * Math.PI * 2 + (t * ring.speed);
+        const wave = sin(angle * (4 + idx) + t * ring.speed * 2) * (5 * (smoothSpeakVolume * 1.4 + smoothHoverBoost * 0.5 + 0.3));
         const r = ring.r + wave;
         const px = cx + cos(angle) * r;
         const py = cy + sin(angle) * r;
 
         coreCtx.beginPath();
-        const pSize = (i % 3 === 0 ? 2.6 : 1.6) + (smoothSpeakVolume * 0.8);
+        const pSize = (i % 3 === 0 ? 2.4 : (i % 5 === 0 ? 3.0 : 1.5)) + (smoothSpeakVolume * 0.8);
         coreCtx.arc(px, py, pSize, 0, PI * 2);
         coreCtx.fillStyle = i % 2 === 0 ? ring.color : '#ffffff';
         coreCtx.shadowColor = ring.color;
         coreCtx.shadowBlur = ring.glow + (smoothSpeakVolume * 8);
-        coreCtx.globalAlpha = (i % 2 === 0 ? 0.75 : 0.95) * (0.55 + smoothSpeakVolume * 0.45);
+        coreCtx.globalAlpha = (i % 2 === 0 ? 0.75 : 0.95) * (0.6 + smoothSpeakVolume * 0.4);
         coreCtx.fill();
       }
       coreCtx.restore();
