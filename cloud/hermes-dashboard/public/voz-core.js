@@ -575,7 +575,8 @@
     resizeBg();
     resizeCore();
     renderHudTelemetry();
-    applyTheme("cyan");
+    const savedTheme = localStorage.getItem("browCoreTheme");
+    applyTheme(savedTheme && THEMES[savedTheme] ? savedTheme : "cyan");
     requestAnimationFrame(loop);
   }
 
