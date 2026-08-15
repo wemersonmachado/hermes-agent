@@ -75,7 +75,7 @@
       applyTheme(savedTheme);
     }
 
-    const panels = document.querySelectorAll("#hud-theme-panel, #pwa-core-color-menu, .core-color-menu-container");
+    const panels = document.querySelectorAll("#core-color-popover, #hud-theme-panel, #pwa-core-color-menu, .core-color-popover");
     panels.forEach(panel => {
       if (!panel) return;
       if (panel.dataset.colorBound && !forceRebuild) return;
@@ -92,6 +92,8 @@
           e.preventDefault();
           applyTheme(key);
           setupColorPickers(true);
+          const p = e.target.closest("#core-color-popover, #hud-theme-panel, #pwa-core-color-menu, .core-color-popover");
+          if (p) p.style.display = "none";
         });
         panel.appendChild(btn);
       });
@@ -103,7 +105,7 @@
       if (e.stopPropagation) e.stopPropagation();
       if (e.preventDefault) e.preventDefault();
     }
-    const panels = document.querySelectorAll("#hud-theme-panel, #pwa-core-color-menu, .core-color-menu-container");
+    const panels = document.querySelectorAll("#core-color-popover, #hud-theme-panel, #pwa-core-color-menu, .core-color-popover");
     panels.forEach(p => {
       if (!p) return;
       const isHidden = p.style.display === "none" || !p.style.display;
@@ -111,17 +113,17 @@
       if (isHidden) {
         p.style.gridTemplateColumns = "repeat(5, 1fr)";
         p.style.gap = "6px";
-        p.style.zIndex = "999";
+        p.style.zIndex = "9999";
       }
     });
     setupColorPickers(true);
   };
 
   document.addEventListener("click", (e) => {
-    if (e && e.target && e.target.closest && e.target.closest("#hud-theme-panel, #pwa-core-color-menu, button")) {
+    if (e && e.target && e.target.closest && e.target.closest("#core-color-popover, #hud-theme-panel, #pwa-core-color-menu, .btn-core-color-picker, .core-color-popover")) {
       return;
     }
-    const panels = document.querySelectorAll("#hud-theme-panel, #pwa-core-color-menu");
+    const panels = document.querySelectorAll("#core-color-popover, #hud-theme-panel, #pwa-core-color-menu, .core-color-popover");
     panels.forEach(p => {
       if (p) p.style.display = "none";
     });
@@ -269,11 +271,11 @@
     document.querySelectorAll(selector).forEach(el => {
       if (el && !el.dataset.hudBound) {
         el.dataset.hudBound = "true";
-        el.addEventListener("input", () => {
-          typingBoost = 1.0;
+        el.addEventListener("input", (e) => {
+          if (e && e.isTrusted) typingBoost = 0.5;
         });
-        el.addEventListener("keydown", () => {
-          typingBoost = 1.0;
+        el.addEventListener("keydown", (e) => {
+          if (e && e.isTrusted) typingBoost = 0.5;
         });
       }
     });
@@ -362,23 +364,38 @@
     const isPlayerActive = player && !player.paused && player.currentTime > 0;
     const trulySpeaking = speaking || isPlayerActive;
 
-    if (listening && micAnalyser) {
-      micAnalyser.getByteFrequencyData(micDataArray);
-      let sum = 0;
-      for (let i = 0; i < 12; i++) sum += micDataArray[i] || 0;
-      const avg = sum / 12 / 255;
-      return { level: Math.max(0.5, avg * 2.8), listening: true, speaking: false };
+    // ESCUTA REAL (Microfone do usuário): responde ESTRITAMENTE quando houver som da voz saindo da boca do usuário!
+    if (listening) {
+      if (micAnalyser && micDataArray) {
+        micAnalyser.getByteFrequencyData(micDataArray);
+        let sum = 0;
+        for (let i = 0; i < 16; i++) sum += micDataArray[i] || 0;
+        const avg = sum / 16 / 255;
+        // Limiar de ruído ambiente (0.05). Se o usuário falar, reage proporcionalmente à intensidade!
+        if (avg > 0.05) {
+          return { level: Math.min(1.0, (avg - 0.04) * 3.2), listening: true, speaking: false };
+        }
+      }
+      // Se estiver ouvindo em silêncio absoluto, mantém em repouso
+      return { level: 0.0, listening: true, speaking: false };
     }
-    if (trulySpeaking && ttsAnalyser) {
+
+    // FALA REAL (BROW respondendo por voz / TTS): reage em tempo real com o som audível!
+    if (trulySpeaking && ttsAnalyser && ttsDataArray) {
       ttsAnalyser.getByteFrequencyData(ttsDataArray);
       let sum = 0;
-      for (let i = 0; i < 12; i++) sum += ttsDataArray[i] || 0;
-      const avg = sum / 12 / 255;
-      return { level: Math.max(0.5, avg * 2.8), listening: false, speaking: true };
+      for (let i = 0; i < 16; i++) sum += ttsDataArray[i] || 0;
+      const avg = sum / 16 / 255;
+      if (avg > 0.02) {
+        return { level: Math.min(1.0, avg * 3.0), listening: false, speaking: true };
+      }
     }
-    if (listening) return { level: 0.5 + Math.abs(Math.sin(Date.now() * 0.01)) * 0.45, listening: true, speaking: false };
-    if (trulySpeaking) return { level: 0.45 + Math.abs(Math.sin(Date.now() * 0.014)) * 0.5, listening: false, speaking: true };
-    return { level: 0.05, listening: false, speaking: false };
+    if (trulySpeaking) {
+      return { level: 0.35 + Math.abs(Math.sin(Date.now() * 0.01)) * 0.3, listening: false, speaking: true };
+    }
+
+    // Repouso calmo por padrão (geração de texto não sacode o núcleo)
+    return { level: 0.0, listening: false, speaking: false };
   }
 
   function drawCore(t) {
