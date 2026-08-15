@@ -6,7 +6,9 @@
 let deferredInstallPrompt = null;
 let currentTabId = 'voz';
 let isVoiceRecording = false;
-let speechRecognition = null;
+let pwaMediaRecorder = null;
+let pwaRecordedChunks = [];
+let pwaAudioContext = null;
 
 const TELEGRAM_CHAT_STORAGE_KEY = 'hermes_telegram_chat_history';
 let chatHistory = JSON.parse(localStorage.getItem(TELEGRAM_CHAT_STORAGE_KEY) || '[]');
@@ -37,20 +39,20 @@ const REAL_TELEMETRY_FRESH_MS = 15000;
 let lastRealTelemetryAt = 0;
 
 let pcTelemetry = {
-  cpuLoadEst: 12,
-  ramUsedMB: 6290,
-  ramTotalMB: 8090,
-  ramPercent: 78,
-  gpuLoadEst: 10,
-  gpuName: 'NVIDIA GeForce 940MX',
-  diskPercent: 90,
-  diskFreeGB: 10.9,
-  diskTotalGB: 111.1,
-  cores: 4,
+  cpuLoadEst: null,
+  ramUsedMB: null,
+  ramTotalMB: null,
+  ramPercent: null,
+  gpuLoadEst: null,
+  gpuName: null,
+  diskPercent: null,
+  diskFreeGB: null,
+  diskTotalGB: null,
+  cores: null,
   fps: 60,
   topProcesses: [],
   bluetoothDevices: [],
-  telemetrySource: 'estimado'
+  telemetrySource: 'offline'
 };
 
 // 1. INICIALIZAÇÃO AO CARREGAR O APLICATIVO
@@ -59,6 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initInstallPrompt();
   initPcTelemetryPwa();
   initSpeechRecognition();
+  initNeuralCoreCanvasPwa();
   initNeuralWaveCanvasPwa();
   setChatModePwa(chatResponseMode);
   
@@ -77,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Polling de Telemetria Real do PC via HTTPS (/api/hermes/telemetry) 1:1 com o Dashboard
   pollRealTelemetryAgentPwa();
-  setInterval(() => { if (!document.hidden) pollRealTelemetryAgentPwa(); }, 60000);
+  setInterval(() => { if (!document.hidden) pollRealTelemetryAgentPwa(); }, 10000);
 
   initFinanceSyncPwa();
   initHermesAlivenessPwa();
@@ -138,13 +141,13 @@ async function pollRealTelemetryAgentPwa() {
     }
 
     const t = data.telemetry;
-    pcTelemetry.cpuLoadEst = Math.round(t.cpuPercent || 12);
-    pcTelemetry.ramPercent = Math.round(t.ramPercent || 78);
-    pcTelemetry.ramUsedMB = Math.round(t.ramUsedMB || 6290);
-    pcTelemetry.ramTotalMB = Math.round(t.ramTotalMB || 8090);
-    pcTelemetry.gpuName = t.gpuName || 'NVIDIA GeForce 940MX';
-    pcTelemetry.gpuLoadEst = Math.round(t.gpuPercent || (pcTelemetry.cpuLoadEst * 0.45));
-    pcTelemetry.cores = t.cores || 4;
+    pcTelemetry.cpuLoadEst = Number.isFinite(t.cpuPercent) ? Math.round(t.cpuPercent) : null;
+    pcTelemetry.ramPercent = Number.isFinite(t.ramPercent) ? Math.round(t.ramPercent) : null;
+    pcTelemetry.ramUsedMB = Number.isFinite(t.ramUsedMB) ? Math.round(t.ramUsedMB) : null;
+    pcTelemetry.ramTotalMB = Number.isFinite(t.ramTotalMB) ? Math.round(t.ramTotalMB) : null;
+    pcTelemetry.gpuName = t.gpuName || null;
+    pcTelemetry.gpuLoadEst = Number.isFinite(t.gpuPercent) ? Math.round(t.gpuPercent) : null;
+    pcTelemetry.cores = Number.isFinite(t.cores) ? t.cores : null;
 
     if (typeof t.diskFreeGB === 'number') pcTelemetry.diskFreeGB = t.diskFreeGB;
     if (typeof t.diskTotalGB === 'number') pcTelemetry.diskTotalGB = t.diskTotalGB;
@@ -237,8 +240,8 @@ function renderPwaTelemetryGauges() {
       sourceBadgeEl.textContent = '🟢 CPU/RAM reais (agente local ativo)';
       sourceBadgeEl.style.color = 'var(--emerald)';
     } else {
-      sourceBadgeEl.textContent = '🟡 CPU/RAM estimados (agente local offline)';
-      sourceBadgeEl.style.color = 'var(--amber)';
+      sourceBadgeEl.textContent = '⚪ aguardando telemetria real do PC';
+      sourceBadgeEl.style.color = 'var(--text-muted)';
     }
   }
 
@@ -386,6 +389,27 @@ function formatTimeNow() {
 }
 
 // 5. ONDAS NEURAIS DA BROW
+function initNeuralCoreCanvasPwa() {
+    const canvas = document.getElementById('hud-core-canvas');
+    if (canvas && (window.BrowCore || canvas.dataset.browSharedCore === "true")) {
+      return;
+    }
+    if (!canvas || canvas.dataset.neuralReady) return;
+  canvas.dataset.neuralReady = 'true';
+  const ctx = canvas.getContext('2d');
+  const points = Array.from({ length: 300 }, () => ({ a: Math.random() * Math.PI * 2, r: .3 + Math.random() * .62, h: Math.random() > .5 ? 190 : 275 }));
+  let phase = 0;
+  const draw = () => {
+    const side = Math.max(1, Math.round((canvas.clientWidth || 145) * (devicePixelRatio || 1)));
+    if (canvas.width !== side) canvas.width = canvas.height = side;
+    const dpr = devicePixelRatio || 1, w = side / dpr, c = w / 2;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, w);
+    points.forEach((p, i) => { const r = p.r * w * .43, a = p.a + phase * (.25 + (i % 7) * .04), x = c + Math.cos(a) * r, y = c + Math.sin(a) * r; ctx.fillStyle = `hsla(${p.h},90%,66%,${.2 + (1-p.r)*.7})`; ctx.fillRect(x, y, 1.5, 1.5); });
+    [ .25, .36 ].forEach((r, i) => { ctx.beginPath(); ctx.arc(c,c,w*r,0,Math.PI*2); ctx.strokeStyle = i ? 'rgba(6,182,212,.35)' : 'rgba(168,85,247,.5)'; ctx.stroke(); });
+    ctx.beginPath(); ctx.arc(c,c,w*.18,0,Math.PI*2); ctx.strokeStyle='#dbeafe'; ctx.lineWidth=1.5; ctx.stroke(); phase += .02; requestAnimationFrame(draw);
+  }; draw();
+}
+
 function initNeuralWaveCanvasPwa() {
   waveCanvas = document.getElementById('neural-wave-canvas');
   if (!waveCanvas) return;
@@ -443,6 +467,8 @@ function closeDrawer() {
 }
 
 function switchPwaTab(tabId) {
+  const requestedTab = tabId;
+  if (['agenda', 'metas', 'tarefas', 'planejamento'].includes(tabId)) tabId = 'agenda';
   currentTabId = tabId;
   closeDrawer();
 
@@ -451,7 +477,8 @@ function switchPwaTab(tabId) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
 
   const targetView = document.getElementById(`view-${tabId}`);
-  const targetDrawer = document.getElementById(`drawer-item-${tabId}`);
+  const drawerTab = ['metas', 'tarefas', 'planejamento'].includes(requestedTab) ? 'agenda' : requestedTab;
+  const targetDrawer = document.getElementById(`drawer-item-${drawerTab}`);
   const targetNav = document.getElementById(`nav-tab-${tabId}`);
 
   if (targetView) targetView.classList.add('active');
@@ -460,15 +487,35 @@ function switchPwaTab(tabId) {
 
   if (tabId === 'dashboard') { loadOverview(); loadDashboardNewsPwa(); }
   if (tabId === 'memoria') loadMemories();
-  if (tabId === 'agenda') loadAgenda();
+  if (tabId === 'agenda') { loadAgenda(); loadGoals(); loadTasks(); }
   if (tabId === 'financas') loadFinances();
   if (tabId === 'documentos') loadDocuments();
   if (tabId === 'contatos') loadContacts();
-  if (tabId === 'metas') loadGoals();
-  if (tabId === 'tarefas') loadTasks();
   if (tabId === 'automacao') { loadAutomations(); loadLocationSettingsPwa(); }
   if (tabId === 'skills') loadSkills();
 }
+
+function initPlanningHubPwa() {
+  const first = document.getElementById('view-agenda');
+  if (!first || document.getElementById('planning-hub-ready')) return;
+  const parent = first.parentElement;
+  const wasActive = first.classList.contains('active');
+  first.id = 'view-agenda-source';
+  const hub = document.createElement('section');
+  hub.id = 'view-agenda'; hub.className = `pwa-view${wasActive ? ' active' : ''}`;
+  hub.dataset.planningHubReady = 'true';
+  hub.innerHTML = '<div class="pwa-section"><div class="pwa-card"><div class="card-title">Planejamento unificado</div><p style="color:var(--text-muted);font-size:12px;">Compromissos, tarefas e metas em uma só página, sincronizados com o BROW.</p></div></div>';
+  const section = hub.querySelector('.pwa-section');
+  for (const [id, legacy] of [['agenda', first], ['tarefas', document.getElementById('view-tarefas')], ['metas', document.getElementById('view-metas')]]) {
+    const content = legacy?.querySelector('.pwa-section');
+    if (content) section.appendChild(content);
+    legacy?.remove();
+  }
+  document.querySelectorAll('#drawer-item-metas, #drawer-item-tarefas').forEach(item => item.remove());
+  parent?.appendChild(hub);
+}
+
+document.addEventListener('DOMContentLoaded', initPlanningHubPwa);
 
 // 7. CONTROLES DA BARRA SUPERIOR DO CHAT
 function setChatModePwa(mode) {
@@ -525,6 +572,9 @@ function clearVoiceChatHistoryPwa() {
 
 // 8. MOTOR DE CHAT AI DE PRODUÇÃO (/api/chat) COM LEITURA STREAMING SEGURA
 async function sendChatMessage() {
+  // A ação de enviar é um gesto do usuário: aproveita-o para liberar áudio
+  // em Android/iOS antes de uma resposta assíncrona chegar.
+  void unlockPwaAudio();
   const input = document.getElementById('chat-input-field');
   if (!input) return;
   const text = input.value.trim();
@@ -733,6 +783,19 @@ function scrollToChatBottom() {
 }
 
 // 9. SÍNTESE DE VOZ REAL VIA /api/tts COM AUDIO PLAYER
+function unlockPwaAudio() {
+  const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextCtor) return;
+  try {
+    pwaAudioContext ||= new AudioContextCtor();
+    if (pwaAudioContext.state === 'suspended') void pwaAudioContext.resume();
+  } catch (error) {
+    // Alguns navegadores privados não permitem AudioContext; o player HTML
+    // e a voz nativa abaixo continuam sendo usados normalmente.
+    console.debug('[BROW] desbloqueio de áudio indisponível:', error);
+  }
+}
+
 async function speakWithEdgeTTS(textToSpeak) {
   if (!textToSpeak) return;
   const badge = document.getElementById('voice-state-badge');
@@ -748,91 +811,124 @@ async function speakWithEdgeTTS(textToSpeak) {
     if (title) title.textContent = 'Converse com o BROW — digite ou fale';
   };
 
+  const safeText = String(textToSpeak).slice(0, 1200);
+  let objectUrl = null;
   try {
-    const ttsUrl = `/api/tts?text=${encodeURIComponent(textToSpeak)}`;
-    if (player) {
-      player.pause();
-      player.src = ttsUrl;
-      await player.play().catch(() => fallbackNativeSpeech(textToSpeak));
-      await new Promise(resolve => { player.onended = resolve; player.onerror = resolve; player.onpause = resolve; });
-    }
-  } catch (err) {
-    fallbackNativeSpeech(textToSpeak);
+    // Baixar o MP3 e tocar um Blob evita problemas de URL longa, cache antigo
+    // e redirecionamento que são comuns no Chrome Android/PWA instalado.
+    const response = await fetch(`/api/tts?text=${encodeURIComponent(safeText)}`, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`tts_http_${response.status}`);
+    const blob = await response.blob();
+    if (!blob.size) throw new Error('tts_empty_audio');
+    if (!player) throw new Error('tts_player_missing');
+    objectUrl = URL.createObjectURL(blob);
+    player.pause();
+    player.currentTime = 0;
+    player.src = objectUrl;
+    player.load();
+    await player.play();
+    await new Promise((resolve, reject) => {
+      player.onended = resolve;
+      player.onerror = () => reject(new Error('tts_playback_error'));
+    });
+  } catch (error) {
+    console.warn('[BROW] Edge TTS indisponível, usando voz do aparelho:', error);
+    await fallbackNativeSpeech(safeText);
+  } finally {
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+    finish();
   }
-
-  finish();
 }
 
 function fallbackNativeSpeech(text) {
-  if ('speechSynthesis' in window) {
+  if (!('speechSynthesis' in window)) return Promise.resolve();
+  return new Promise(resolve => {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'pt-BR';
     utterance.rate = 1.05;
+    utterance.onend = resolve;
+    utterance.onerror = resolve;
     window.speechSynthesis.speak(utterance);
-  }
+  });
 }
 
-// 10. MICROFONE POR VOZ
+// 10. MICROFONE REAL: grava no navegador e usa o mesmo Whisper do
+// Dashboard e Telegram. SpeechRecognition do navegador tinha qualidade e
+// suporte inconsistentes, então cada canal acabava entendendo algo diferente.
 function initSpeechRecognition() {
-  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRec) return;
-
-  speechRecognition = new SpeechRec();
-  speechRecognition.continuous = false;
-  speechRecognition.interimResults = true;
-  speechRecognition.lang = 'pt-BR';
-
-  speechRecognition.onresult = (e) => {
-    let transcript = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      transcript += e.results[i][0].transcript;
-    }
-    const input = document.getElementById('chat-input-field');
-    if (input) input.value = transcript;
-
-    const title = document.getElementById('voice-transcript-title');
-    if (title) title.textContent = `"${transcript}"`;
-  };
-
-  speechRecognition.onend = () => {
-    isVoiceRecording = false;
-    isSpeakingOrListening = false;
-    const btn = document.getElementById('mic-btn-toggle');
-    const badge = document.getElementById('voice-state-badge');
-    const title = document.getElementById('voice-transcript-title');
-    if (btn) btn.classList.remove('recording');
-    if (badge) badge.textContent = '🟢 Pronta';
-    if (title) title.textContent = 'Converse com o BROW — digite ou fale';
-  };
+  // A captura é inicializada apenas a partir do clique do usuário, para que
+  // o navegador possa exibir e respeitar a permissão de microfone.
 }
 
 function toggleMicInput() {
-  if (!speechRecognition) {
-    alert('Navegador sem suporte a microfone.');
+  void unlockPwaAudio();
+  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+    alert('Este navegador não oferece gravação de áudio. Use a mensagem de texto.');
     return;
   }
+  if (isVoiceRecording) {
+    if (pwaMediaRecorder && pwaMediaRecorder.state !== 'inactive') pwaMediaRecorder.stop();
+    return;
+  }
+  void startRealVoiceRecordingPwa();
+}
+
+async function startRealVoiceRecordingPwa() {
   const btn = document.getElementById('mic-btn-toggle');
   const badge = document.getElementById('voice-state-badge');
   const title = document.getElementById('voice-transcript-title');
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (error) {
+    if (badge) badge.textContent = '❌ Sem microfone';
+    alert('Permita o uso do microfone para enviar áudio ao BROW.');
+    return;
+  }
 
-  if (isVoiceRecording) {
-    speechRecognition.stop();
+  pwaRecordedChunks = [];
+  const mimeType = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'].find(type => MediaRecorder.isTypeSupported(type)) || '';
+  pwaMediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+  pwaMediaRecorder.ondataavailable = event => { if (event.data.size) pwaRecordedChunks.push(event.data); };
+  pwaMediaRecorder.onstart = () => {
+    isVoiceRecording = true;
+    isSpeakingOrListening = true;
+    if (btn) btn.classList.add('recording');
+    if (badge) badge.textContent = '🎙️ Ouvindo...';
+    if (title) title.textContent = 'Fale agora...';
+  };
+  pwaMediaRecorder.onstop = async () => {
     isVoiceRecording = false;
     isSpeakingOrListening = false;
+    stream.getTracks().forEach(track => track.stop());
     if (btn) btn.classList.remove('recording');
-    if (badge) badge.textContent = '🟢 Pronta';
-    if (title) title.textContent = 'Converse com o BROW — digite ou fale';
-  } else {
+    const audio = new Blob(pwaRecordedChunks, { type: pwaMediaRecorder.mimeType || 'audio/webm' });
+    if (!audio.size) { if (badge) badge.textContent = '🟢 Pronta'; return; }
+    if (badge) badge.textContent = '🧠 Transcrevendo...';
+    if (title) title.textContent = 'Transcrevendo áudio...';
     try {
-      speechRecognition.start();
-      isVoiceRecording = true;
-      isSpeakingOrListening = true;
-      if (btn) btn.classList.add('recording');
-      if (badge) badge.textContent = '🎙️ Ouvindo...';
-      if (title) title.textContent = 'Fale agora...';
-    } catch (e) {}
-  }
+      const form = new FormData();
+      const extension = audio.type.includes('mp4') ? 'm4a' : 'webm';
+      form.append('audio', audio, `brow-voice.${extension}`);
+      const response = await fetch('/api/hermes/stt', { method: 'POST', body: form });
+      const data = await response.json();
+      const transcript = String(data?.text || '').trim();
+      if (!response.ok || !transcript) throw new Error('empty_transcript');
+      const input = document.getElementById('chat-input-field');
+      if (input) input.value = transcript;
+      await sendChatMessage();
+    } catch (error) {
+      console.error('[BROW] Falha STT PWA:', error);
+      if (badge) badge.textContent = '❌ Erro ao ouvir';
+      if (title) title.textContent = 'Não consegui entender o áudio. Tente novamente.';
+      setTimeout(() => {
+        if (badge) badge.textContent = '🟢 Pronta';
+        if (title) title.textContent = 'Converse com o BROW — digite ou fale';
+      }, 2500);
+    }
+  };
+  pwaMediaRecorder.start();
 }
 
 // 11. ABA DOCUMENTOS
