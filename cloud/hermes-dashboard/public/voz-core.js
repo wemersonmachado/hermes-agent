@@ -157,6 +157,7 @@
   // análise do próprio <audio id="edge-tts-player"> durante fala. ──
   const coreCanvas = document.getElementById("hud-core-canvas");
   const coreCtx = coreCanvas ? coreCanvas.getContext("2d") : null;
+  if (coreCanvas) coreCanvas.dataset.browSharedCore = "true";
 
   let micAnalyser = null;
   let micDataArray = null;
@@ -201,9 +202,6 @@
       src.connect(micAnalyser);
       micDataArray = new Uint8Array(micAnalyser.frequencyBinCount);
     } catch (e) {
-      // Sem microfone acessível — núcleo usa nível estimado em vez de real
-      // quando estiver "ouvindo" (raro: só acontece se o usuário negar
-      // permissão depois de já ter clicado no mic real do app.js).
     }
   }
 
@@ -221,18 +219,21 @@
   let smoothHoverBoost = 0.0;
 
   const bindInputEvents = () => {
-    ['voice-chat-input', 'chat-input-field'].forEach(id => {
-      const el = document.getElementById(id);
+    const selector = '#voice-chat-input, #chat-input-field, .input, input[type="text"], textarea';
+    document.querySelectorAll(selector).forEach(el => {
       if (el && !el.dataset.hudBound) {
         el.dataset.hudBound = "true";
         el.addEventListener("input", () => {
+          typingBoost = 1.0;
+        });
+        el.addEventListener("keydown", () => {
           typingBoost = 1.0;
         });
       }
     });
   };
   bindInputEvents();
-  setInterval(bindInputEvents, 2000);
+  setInterval(bindInputEvents, 1500);
 
   if (coreCanvas) {
     coreCanvas.addEventListener("mouseenter", () => { hoverBoost = 1.0; });
@@ -308,25 +309,28 @@
   let smoothTypingBoost = 0.0;
 
   function currentAudioLevel() {
-    const speaking = typeof isSpeakingOrListening !== "undefined" && isSpeakingOrListening;
-    const listening = typeof isRecording !== "undefined" && isRecording;
+    const speaking = (typeof isSpeakingOrListening !== "undefined" && isSpeakingOrListening) || (typeof isSpeaking !== "undefined" && isSpeaking);
+    const listening = (typeof isRecording !== "undefined" && isRecording) || (typeof isListening !== "undefined" && isListening);
     const player = document.getElementById("edge-tts-player");
-    const trulySpeaking = speaking && player && !player.paused;
+    const isPlayerActive = player && !player.paused && player.currentTime > 0;
+    const trulySpeaking = speaking || isPlayerActive;
 
     if (listening && micAnalyser) {
       micAnalyser.getByteFrequencyData(micDataArray);
       let sum = 0;
       for (let i = 0; i < 12; i++) sum += micDataArray[i] || 0;
-      return { level: (sum / 12 / 255) * 2.4, listening: true, speaking: false };
+      const avg = sum / 12 / 255;
+      return { level: Math.max(0.45, avg * 2.5), listening: true, speaking: false };
     }
     if (trulySpeaking && ttsAnalyser) {
       ttsAnalyser.getByteFrequencyData(ttsDataArray);
       let sum = 0;
       for (let i = 0; i < 12; i++) sum += ttsDataArray[i] || 0;
-      return { level: (sum / 12 / 255) * 2.4, listening: false, speaking: true };
+      const avg = sum / 12 / 255;
+      return { level: Math.max(0.45, avg * 2.5), listening: false, speaking: true };
     }
-    if (listening) return { level: 0.35 + Math.abs(Math.sin(Date.now() * 0.006)) * 0.4, listening: true, speaking: false };
-    if (trulySpeaking) return { level: 0.25 + Math.abs(Math.sin(Date.now() * 0.01)) * 0.35, listening: false, speaking: true };
+    if (listening) return { level: 0.45 + Math.abs(Math.sin(Date.now() * 0.008)) * 0.4, listening: true, speaking: false };
+    if (trulySpeaking) return { level: 0.4 + Math.abs(Math.sin(Date.now() * 0.012)) * 0.45, listening: false, speaking: true };
     return { level: 0.05, listening: false, speaking: false };
   }
 
@@ -497,12 +501,15 @@
       applyTheme(themeNameOrHex);
     }
   };
+  window.BrowNeuralCore = window.BrowCore;
 
   function resizeCore() {
-    if (!coreCanvas) return;
-    const size = Math.min(coreCanvas.parentElement.clientWidth, coreCanvas.parentElement.clientHeight, 360);
-    coreCanvas.width = size;
-    coreCanvas.height = size;
+    if (!coreCanvas || !coreCanvas.parentElement) return;
+    const size = Math.min(coreCanvas.parentElement.clientWidth || 360, coreCanvas.parentElement.clientHeight || 360, 360);
+    if (size > 0 && (coreCanvas.width !== size || coreCanvas.height !== size)) {
+      coreCanvas.width = size;
+      coreCanvas.height = size;
+    }
   }
   window.addEventListener("resize", resizeCore);
 

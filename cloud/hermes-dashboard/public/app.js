@@ -7,15 +7,16 @@ document.addEventListener("DOMContentLoaded", () => {
     initCustomNewsTopics();
     loadDashboardOverview();
     renderScheduledSearches();
-    renderScheduledBriefings();
+    loadScheduledBriefings();
     loadChatMessagesFromStorage();
     initPcTelemetry();
-    setTimeout(initNeuralWaveCanvas, 300);
+    setTimeout(() => { initNeuralCoreCanvas(); initNeuralWaveCanvas(); }, 300);
     // Sempre direcionar para Cérebro Central ("voz") como a PRIMEIRA página do dashboard!
     switchMainTab('voz');
     initChatHistorySync();
     initFinanceSync();
     initHermesAliveness();
+    initPlanningHubDesk();
 });
 
 /* ── SYNC DE CHAT ENTRE DASHBOARD / PWA / TELEGRAM (07/08/2026) ──
@@ -136,10 +137,12 @@ function closeMobileSidebar() {
 
 /* ── Main Tab Switching — loads real data for the tab being opened ── */
 function switchMainTab(tabId, el) {
+    const requestedTab = tabId;
+    if (['agenda', 'metas', 'tarefas', 'planejamento'].includes(tabId)) tabId = 'agenda';
     closeMobileSidebar();
     document.querySelectorAll('.sidebar .nav-item').forEach(item => item.classList.remove('active'));
     if (el) el.classList.add('active');
-    else { const nav = document.querySelector(`.sidebar .nav-item[data-tab="${tabId}"]`); if (nav) nav.classList.add('active'); }
+    else { const nav = document.querySelector(`.sidebar .nav-item[data-tab="${requestedTab}"]`); if (nav) nav.classList.add('active'); }
 
     document.querySelectorAll('.main-tab-view').forEach(view => view.classList.remove('active'));
     const targetView = document.getElementById(`view-${tabId}`);
@@ -148,16 +151,41 @@ function switchMainTab(tabId, el) {
     const loaders = {
         dashboard: () => { loadDashboardOverview(); loadDashboardNews(); },
         memoria: loadMemories,
-        agenda: loadAgenda,
+        agenda: () => Promise.all([loadAgenda(), loadMetas(), loadTarefas()]),
         financas: loadFinances,
         documentos: loadDocumentsDesk,
-        contatos: () => loadMemories('contato'),
-        metas: loadMetas,
-        tarefas: loadTarefas,
+        contatos: loadContactsDesk,
         automacao: () => { loadCloudStatusView(); loadLocationSettings(); },
         skills: loadSkills,
     };
     if (loaders[tabId]) loaders[tabId]();
+}
+
+function initPlanningHubDesk() {
+    const first = document.getElementById('view-agenda');
+    if (!first || document.getElementById('planning-hub-ready')) return;
+    const parent = first.parentElement;
+    const wasActive = first.classList.contains('active');
+    first.id = 'view-agenda-source';
+    const hub = document.createElement('div');
+    hub.id = 'view-agenda';
+    hub.className = `main-tab-view${wasActive ? ' active' : ''}`;
+    hub.dataset.planningHubReady = 'true';
+    hub.innerHTML = '<section class="card"><div class="card-hd"><h2 class="card-title">Planejamento: agenda, tarefas e metas</h2><span class="badge badge-info">Tudo em um só lugar</span></div><p class="text-muted">Compromissos, execução diária e objetivos usam os mesmos dados do BROW e do Telegram.</p></section>';
+    for (const [id, legacy] of [['agenda', first], ['tarefas', document.getElementById('view-tarefas')], ['metas', document.getElementById('view-metas')]]) {
+        const content = legacy?.querySelector('.tab-grid-2col');
+        if (content) {
+            const heading = document.createElement('h3');
+            heading.className = 'card-title';
+            heading.style.margin = '16px 0 10px';
+            heading.textContent = id === 'agenda' ? 'Compromissos' : id === 'tarefas' ? 'Tarefas' : 'Metas';
+            hub.appendChild(heading);
+            hub.appendChild(content);
+        }
+        legacy?.remove();
+    }
+    document.querySelectorAll('.nav-item[data-tab="metas"], .nav-item[data-tab="tarefas"]').forEach(item => item.remove());
+    parent?.appendChild(hub);
 }
 
 /* ── BROW Cloud status ───────────────────────────────────────── */
@@ -235,25 +263,16 @@ async function loadCloudStatusView() {
 
 async function triggerBriefingAutomacao() {
     const box = document.getElementById('briefing-automacao-box');
-    if (box) box.innerHTML = '<p class="text-muted">⚡ Compilando Briefing Executivo Proativo...</p>';
+    if (box) box.innerHTML = '<p class="text-muted">⚡ Compilando e enviando Briefing Executivo Proativo...</p>';
     try {
-        const [memRes, finRes, agRes] = await Promise.all([
-            fetch('/api/hermes/memories').then(r => r.json()).catch(() => ({ items: [] })),
-            fetch('/api/hermes/finances').then(r => r.json()).catch(() => ({ items: [], summary: {} })),
-            fetch('/api/hermes/agenda').then(r => r.json()).catch(() => ({ items: [] })),
-        ]);
-        const memories = memRes.items || [];
-        const pendingAgenda = (agRes.items || []).filter(a => !a.sentAt);
-        const saldo = finRes.summary?.saldo ?? 0;
-        
+        const res = await fetch('/api/hermes/briefing', { method: 'POST' });
+        const data = await res.json();
+        if (!data.ok) throw new Error('briefing_failed');
+        const status = data.telegramSent
+            ? '<span class="text-green">✅ Enviado ao Telegram agora.</span>'
+            : '<span class="text-red">⚠️ Não consegui enviar ao Telegram (bot configurado?).</span>';
         if (box) {
-            box.innerHTML = `
-                <div style="display:flex; flex-direction:column; gap:8px;">
-                    <p><strong>📊 RESUMO EXECUTIVO COMPILADO:</strong></p>
-                    <p>• <strong>Agenda / Lembretes:</strong> ${pendingAgenda.length} compromissos pendentes (${pendingAgenda.slice(0, 3).map(a => escapeHtml(a.text)).join(', ') || 'nenhum'}).</p>
-                    <p>• <strong>Saúde Financeira:</strong> Saldo estimado de R$ ${saldo.toFixed(2).replace('.', ',')} (${saldo >= 0 ? 'Estável' : 'Atenção para saldo negativo'}).</p>
-                    <p>• <strong>Memórias Permanentes:</strong> ${memories.length} memórias salvas no cofre R2/Supabase.</p>
-                </div>`;
+            box.innerHTML = `<div style="display:flex; flex-direction:column; gap:8px; white-space:pre-wrap;">${escapeHtml(data.text)}</div><p style="margin-top:8px;">${status}</p>`;
         }
     } catch (e) {
         if (box) box.innerHTML = '<p class="text-red">❌ Erro ao compilar briefing.</p>';
@@ -266,7 +285,7 @@ function fetchData() {
     const active = document.querySelector('.main-tab-view.active');
     if (!active) return;
     if (active.id === 'view-memoria') loadMemories();
-    else if (active.id === 'view-agenda') loadAgenda();
+    else if (active.id === 'view-agenda') Promise.all([loadAgenda(), loadMetas(), loadTarefas()]);
     else if (active.id === 'view-financas') loadFinances();
     else if (active.id === 'view-documentos') loadMemories('documento');
     else if (active.id === 'view-contatos') loadMemories('contato');
@@ -770,9 +789,42 @@ function renderMemoriesList(items, filterCategory) {
             <div class="item-actions">
                 <button class="btn-item-action btn-item-delete" onclick="deleteMemoryReal('${m.id.slice(0, 8).toUpperCase()}')" title="Excluir do BROW">🗑️ Excluir</button>
             </div>`;
+        const editButton = document.createElement('button');
+        editButton.type = 'button';
+        editButton.className = 'btn-item-action';
+        editButton.title = 'Editar memória';
+        editButton.textContent = '✏️ Editar';
+        editButton.addEventListener('click', () => void editMemoryReal(
+            m.id.slice(0, 8).toUpperCase(), m.title || '', m.summary || '', m.mainCategory || '',
+        ));
+        li.querySelector('.item-actions')?.prepend(editButton);
         el.appendChild(li);
     });
     updateMemorySelectionUI();
+}
+
+async function editMemoryReal(id, currentTitle, currentSummary, currentCategory) {
+    const title = prompt('Título da memória:', currentTitle);
+    if (title === null) return;
+    const cleanTitle = title.trim();
+    if (!cleanTitle) { alert('O título da memória não pode ficar vazio.'); return; }
+    const summary = prompt('Conteúdo da memória:', currentSummary);
+    if (summary === null) return;
+    const category = prompt('Categoria (ex.: pessoal, trabalho, contato, meta):', currentCategory || 'pessoal');
+    if (category === null) return;
+    try {
+        const res = await fetch(`/api/hermes/memories/${id}`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: cleanTitle, summary: summary.trim(), mainCategory: category.trim() || 'pessoal' }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.ok === false) throw new Error(data.error || data.message || 'update_failed');
+        await loadMemories();
+        await loadDashboardOverview();
+    } catch (error) {
+        alert('Não foi possível editar a memória.');
+        console.error(error);
+    }
 }
 
 async function deleteMemoryReal(id) {
@@ -965,11 +1017,12 @@ async function submitAgendaForm(event) {
     const formData = new FormData(form);
     const title = formData.get('title');
     const dueDate = formData.get('due_date');
+    const dueTime = formData.get('due_time') || '09:00';
     if (!title || !dueDate) { alert('Preencha título e data.'); return; }
     try {
         const res = await fetch('/api/hermes/agenda', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: title, dueAt: new Date(`${dueDate}T09:00:00`).toISOString() })
+            body: JSON.stringify({ text: title, dueAt: new Date(`${dueDate}T${dueTime}:00`).toISOString() })
         });
         if (!res.ok) throw new Error('create_failed');
         alert('✅ Agendado no BROW de produção — o cron real vai entregar no Telegram na hora.');
@@ -980,7 +1033,7 @@ async function submitAgendaForm(event) {
 }
 
 /* ── Metas & Tarefas: integração com o banco unificado de Memórias/Agenda ── */
-async function loadMetas() {
+async function loadLegacyMetasView() {
     try {
         const [memRes, agRes] = await Promise.all([
             fetch('/api/hermes/memories').then(r => r.json()).catch(() => ({ items: [] })),
@@ -1028,7 +1081,7 @@ async function loadMetas() {
     } catch (e) { console.error("Erro ao carregar metas:", e); }
 }
 
-async function loadTarefas() {
+async function loadLegacyTasksView() {
     try {
         const [agRes, memRes] = await Promise.all([
             fetch('/api/hermes/agenda').then(r => r.json()).catch(() => ({ items: [] })),
@@ -1075,6 +1128,44 @@ async function loadTarefas() {
         });
     } catch (e) { console.error("Erro ao carregar tarefas:", e); }
 }
+
+// Planejamento usa as três tabelas reais. As versões antigas das telas
+// inferiam tarefas/metas a partir de texto de memórias e agenda, o que dava
+// falsos positivos e escondia itens criados no PWA/Telegram.
+async function loadMetas() {
+    const list = document.getElementById('tab-goals-list');
+    try {
+        const data = await fetch('/api/hermes/goals').then((res) => res.json());
+        const rows = data.rows || [];
+        const badge = document.getElementById('tab-goals-count'); if (badge) badge.textContent = rows.length;
+        if (!list) return;
+        list.innerHTML = rows.length ? rows.map((goal) => {
+            const progress = goal.target_value ? Math.min(100, Math.round((Number(goal.current_value || 0) / Number(goal.target_value)) * 100)) : 0;
+            return `<li class="data-item"><span class="item-text-content"><strong>${escapeHtml(goal.title)}</strong> — ${progress}%${goal.due_date ? ` · prazo ${escapeHtml(goal.due_date)}` : ''}</span><div class="item-actions"><button class="btn-item-action" onclick="updateGoalProgressDesk('${goal.id}', ${Math.min(100, progress + 10)})">+10%</button><button class="btn-item-action btn-item-delete" onclick="deleteGoalDesk('${goal.id}')">Excluir</button></div></li>`;
+        }).join('') : '<li class="text-muted">Nenhuma meta cadastrada.</li>';
+    } catch (error) { if (list) list.innerHTML = '<li class="text-muted">Não foi possível carregar metas.</li>'; console.error(error); }
+}
+
+async function submitGoalFormDesk(event) {
+    event.preventDefault(); const form = new FormData(event.target); const title = String(form.get('title') || '').trim(); if (!title) return;
+    const res = await fetch('/api/hermes/goals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, unit: form.get('category') || 'Pessoal', target_value: 100, current_value: 0, due_date: form.get('target_date') || null }) });
+    if (!res.ok) { alert('Não foi possível salvar a meta.'); return; } event.target.reset(); await loadMetas();
+}
+async function updateGoalProgressDesk(id, current_value) { await fetch(`/api/hermes/goals/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ current_value }) }); await loadMetas(); }
+async function deleteGoalDesk(id) { if (!confirm('Excluir esta meta?')) return; await fetch(`/api/hermes/goals/${id}`, { method: 'DELETE' }); await loadMetas(); }
+
+async function loadTarefas() {
+    const list = document.getElementById('tab-tasks-list');
+    try {
+        const data = await fetch('/api/hermes/tasks').then((res) => res.json()); const rows = data.rows || [];
+        const badge = document.getElementById('tab-tasks-count'); if (badge) badge.textContent = rows.filter((task) => !task.done).length;
+        if (!list) return;
+        list.innerHTML = rows.length ? rows.map((task) => `<li class="data-item"><span class="item-text-content" style="${task.done ? 'text-decoration:line-through;opacity:.65;' : ''}"><strong>${escapeHtml(task.title)}</strong>${task.due_date ? ` · ${escapeHtml(task.due_date)}` : ''}</span><div class="item-actions"><button class="btn-item-action" onclick="toggleTaskDesk('${task.id}', ${!task.done})">${task.done ? 'Reabrir' : 'Concluir'}</button><button class="btn-item-action btn-item-delete" onclick="deleteTaskDesk('${task.id}')">Excluir</button></div></li>`).join('') : '<li class="text-muted">Nenhuma tarefa cadastrada.</li>';
+    } catch (error) { if (list) list.innerHTML = '<li class="text-muted">Não foi possível carregar tarefas.</li>'; console.error(error); }
+}
+async function submitTaskFormDesk(event) { event.preventDefault(); const form = new FormData(event.target); const title = String(form.get('title') || '').trim(); if (!title) return; const dueDate = form.get('due_date'); const res = await fetch('/api/hermes/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, priority: form.get('priority') || 'média', due_date: dueDate || null, done: false }) }); if (!res.ok) { alert('Não foi possível salvar a tarefa.'); return; } event.target.reset(); await loadTarefas(); }
+async function toggleTaskDesk(id, done) { await fetch(`/api/hermes/tasks/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ done }) }); await loadTarefas(); }
+async function deleteTaskDesk(id) { if (!confirm('Excluir esta tarefa?')) return; await fetch(`/api/hermes/tasks/${id}`, { method: 'DELETE' }); await loadTarefas(); }
 
 /* ── Finanças: painel completo (KPIs, saúde, categoria, vencimentos, upload) ── */
 const FIN_CATEGORY_ICON = { alimentacao: '🍽️', transporte: '🚗', saude: '💊', moradia: '🏠', lazer: '🎮', vestuario: '👕', educacao: '📚', salario: '💼', outros: '📦' };
@@ -1610,7 +1701,10 @@ function renderFinancesExtrato(elementId, items) {
     if (!el) return;
     el.innerHTML = '';
     if (!items || !items.length) { el.innerHTML = '<li class="text-muted">Nenhum lançamento este mês no BROW.</li>'; return; }
-    items.slice(0, 30).forEach((e) => {
+    // Era slice(0,30) — um extrato real importado (upload) facilmente passa
+    // disso (achado 14/08/2026: extrato de 1 mês só já trouxe 121
+    // lançamentos), escondendo a maior parte sem dar pra saber que tem mais.
+    items.slice(0, 150).forEach((e) => {
         const li = document.createElement('li');
         const sign = e.type === 'receita' ? '↗️' : '↘️';
         const cls = e.type === 'receita' ? 'text-green' : 'text-red';
@@ -1618,8 +1712,9 @@ function renderFinancesExtrato(elementId, items) {
         const parcelaBadge = e.installment ? `<span class="badge badge-info">Parcela ${e.installment.current}/${e.installment.total}</span>` : '';
         const dueBadge = e.dueDate && e.status === 'pendente' ? `<span class="badge badge-info">Vence ${new Date(e.dueDate + 'T12:00:00').toLocaleDateString('pt-BR')}</span>` : '';
         const payAction = e.status === 'pendente' ? `<button class="btn-item-action" onclick="markFinanceEntryPaid('${e.id.slice(0, 8).toUpperCase()}')" title="Marcar como pago">✅</button>` : '';
+        const bankBadge = e.bank && e.bank !== 'outro' ? `<span class="badge badge-warning">🏦 ${escapeHtml(e.bank)}</span>` : '';
         li.innerHTML = `
-            <span class="item-text-content">${sign} <strong class="${cls}">R$ ${e.amount.toFixed(2).replace('.', ',')}</strong> — ${escapeHtml(e.description || e.category)} <span class="badge badge-info">${escapeHtml(e.category)}</span> ${statusBadge} ${parcelaBadge} ${dueBadge}</span>
+            <span class="item-text-content">${sign} <strong class="${cls}">R$ ${e.amount.toFixed(2).replace('.', ',')}</strong> — ${escapeHtml(e.description || e.category)} <span class="badge badge-info">${escapeHtml(e.category)}</span> ${bankBadge} ${statusBadge} ${parcelaBadge} ${dueBadge}</span>
             <div class="item-actions">
                 ${payAction}
                 <button class="btn-item-action" onclick="editFinanceItemFromModal('${e.id.slice(0, 8).toUpperCase()}', '${escapeHtml(e.description || '').replace(/'/g, "\\'")}', '${e.amount}')" title="Editar">✏️ Editar</button>
@@ -1677,13 +1772,13 @@ async function submitFinanceForm(event) {
    Content-Type original (com o boundary do multipart) pro Worker. */
 async function uploadFinanceReceipt(event) {
     const input = event.target;
-    const file = input.files?.[0];
-    if (!file) return;
+    const files = Array.from(input.files || []);
+    if (!files.length) return;
     const statusEl = document.getElementById('fin-upload-status');
-    if (statusEl) statusEl.innerHTML = '⏳ Lendo e analisando o arquivo...';
+    if (statusEl) statusEl.innerHTML = `⏳ Lendo e analisando ${files.length} arquivo(s)...`;
     try {
         const form = new FormData();
-        form.append('file', file);
+        files.forEach(f => form.append('file', f));
         const res = await fetch('/api/hermes/finances/upload', { method: 'POST', body: form });
         const data = await res.json();
         if (!res.ok || !data.ok) throw new Error(data.message || 'upload_failed');
@@ -1749,22 +1844,13 @@ function quickSearchTopic(topicQuery) {
 
 async function triggerBriefing() {
     try {
-        const [memRes, finRes, agRes] = await Promise.all([
-            fetch('/api/hermes/memories').then(r => r.json()).catch(() => ({ items: [] })),
-            fetch('/api/hermes/finances').then(r => r.json()).catch(() => ({ items: [], summary: {} })),
-            fetch('/api/hermes/agenda').then(r => r.json()).catch(() => ({ items: [] })),
-        ]);
-        const memories = memRes.items || [];
-        const pendingAgenda = (agRes.items || []).filter(a => !a.sentAt).slice(0, 5);
-        const saldo = finRes.summary?.saldo ?? 0;
-        const lines = [
-            `📅 Próximos compromissos (${pendingAgenda.length}): ${pendingAgenda.map(a => a.text).join('; ') || 'nenhum'}`,
-            `💰 Saldo do mês: R$ ${saldo.toFixed(2).replace('.', ',')}`,
-            `🧠 Memórias registradas: ${memories.length}`,
-        ];
-        alert(`✨ Briefing Proativo\n\n${lines.join('\n')}`);
+        const res = await fetch('/api/hermes/briefing', { method: 'POST' });
+        const data = await res.json();
+        if (!data.ok) throw new Error('briefing_failed');
+        const status = data.telegramSent ? '✅ Enviado ao Telegram agora.' : '⚠️ Gerado, mas não consegui enviar ao Telegram (verifique o bot).';
+        alert(`✨ Briefing Executivo\n\n${data.text}\n\n${status}`);
     } catch (error) {
-        alert('❌ Não consegui montar o briefing agora.');
+        alert('❌ Não consegui gerar o briefing agora.');
         console.error(error);
     }
 }
@@ -1796,9 +1882,78 @@ async function submitForm(event, endpoint) {
     event.preventDefault();
     if (endpoint === 'finances') return submitFinanceForm(event);
     if (endpoint === 'documents') return submitCategoryDocumentFormDesk(event);
-    if (endpoint === 'contacts') return submitCategoryMemoryForm(event, 'contato');
-    if (endpoint === 'goals') return submitCategoryMemoryForm(event, 'meta');
+    if (endpoint === 'contacts') return submitContactFormDesk(event);
+    if (endpoint === 'goals') return submitGoalFormDesk(event);
     alert('Este módulo (' + endpoint + ') usa a inteligência unificada de Memória e Agenda do BROW.');
+}
+
+let extractedContactsDesk = [];
+
+async function loadContactsDesk() {
+    const list = document.getElementById('tab-contacts-list');
+    if (!list) return;
+    try {
+        const res = await fetch('/api/hermes/contacts');
+        const data = await res.json();
+        const rows = data.rows || [];
+        list.innerHTML = rows.length ? rows.map((contact) => `<li class="data-item"><span class="item-text-content"><strong>${escapeHtml(contact.name)}</strong> — ${escapeHtml(contact.phone || 'Sem telefone')}${contact.email ? ` · ${escapeHtml(contact.email)}` : ''}</span><div class="item-actions"><button class="btn-item-action btn-item-delete" onclick="deleteContactDesk('${contact.id}')">Excluir</button></div></li>`).join('') : '<li class="text-muted">Nenhum contato cadastrado.</li>';
+    } catch (error) { list.innerHTML = '<li class="text-muted">Não foi possível carregar os contatos.</li>'; console.error(error); }
+}
+
+async function submitContactFormDesk(event) {
+    event.preventDefault();
+    const data = new FormData(event.target);
+    const name = String(data.get('name') || '').trim();
+    if (!name) return;
+    const res = await fetch('/api/hermes/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, phone: data.get('phone') || '', notes: data.get('relationship') || '' }) });
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok || result.ok === false) { alert('Não foi possível salvar o contato.'); return; }
+    event.target.reset();
+    await loadContactsDesk();
+}
+
+async function deleteContactDesk(id) {
+    if (!confirm('Excluir este contato?')) return;
+    const res = await fetch(`/api/hermes/contacts/${id}`, { method: 'DELETE' });
+    if (!res.ok) { alert('Não foi possível excluir o contato.'); return; }
+    await loadContactsDesk();
+}
+
+function renderExtractedContactsDesk() {
+    const preview = document.getElementById('contacts-extract-preview');
+    const save = document.getElementById('contacts-save-extracted');
+    if (!preview || !save) return;
+    const selectable = extractedContactsDesk.filter((contact) => !contact.duplicate);
+    preview.innerHTML = extractedContactsDesk.length ? extractedContactsDesk.map((contact, index) => `<li class="data-item"><label style="display:flex;gap:8px;align-items:center;"><input type="checkbox" class="extracted-contact-checkbox" value="${index}" ${contact.duplicate ? 'disabled' : 'checked'}><span><strong>${escapeHtml(contact.name)}</strong> — ${escapeHtml(contact.phone || contact.email || '')}${contact.duplicate ? ' (já existe)' : ''}</span></label></li>`).join('') : '<li class="text-muted">Nenhum contato reconhecido no arquivo.</li>';
+    save.style.display = selectable.length ? 'inline-flex' : 'none';
+}
+
+async function extractContactsDesk(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const status = document.getElementById('contacts-extract-status');
+    if (status) status.textContent = 'Extraindo contatos; nada será salvo sem sua confirmação.';
+    try {
+        const form = new FormData(); form.append('file', file);
+        const res = await fetch('/api/hermes/contacts/extract', { method: 'POST', body: form });
+        const data = await res.json();
+        if (!res.ok || data.ok === false) throw new Error(data.error || 'extract_failed');
+        extractedContactsDesk = data.contacts || [];
+        renderExtractedContactsDesk();
+        if (status) status.textContent = `${extractedContactsDesk.length} contato(s) encontrado(s). Revise a seleção antes de salvar.`;
+    } catch (error) { if (status) status.textContent = 'Falha ao extrair contatos.'; console.error(error); }
+}
+
+async function saveExtractedContactsDesk() {
+    const chosen = [...document.querySelectorAll('.extracted-contact-checkbox:checked')].map((box) => extractedContactsDesk[Number(box.value)]).filter(Boolean);
+    if (!chosen.length) { alert('Selecione pelo menos um contato.'); return; }
+    const res = await fetch('/api/hermes/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contacts: chosen }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.ok === false) { alert('Não foi possível salvar os contatos.'); return; }
+    extractedContactsDesk = [];
+    renderExtractedContactsDesk();
+    await loadContactsDesk();
+    alert(`${data.created || 0} contato(s) salvo(s).`);
 }
 
 /* ── MÓDULO DE DOCUMENTOS & ARQUIVOS (COFRE R2 + MEMÓRIA AI) ── */
@@ -1845,9 +2000,9 @@ function filterDocumentsDesk() {
     listEl.innerHTML = filtered.map(d => {
         const fullId = d.id || '';
         const shortId = d.id ? d.id.slice(0, 8).toUpperCase() : '';
-        const mime = d.mime || '';
+        const mime = d.mime || d.mime_type || '';
         const sizeStr = d.fileSize ? ` • ${(d.fileSize / 1024).toFixed(0)} KB` : '';
-        const dateStr = d.createdAt ? new Date(d.createdAt).toLocaleDateString('pt-BR') : '';
+        const dateStr = (d.createdAt || d.created_at) ? new Date(d.createdAt || d.created_at).toLocaleDateString('pt-BR') : '';
         
         let fileIcon = '📄';
         if (mime.includes('pdf')) fileIcon = '📕';
@@ -1860,7 +2015,7 @@ function filterDocumentsDesk() {
                 <div style="display:flex; align-items:center; gap:10px;">
                     <div style="font-size:24px;">${fileIcon}</div>
                     <div>
-                        <strong style="color:#fff; font-size:13px; display:block;">${escapeHtml(d.title || d.sourceName || 'Documento')}</strong>
+                        <strong style="color:#fff; font-size:13px; display:block;">${escapeHtml(d.title || d.display_name || d.filename || d.sourceName || 'Documento')}</strong>
                         <div style="font-size:11px; color:var(--text-2); margin-top:2px;">
                             <span class="badge badge-info" style="font-size:9.5px;">${escapeHtml(d.category || 'documento')}</span>
                             <span>${dateStr}${sizeStr}</span>
@@ -1886,6 +2041,11 @@ async function uploadDocumentFileDesk(event) {
     const catInput = document.getElementById('doc-form-category');
     const valInput = document.getElementById('doc-form-validity');
 
+    // O nome digitado prevalece; sem ele, antecipamos o nome-base do arquivo
+    // antes do upload para persistir e exibir o mesmo título.
+    if (files.length === 1 && titleInput && !titleInput.value.trim()) {
+        titleInput.value = files[0].name.replace(/\.[^.]+$/, '') || files[0].name;
+    }
     const customTitle = titleInput?.value.trim() || '';
     const customCat = catInput?.value.trim() || 'documento';
     const customVal = valInput?.value || '';
@@ -1942,6 +2102,7 @@ async function submitCategoryDocumentFormDesk(event) {
             body: JSON.stringify({
                 title,
                 category: catInput?.value.trim() || 'documento',
+                validity: valInput?.value || null,
                 mainCategory: 'documento',
                 summary: `Documento registrado: ${title} (${catInput?.value || 'geral'})`
             })
@@ -2026,11 +2187,29 @@ function drawSparkline() {
 }
 
 /* ── PROGRAMADOR DE BRIEFINGS DIÁRIOS DE NOTÍCIAS POR ASSUNTO ── */
-let globalScheduledBriefings = JSON.parse(localStorage.getItem('hermes_scheduled_briefings') || '[]');
+// Agendamento real desde 14/08/2026: cada briefing programado é uma linha
+// em hermes_cloud_automations com next_run_at — o cron fixo do Worker
+// (*/5min, automation_dispatch.ts) dispara sozinho quando chega a hora e
+// reagenda pro próximo ciclo. Nada mais em localStorage.
+let globalScheduledBriefings = [];
+
+const FREQUENCY_LABELS = { daily: 'Diário (Seg a Dom)', weekdays: 'Dias Úteis (Seg a Sex)', weekends: 'Finais de Semana' };
+const FREQUENCY_VALUES = { 'Diário (Seg a Dom)': 'daily', 'Dias Úteis (Seg a Sex)': 'weekdays', 'Finais de Semana': 'weekends' };
 
 function selectBriefingTopic(topicText) {
     const input = document.getElementById('briefing-topic-input');
     if (input) input.value = topicText;
+}
+
+async function loadScheduledBriefings() {
+    try {
+        const res = await fetch('/api/hermes/automations');
+        const data = await res.json();
+        globalScheduledBriefings = (data.rows || []).filter(r => r.payload && r.payload.topic);
+    } catch (e) {
+        globalScheduledBriefings = [];
+    }
+    renderScheduledBriefings();
 }
 
 function renderScheduledBriefings() {
@@ -2043,165 +2222,45 @@ function renderScheduledBriefings() {
         el.innerHTML = '<li class="text-muted">Nenhum briefing de notícias programado ainda. Escolha um tópico acima para cadastrar!</li>';
         return;
     }
-    globalScheduledBriefings.forEach((b, idx) => {
+    globalScheduledBriefings.forEach((b) => {
+        const hour = b.next_run_at ? new Date(b.next_run_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' }) : '—';
+        const freqLabel = FREQUENCY_LABELS[b.frequency] || b.frequency || 'Diário';
         const li = document.createElement('li');
         li.innerHTML = `
             <div class="form-col gap-1" style="flex:1;">
-                <span class="item-text-content">📡 <strong>${escapeHtml(b.topic)}</strong></span>
+                <span class="item-text-content">📡 <strong>${escapeHtml(b.payload.topic)}</strong></span>
                 <div style="display:flex; gap:6px; flex-wrap:wrap; font-size:11px;">
-                    <span class="badge badge-info">⏰ ${escapeHtml(b.hour)}</span>
-                    <span class="badge badge-success">${escapeHtml(b.frequency)}</span>
-                    <span class="badge badge-warning">🟢 Ativo no Cron Telegram</span>
+                    <span class="badge badge-info">⏰ ${escapeHtml(hour)}</span>
+                    <span class="badge badge-success">${escapeHtml(freqLabel)}</span>
+                    <span class="badge badge-warning">🟢 Ativo no Cron</span>
                 </div>
             </div>
             <div class="item-actions">
-                <button class="btn btn-primary btn-xs" onclick="testBriefingNow(${idx})" title="Pesquisar e exibir resumo agora">⚡ Executar Agora</button>
-                <button class="btn-item-action btn-item-delete" onclick="deleteScheduledBriefing(${idx})" title="Excluir agendamento">🗑️ Excluir</button>
+                <button class="btn btn-primary btn-xs" onclick="testBriefingNow(${b.id})" title="Pesquisar e exibir resumo agora">⚡ Executar Agora</button>
+                <button class="btn-item-action btn-item-delete" onclick="deleteScheduledBriefing(${b.id})" title="Excluir agendamento">🗑️ Excluir</button>
             </div>`;
         el.appendChild(li);
     });
 }
 
-function buildCleanQuery(rawTopic) {
-    let t = rawTopic.trim();
-    if (/futebol/i.test(t)) return "jogos futebol resultados noticias hoje";
-    if (/inteligência artificial|ia|llm/i.test(t)) return "inteligencia artificial modelos lancamentos noticias hoje";
-    if (/mercado|dólar|ibovespa|economia/i.test(t)) return "mercado financeiro dolar ibovespa economia hoje";
-    if (/brasil|mundo|notícias do dia/i.test(t)) return "manchetes ultimas noticias brasil mundo hoje";
-
-    t = t.replace(/^principais notícias (de |sobre |do |da )?/i, '');
-    t = t.replace(/^notícias (de |sobre |do |da )?/i, '');
-    t = t.replace(/^últimas notícias (de |sobre |do |da )?/i, '');
-    t = t.replace(/ no dia$/i, '');
-    t = t.replace(/ hoje$/i, '');
-    t = t.trim();
-    return t ? `${t} ultimas noticias hoje` : rawTopic;
+function computeNextRunAt(hour, frequency) {
+    const [h, m] = hour.split(':').map(Number);
+    const now = new Date();
+    // Calcula em horário de Brasília, convertendo de volta pra UTC — mesmo
+    // padrão usado no resto do dashboard pra horários informados pelo usuário.
+    const brNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+    const offsetMs = now.getTime() - brNow.getTime();
+    let candidate = new Date(brNow);
+    candidate.setHours(h, m, 0, 0);
+    if (candidate <= brNow) candidate = new Date(candidate.getTime() + 24 * 60 * 60 * 1000);
+    while (
+        (frequency === 'weekdays' && (candidate.getDay() === 0 || candidate.getDay() === 6)) ||
+        (frequency === 'weekends' && candidate.getDay() !== 0 && candidate.getDay() !== 6)
+    ) {
+        candidate = new Date(candidate.getTime() + 24 * 60 * 60 * 1000);
+    }
+    return new Date(candidate.getTime() + offsetMs).toISOString();
 }
-
-async function fetchNewsArticles(rawTopic) {
-    const candidateQueries = [];
-    const t = rawTopic.trim();
-    
-    if (/mercado|dólar|ibovespa|economia/i.test(t)) {
-        candidateQueries.push("mercado financeiro", "dolar ibovespa", "economia brasil");
-    } else if (/futebol/i.test(t)) {
-        candidateQueries.push("futebol hoje", "jogos futebol", "futebol brasileirao");
-    } else if (/inteligência artificial|ia|llm/i.test(t)) {
-        candidateQueries.push("inteligencia artificial", "openai chatgpt", "modelos IA");
-    } else if (/brasil|mundo|notícias/i.test(t)) {
-        candidateQueries.push("noticias brasil", "manchetes hoje", "ultimas noticias");
-    } else {
-        const clean = t.replace(/^principais notícias (de |sobre |do |da )?/i, '')
-                       .replace(/^notícias (de |sobre |do |da )?/i, '')
-                       .replace(/^últimas notícias (de |sobre |do |da )?/i, '')
-                       .replace(/ no dia$/i, '').replace(/ hoje$/i, '').trim();
-        candidateQueries.push(clean || rawTopic, `noticias ${clean || rawTopic}`, "noticias brasil");
-    }
-
-    // 1. Tentar /api/hermes/research em fallback progressivo por cada query candidata
-    for (const q of candidateQueries) {
-        try {
-            const res = await fetch('/api/hermes/research', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: q })
-            });
-            if (res.ok) {
-                const data = await res.json();
-                const sources = data.report?.sources || [];
-                if (sources.length > 0) {
-                    return sources.map(s => ({
-                        title: s.title,
-                        url: s.url,
-                        snippet: s.snippet || "Acompanhe os desdobramentos completos desta matéria na íntegra."
-                    }));
-                }
-            }
-        } catch (e) {
-            console.warn(`Pesquisa falhou para "${q}":`, e);
-        }
-    }
-
-    // 2. Tentar Google News RSS com cada query candidata
-    for (const q of candidateQueries) {
-        try {
-            const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
-            const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(rssUrl)}`);
-            if (res.ok) {
-                const xmlText = await res.text();
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(xmlText, "text/xml");
-                // Mesmo achado do Telegram/Dashboard (ver NEWS_MAX_AGE_DAYS
-                // em index.ts, print real 10/08/2026): busca por palavra-
-                // chave devolve artigo de anos atrás junto com um de hoje,
-                // como se fossem igualmente atuais. Um briefing agendado
-                // nunca pode citar notícia velha como se fosse do dia.
-                const NEWS_MAX_AGE_MS = 21 * 24 * 60 * 60 * 1000;
-                const parsed = Array.from(xmlDoc.querySelectorAll("item")).map(item => {
-                    const title = item.querySelector("title")?.textContent || "";
-                    const link = item.querySelector("link")?.textContent || "";
-                    const rawDesc = item.querySelector("description")?.textContent || "";
-                    const cleanDesc = rawDesc.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim();
-                    const pubDateStr = item.querySelector("pubDate")?.textContent || "";
-                    const pubDateMs = pubDateStr ? new Date(pubDateStr).getTime() : NaN;
-                    return { title, url: link, snippet: cleanDesc || "Confira os detalhes desta matéria na íntegra.", pubDateMs };
-                });
-                const recent = parsed.filter(a => Number.isNaN(a.pubDateMs) || (Date.now() - a.pubDateMs) <= NEWS_MAX_AGE_MS).slice(0, 5);
-                if (recent.length > 0) {
-                    return recent.map(({ title, url, snippet }) => ({ title, url, snippet }));
-                }
-            }
-        } catch (e) {
-            console.warn(`Google News RSS falhou para "${q}":`, e);
-        }
-    }
-
-    // 3. Fallback de emergência: busca global de notícias do dia
-    try {
-        const emergencyRes = await fetch('/api/hermes/research', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: "noticias principais hoje brasil" })
-        });
-        const emergencyData = await emergencyRes.json();
-        const emergencySources = emergencyData.report?.sources || [];
-        if (emergencySources.length > 0) {
-            return emergencySources.map(s => ({
-                title: s.title,
-                url: s.url,
-                snippet: s.snippet || "Acompanhe as principais manchetes do dia."
-            }));
-        }
-    } catch (e) {
-        console.error("Emergency fallback failed:", e);
-    }
-
-    // Achado real 10/08/2026 (Fase 8 do Contrato de Evidência, print do
-    // usuário): quando as 3 tentativas reais acima falhavam, este fallback
-    // inventava um "artigo" -- título "Notícias em Destaque: X", resumo "as
-    // matérias... estão sendo compiladas pelo BROW Cloud" -- que não existe
-    // em lugar nenhum, só um link de busca genérico do Google. Isso ia
-    // DIRETO pro Telegram via testBriefingNow como se fosse notícia real
-    // ("compilado automaticamente pelo BROW AI"). Mesma classe de bug do
-    // placar/preço inventado no Worker (ver grounding.ts) -- aqui do lado do
-    // cliente: sem evidência real encontrada, retorna vazio, nunca inventa.
-    return [];
-}
-
-// Achado 08/08/2026: este handler SEMPRE mandava `dueAt` (data específica de
-// amanhã) pro Worker, nunca `time`. O backend (handleAgenda, dashboard.ts)
-// decide `kind: body.dueAt ? "once" : "daily"` -- ou seja, TODO briefing
-// criado aqui virava um lembrete de UMA VEZ SÓ (dispara amanhã, nunca mais),
-// mesmo com o seletor de frequência mostrando "Diário" e o card mostrando
-// "🟢 Ativo no Cron Telegram" pra sempre. É por isso que os briefings
-// paravam de chegar no Telegram depois do primeiro dia. Correção: manda
-// `time` (não `dueAt`) pra virar `kind:"daily"` de verdade, e `weekdays`
-// quando a frequência não for "todos os dias".
-const FREQUENCY_WEEKDAYS = {
-    'Diário (Seg a Dom)': undefined,
-    'Dias Úteis (Seg a Sex)': [1, 2, 3, 4, 5],
-    'Finais de Semana': [0, 6],
-};
 
 async function addScheduledBriefing(event) {
     if (event) event.preventDefault();
@@ -2212,143 +2271,59 @@ async function addScheduledBriefing(event) {
     if (!topic) return;
 
     const hour = timeInput?.value || '08:00';
-    const frequency = freqInput?.value || 'Diário (Seg a Dom)';
-    const weekdays = FREQUENCY_WEEKDAYS[frequency];
-
-    const newBriefing = { id: Date.now().toString(), topic, hour, frequency, created: new Date().toISOString() };
-    globalScheduledBriefings.push(newBriefing);
-    localStorage.setItem('hermes_scheduled_briefings', JSON.stringify(globalScheduledBriefings));
+    const frequencyLabel = freqInput?.value || 'Diário (Seg a Dom)';
+    const frequency = FREQUENCY_VALUES[frequencyLabel] || 'daily';
 
     try {
-        const body = {
-            text: `📡 BRIEFING DIÁRIO DE NOTÍCIAS (${frequency} às ${hour}): Notícias atualizadas sobre "${topic}". Pesquise notícias sobre ${topic} e traga as principais manchetes.`,
-            time: hour,
-        };
-        if (weekdays) body.weekdays = weekdays;
-        await fetch('/api/hermes/agenda', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
+        const res = await fetch('/api/hermes/automations', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: `Briefing: ${topic}`,
+                frequency,
+                next_run_at: computeNextRunAt(hour, frequency),
+                payload: { topic },
+            })
         });
+        const data = await res.json();
+        if (!data.ok) throw new Error('create_failed');
+        if (topicInput) topicInput.value = '';
+        await loadScheduledBriefings();
+        alert(`✅ Briefing programado!\nA BROW pesquisará sobre "${topic}" e entregará no Telegram automaticamente, diariamente às ${hour}.`);
     } catch (e) {
-        console.error("Erro ao registrar agendamento no Worker", e);
+        alert('❌ Não consegui programar esse briefing agora.');
     }
-
-    if (topicInput) topicInput.value = '';
-    renderScheduledBriefings();
-    alert(`✅ Briefing programado com sucesso!\nA BROW pesquisará notícias sobre "${topic}" e entregará o resumo diariamente às ${hour} no Telegram.`);
 }
 
-function deleteScheduledBriefing(index) {
-    if (!confirm("Deseja cancelar e remover este briefing diário programado?")) return;
-    globalScheduledBriefings.splice(index, 1);
-    localStorage.setItem('hermes_scheduled_briefings', JSON.stringify(globalScheduledBriefings));
-    renderScheduledBriefings();
-}
-
-function cleanShortUrl(rawUrl) {
-    if (!rawUrl) return "";
+async function deleteScheduledBriefing(id) {
+    if (!confirm("Deseja remover este agendamento?")) return;
     try {
-        let clean = rawUrl;
-        if (clean.includes("uddg=")) {
-            const match = clean.match(/uddg=([^&]+)/);
-            if (match) clean = decodeURIComponent(match[1]);
-        }
-        if (clean.includes("url=")) {
-            const match = clean.match(/url=([^&]+)/);
-            if (match) clean = decodeURIComponent(match[1]);
-        }
-        const u = new URL(clean);
-        u.search = "";
-        return u.toString();
-    } catch (e) {
-        return rawUrl.split("?")[0];
-    }
+        await fetch(`/api/hermes/automations/${id}`, { method: 'DELETE' });
+        await loadScheduledBriefings();
+    } catch (e) { alert('❌ Não consegui remover agora.'); }
 }
 
-async function testBriefingNow(index) {
-    const briefing = globalScheduledBriefings[index];
+async function testBriefingNow(id) {
+    const briefing = globalScheduledBriefings.find(b => b.id === id);
     if (!briefing) return;
-    const topic = briefing.topic;
-    
+    const topic = briefing.payload.topic;
+
     const briefingBox = document.getElementById('briefing-automacao-box');
-    if (briefingBox) {
-        briefingBox.innerHTML = `<p class="text-muted">🔎 Buscando matérias e acontecimentos específicos sobre <strong>"${escapeHtml(topic)}"</strong>...</p>`;
-    }
-    
+    if (briefingBox) briefingBox.innerHTML = `<p class="text-muted">🔎 Pesquisando sobre <strong>${escapeHtml(topic)}</strong>...</p>`;
+
     try {
-        const articles = await fetchNewsArticles(topic);
-
-        if (!articles.length) {
-            const honestMsg = `Não encontrei notícias reais sobre "${topic}" agora. Tente reformular o tópico ou tente de novo em instantes.`;
-            if (briefingBox) briefingBox.innerHTML = `<p class="text-muted">${escapeHtml(honestMsg)}</p>`;
-            try {
-                await fetch('/api/hermes/agenda', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: `🌅 *Briefing de "${topic}"*: ${honestMsg}`, dueAt: new Date().toISOString() })
-                });
-            } catch (dispatchErr) { console.error("Erro ao enviar aviso honesto para o Telegram:", dispatchErr); }
-            return;
-        }
-
-        // Montar resumo rico e explicativo com links curtos e limpos para o Telegram
-        const formattedArticlesText = articles.slice(0, 5).map((a, i) => {
-            const cleanTitle = a.title.replace(/ - [^-]+$/, '').trim();
-            const sourceName = a.title.includes(' - ') ? a.title.split(' - ').pop().trim() : 'Notícias';
-            const snippet = a.snippet && a.snippet.length > 20 ? a.snippet : 'Confira os desdobramentos completos desta matéria na íntegra.';
-            const shortUrl = cleanShortUrl(a.url);
-            return `📌 *${i + 1}. ${cleanTitle}*\n📰 *Veículo:* ${sourceName}\n📝 *Resumo Executivo:* ${snippet}\n🔗 *Ler matéria na íntegra:* ${shortUrl}`;
-        }).join('\n\n───────────────\n\n');
-
-        const fullTelegramText = `🌅 *BRIEFING MATINAL DE NOTÍCIAS DIÁRIAS* 📡\n🎯 *Tópico:* ${topic}\n⏰ *Programação:* ${briefing.hour} (${briefing.frequency})\n\n${formattedArticlesText}\n\n💡 *Resumo compilado automaticamente pelo BROW AI.*`;
-
-        // DISPARAR MENSAGEM COMPLETA E COM NOTÍCIAS REAIS PARA O TELEGRAM
-        try {
-            await fetch('/api/hermes/agenda', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    text: fullTelegramText,
-                    dueAt: new Date().toISOString()
-                })
-            });
-        } catch (dispatchErr) {
-            console.error("Erro ao enviar mensagem para o Telegram:", dispatchErr);
-        }
-
+        const res = await fetch('/api/hermes/news-briefing', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ topic })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error('briefing_failed');
+        const status = data.telegramSent ? '✅ Enviado ao Telegram.' : '⚠️ Não consegui enviar ao Telegram.';
         if (briefingBox) {
-            const articlesDashboardHtml = articles.slice(0, 5).map((a, i) => {
-                const cleanTitle = a.title.replace(/ - [^-]+$/, '').trim();
-                const sourceName = a.title.includes(' - ') ? a.title.split(' - ').pop().trim() : 'Notícias';
-                const shortUrl = cleanShortUrl(a.url);
-                return `
-                    <div style="background:var(--bg-hover); border-radius:8px; padding:12px; border-left:3px solid var(--purple); margin-bottom:8px;">
-                        <div style="font-weight:700; color:var(--text-main); margin-bottom:4px;">📌 ${i + 1}. ${escapeHtml(cleanTitle)}</div>
-                        <div style="font-size:12px; color:var(--cyan); margin-bottom:6px;">📰 Fonte: ${escapeHtml(sourceName)}</div>
-                        <div style="font-size:13px; color:var(--text-muted); line-height:1.5; margin-bottom:8px;">${escapeHtml(a.snippet)}</div>
-                        <a href="${shortUrl}" target="_blank" class="btn btn-ghost btn-xs" style="color:var(--purple);">🔗 Ler matéria na íntegra</a>
-                    </div>`;
-            }).join('');
-            
-            briefingBox.innerHTML = `
-                <div style="display:flex; flex-direction:column; gap:12px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:8px;">
-                        <span class="badge badge-success">📡 BRIEFING MATINAL SINTETIZADO: ${escapeHtml(topic)}</span>
-                        <span class="badge badge-warning">📲 Enviado Completo para o Telegram</span>
-                    </div>
-                    
-                    <div style="display:flex; flex-direction:column; gap:4px;">
-                        ${articlesDashboardHtml}
-                    </div>
-                </div>`;
+            briefingBox.innerHTML = `<div style="white-space:pre-wrap;">${escapeHtml(data.text)}</div><p style="margin-top:8px;">${status}</p>`;
             briefingBox.scrollIntoView({ behavior: 'smooth' });
         }
-        
-        alert(`📲 MENSAGEM DETALHADA ENVIADA PARA O TELEGRAM!\n\nAs notícias específicas sobre "${topic}" foram pesquisadas, sintetizadas e despachadas para o seu bot com resumos completos.`);
     } catch (e) {
-        if (briefingBox) briefingBox.innerHTML = `<p class="text-red">❌ Erro ao compilar briefing: ${escapeHtml(e.message)}</p>`;
-        alert(`❌ Erro ao executar briefing: ${e.message}`);
+        if (briefingBox) briefingBox.innerHTML = `<p class="text-red">❌ Erro ao executar briefing: ${escapeHtml(e.message)}</p>`;
     }
 }
 
@@ -2489,6 +2464,52 @@ let waveCanvas, waveCtx, waveAnimFrame;
 let wavePhase = 0;
 let isSpeakingOrListening = false;
 
+// Shared neural nucleus: the Dashboard keeps its own shell/sidebar while this
+// canvas mirrors the dark cyan/violet visual language of the desktop core.
+function initNeuralCoreCanvas() {
+    const canvas = document.getElementById('hud-core-canvas');
+    if (canvas && (window.BrowCore || window.BrowNeuralCore || canvas.dataset.browSharedCore === "true")) {
+        return; // voz-core.js já renderiza o núcleo de 3.600 partículas no canvas
+    }
+    if (!canvas || canvas.dataset.neuralReady) return;
+    canvas.dataset.neuralReady = 'true';
+    const ctx = canvas.getContext('2d');
+    const points = Array.from({ length: 620 }, () => ({
+        a: Math.random() * Math.PI * 2,
+        r: 0.28 + Math.random() * 0.68,
+        s: 0.2 + Math.random() * 1.1,
+        hue: Math.random() > .48 ? 190 : 275,
+    }));
+    let phase = 0;
+    function draw() {
+        const rect = canvas.getBoundingClientRect();
+        const size = Math.max(1, Math.round(Math.min(rect.width || 360, rect.height || 360) * (window.devicePixelRatio || 1)));
+        if (canvas.width !== size || canvas.height !== size) { canvas.width = size; canvas.height = size; }
+        const dpr = window.devicePixelRatio || 1, w = size / dpr, c = w / 2;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, w);
+        const pulse = 1 + Math.sin(phase * 1.8) * (isSpeakingOrListening ? .055 : .018);
+        for (let i = 1; i <= 3; i++) {
+            ctx.beginPath(); ctx.arc(c, c, w * (.18 + i * .11) * pulse, 0, Math.PI * 2);
+            ctx.strokeStyle = i % 2 ? 'rgba(168,85,247,.42)' : 'rgba(6,182,212,.38)'; ctx.lineWidth = 1.2; ctx.stroke();
+        }
+        points.forEach((p, i) => {
+            const a = p.a + phase * p.s * .16;
+            const r = p.r * w * .42 * pulse;
+            const x = c + Math.cos(a) * r, y = c + Math.sin(a) * r;
+            const alpha = .2 + .65 * (1 - p.r);
+            ctx.fillStyle = `hsla(${p.hue}, 94%, 66%, ${alpha})`;
+            ctx.fillRect(x, y, i % 6 ? 1.6 : 2.6, i % 6 ? 1.6 : 2.6);
+            if (i % 4 === 0) { ctx.beginPath(); ctx.moveTo(c + Math.cos(a - .18) * (r * .42), c + Math.sin(a - .18) * (r * .42)); ctx.lineTo(x, y); ctx.strokeStyle = `hsla(${p.hue},90%,65%,.10)`; ctx.stroke(); }
+        });
+        const glow = ctx.createRadialGradient(c, c, w * .04, c, c, w * .26);
+        glow.addColorStop(0, '#040812'); glow.addColorStop(.65, 'rgba(3,7,18,.90)'); glow.addColorStop(1, 'rgba(3,7,18,0)');
+        ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(c, c, w * .28, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(c, c, w * .19 * pulse, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(226,232,240,.78)'; ctx.lineWidth = 2; ctx.shadowBlur = 15; ctx.shadowColor = '#a855f7'; ctx.stroke(); ctx.shadowBlur = 0;
+        phase += isSpeakingOrListening ? .05 : .018; requestAnimationFrame(draw);
+    }
+    draw();
+}
+
 function initNeuralWaveCanvas() {
     waveCanvas = document.getElementById('neural-wave-canvas');
     if (!waveCanvas) return;
@@ -2589,14 +2610,14 @@ const persistedTelemetry = loadPersistedTelemetry();
 // dashboard é reaberto -- essa era a origem do "os dados são atualizados/
 // resetados toda vez que abro" relatado pelo usuário.
 let pcTelemetry = {
-    cpuLoadEst: persistedTelemetry?.cpuLoadEst ?? 14,
+    cpuLoadEst: null,
     ramUsedMB: 0,
     ramTotalMB: 0,
-    ramPercent: persistedTelemetry?.ramPercent ?? 0,
-    gpuLoadEst: persistedTelemetry?.gpuLoadEst ?? 10,
-    cores: navigator.hardwareConcurrency || 8,
-    deviceRamGB: navigator.deviceMemory || 8,
-    gpuName: 'Detectando...',
+    ramPercent: null,
+    gpuLoadEst: null,
+    cores: null,
+    deviceRamGB: null,
+    gpuName: null,
     fps: 60,
     diskFreeGB: null,
     diskTotalGB: null,
@@ -2608,7 +2629,7 @@ let pcTelemetry = {
     lastDiskAlertAt: 0,
     lastAnyAlertAt: 0, // gate compartilhado entre TODOS os tipos de alerta -- ver PC_ALERT_MIN_GAP_MS
     overloadStreak: 0,
-    telemetrySource: 'estimado' // 'real-os' quando o agente local confirma dados reais
+    telemetrySource: 'offline'
 };
 
 // ── Telemetria real do PC via Worker (v3, 07/08/2026) ──
@@ -2639,6 +2660,8 @@ async function pollRealTelemetryAgent() {
         pcTelemetry.ramPercent = t.ramPercent;
         pcTelemetry.ramUsedMB = t.ramUsedMB;
         pcTelemetry.ramTotalMB = t.ramTotalMB;
+        if (typeof t.cores === 'number') pcTelemetry.cores = t.cores;
+        if (typeof t.gpuPercent === 'number') pcTelemetry.gpuLoadEst = t.gpuPercent;
         if (t.gpuName) pcTelemetry.gpuName = t.gpuName;
         if (typeof t.diskFreeGB === 'number') pcTelemetry.diskFreeGB = t.diskFreeGB;
         if (typeof t.diskTotalGB === 'number') pcTelemetry.diskTotalGB = t.diskTotalGB;
@@ -2872,7 +2895,7 @@ function initPcTelemetry() {
     // tentativa imediata pra não esperar 1.5s pro dashboard "descobrir" que
     // o agente já está rodando.
     pollRealTelemetryAgent();
-    setInterval(() => { if (!document.hidden) pollRealTelemetryAgent(); }, 60000);
+    setInterval(() => { if (!document.hidden) pollRealTelemetryAgent(); }, 10000);
 
     pollMobileDeviceTelemetry();
     setInterval(() => { if (!document.hidden) pollMobileDeviceTelemetry(); }, 60000);
@@ -2891,8 +2914,8 @@ function renderTelemetryWidget() {
             sourceBadgeEl.textContent = '🟢 CPU/RAM reais (agente local ativo)';
             sourceBadgeEl.title = 'Lido diretamente do sistema operacional pelo agente em scripts/telemetry-agent/.';
         } else {
-            sourceBadgeEl.textContent = '🟡 CPU/RAM estimados (agente local offline)';
-            sourceBadgeEl.title = 'Rode scripts/telemetry-agent/iniciar.bat nesta máquina para ver os valores reais do Gerenciador de Tarefas.';
+            sourceBadgeEl.textContent = '⚪ aguardando telemetria real do PC';
+            sourceBadgeEl.title = 'Abra o BROW Desktop nesta máquina para publicar a leitura real do sistema.';
         }
     }
 
@@ -2911,18 +2934,19 @@ function renderTelemetryWidget() {
     const gpuCircleEl = document.getElementById('gauge-gpu-circle');
     const diskCircleEl = document.getElementById('gauge-disk-circle');
 
-    const safeCpu = isNaN(pcTelemetry.cpuLoadEst) ? 18 : Math.min(100, Math.max(0, pcTelemetry.cpuLoadEst));
-    const safeRam = isNaN(pcTelemetry.ramPercent) ? 81 : Math.min(100, Math.max(0, pcTelemetry.ramPercent));
-    const safeGpu = isNaN(pcTelemetry.gpuLoadEst) ? 14 : Math.min(100, Math.max(0, pcTelemetry.gpuLoadEst));
+    const realFresh = isRealTelemetryFresh();
+    const safeCpu = realFresh && Number.isFinite(pcTelemetry.cpuLoadEst) ? Math.min(100, Math.max(0, pcTelemetry.cpuLoadEst)) : null;
+    const safeRam = realFresh && Number.isFinite(pcTelemetry.ramPercent) ? Math.min(100, Math.max(0, pcTelemetry.ramPercent)) : null;
+    const safeGpu = realFresh && Number.isFinite(pcTelemetry.gpuLoadEst) ? Math.min(100, Math.max(0, pcTelemetry.gpuLoadEst)) : null;
     // Disco só existe com o agente local real -- sem dado, mostra "--%" em
     // vez de inventar um número (diferente de CPU/RAM/GPU que têm fallback
     // por estimativa de navegador).
-    const hasDisk = typeof pcTelemetry.diskPercent === 'number' && !isNaN(pcTelemetry.diskPercent);
-    const safeDisk = hasDisk ? Math.min(100, Math.max(0, pcTelemetry.diskPercent)) : 0;
+    const hasDisk = realFresh && typeof pcTelemetry.diskPercent === 'number' && !isNaN(pcTelemetry.diskPercent);
+    const safeDisk = hasDisk ? Math.min(100, Math.max(0, pcTelemetry.diskPercent)) : null;
 
-    if (cpuTextEl) cpuTextEl.textContent = `${safeCpu}%`;
-    if (ramTextEl) ramTextEl.textContent = `${safeRam}%`;
-    if (gpuTextEl) gpuTextEl.textContent = `${safeGpu}%`;
+    if (cpuTextEl) cpuTextEl.textContent = safeCpu == null ? '--%' : `${safeCpu}%`;
+    if (ramTextEl) ramTextEl.textContent = safeRam == null ? '--%' : `${safeRam}%`;
+    if (gpuTextEl) gpuTextEl.textContent = safeGpu == null ? '--%' : `${safeGpu}%`;
     if (diskTextEl) diskTextEl.textContent = hasDisk ? `${safeDisk}%` : '--%';
 
     const maxDash = 119.38;
@@ -2972,7 +2996,6 @@ function renderTelemetryWidget() {
     // isso mostrava "Placa de vídeo: OpenGL ES 3.2" e RAM do telefone como
     // se fosse hardware do PC, confuso e sem sentido. Mesmo padrão honesto
     // que o Disco C já usava: sem dado real, mostra placeholder, não finge.
-    const realFresh = isRealTelemetryFresh();
     if (cpuEl) cpuEl.textContent = realFresh ? `${safeCpu}% (${pcTelemetry.cores} Núcleos)` : 'Sem agente local';
     if (ramEl) ramEl.textContent = realFresh ? `${pcTelemetry.ramUsedMB}MB / ${pcTelemetry.ramTotalMB}MB (${safeRam}%)` : 'Sem agente local';
     if (gpuEl) gpuEl.textContent = realFresh ? pcTelemetry.gpuName.slice(0, 32) : 'Sem agente local';
